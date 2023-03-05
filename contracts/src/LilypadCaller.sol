@@ -28,6 +28,7 @@ contract LilypadCaller is LilypadCallerInterface {
         bridge = LilypadEvents(_eventsAddress);
     }
 
+    /**
     string constant specStart = '{'
         '"Engine": "docker",'
         '"Verifier": "noop",'
@@ -39,6 +40,22 @@ contract LilypadCaller is LilypadCallerInterface {
     string constant specEnd =
         '"]},'
         '"Resources": {"GPU": "1"},'
+        '"Outputs": [{"Name": "outputs", "Path": "/outputs"}],'
+        '"Deal": {"Concurrency": 1}'
+        '}';
+    */
+
+    string constant specStart = '{'
+        '"Engine": "docker",'
+        '"Verifier": "noop",'
+        '"Publisher": "estuary",'
+        '"Docker": {'
+        '"Image": "docker.io/nhdh/gsc-stable-diffusion-cpu:0.0.1",'
+        '"Entrypoint": ["./generate.sh", "';
+
+    string constant specEnd =
+        '"]},'
+        '"Resources": {"TEE": true},'
         '"Outputs": [{"Name": "outputs", "Path": "/outputs"}],'
         '"Deal": {"Concurrency": 1}'
         '}';

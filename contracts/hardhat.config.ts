@@ -36,8 +36,8 @@ const mnemonic = requireEnv(process.env.MNEMONIC, "MNEMONIC");
 const infuraApiKey = requireEnv(process.env.INFURA_API_KEY, "INFURA_API_KEY");
 const etherscanApiKey = requireEnv(process.env.ETHERSCAN_API_KEY, "ETHERSCAN_API_KEY");
 const optimisticEtherscanApiKey = requireEnv(process.env.OPTIMISTIC_ETHERSCAN_API_KEY, "OPTIMISTIC_ETHERSCAN_API_KEY");
-const ozApiKey = requireEnv(process.env.OPENZEPPELIN_API_KEY, "OPENZEPPELIN_API_KEY");
-const ozSecretKey = requireEnv(process.env.OPENZEPPELIN_SECRET_KEY, "OPENZEPPELIN_SECRET_KEY");
+const ozApiKey = process.env.OPENZEPPELIN_API_KEY;
+const ozSecretKey = process.env.OPENZEPPELIN_SECRET_KEY;
 
 /**
  * Maps a key to the chain ID
@@ -52,6 +52,7 @@ const chainIds = {
   // Optimism: https://docs.infura.io/infura/networks/optimism/how-to/choose-a-network
   "optimism-mainnet": 10,
   "optimism-goerli": 420,
+  "hyperspace": 3141,
 };
 
 function getChainConfig(chain: keyof typeof chainIds) {
@@ -104,7 +105,10 @@ const config: HardhatUserConfig = {
     "optimism-goerli": getChainConfig("optimism-goerli"),
     "optimism-mainnet": {
       ...getChainConfig("optimism-mainnet"),
-      url: "https://opt-mainnet.g.alchemy.com/v2/ZTQlA1-nt0ZuZwXgAKQExGHva-Q7tbTK"
+    },
+    "hyperspace": {
+      ...getChainConfig("hyperspace"),
+      url: "https://api.hyperspace.node.glif.io/rpc/v1",
     },
   },
   paths: {
