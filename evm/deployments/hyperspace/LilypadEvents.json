@@ -1,0 +1,733 @@
+{
+  "address": "0xE7326B4aE16A8aEE3698992EBf43a476AD199BD8",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requestor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "string",
+              "name": "result",
+              "type": "string"
+            },
+            {
+              "internalType": "enum LilypadResultType",
+              "name": "resultType",
+              "type": "uint8"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct LilypadEvents.BacalhauJobResult",
+          "name": "result",
+          "type": "tuple"
+        }
+      ],
+      "name": "BacalhauJobResultsReturned",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requestor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "spec",
+              "type": "string"
+            },
+            {
+              "internalType": "enum LilypadResultType",
+              "name": "resultType",
+              "type": "uint8"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct LilypadEvents.BacalhauJob",
+          "name": "job",
+          "type": "tuple"
+        }
+      ],
+      "name": "NewBacalhauJobSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "bacalhauJobHistory",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "requestor",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "spec",
+          "type": "string"
+        },
+        {
+          "internalType": "enum LilypadResultType",
+          "name": "resultType",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "bacalhauJobResultByAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "requestor",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "result",
+          "type": "string"
+        },
+        {
+          "internalType": "enum LilypadResultType",
+          "name": "resultType",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "bacalhauJobResultHistory",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "requestor",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "result",
+          "type": "string"
+        },
+        {
+          "internalType": "enum LilypadResultType",
+          "name": "resultType",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentJobID",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fetchAllJobs",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requestor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "spec",
+              "type": "string"
+            },
+            {
+              "internalType": "enum LilypadResultType",
+              "name": "resultType",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct LilypadEvents.BacalhauJob[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fetchAllResults",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requestor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "string",
+              "name": "result",
+              "type": "string"
+            },
+            {
+              "internalType": "enum LilypadResultType",
+              "name": "resultType",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct LilypadEvents.BacalhauJobResult[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_requestor",
+          "type": "address"
+        }
+      ],
+      "name": "fetchJobsByAddress",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "requestor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "string",
+              "name": "result",
+              "type": "string"
+            },
+            {
+              "internalType": "enum LilypadResultType",
+              "name": "resultType",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct LilypadEvents.BacalhauJobResult[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_errorMsg",
+          "type": "string"
+        }
+      ],
+      "name": "returnBacalhauError",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_jobId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum LilypadResultType",
+          "name": "_resultType",
+          "type": "uint8"
+        },
+        {
+          "internalType": "string",
+          "name": "_result",
+          "type": "string"
+        }
+      ],
+      "name": "returnBacalhauResults",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_spec",
+          "type": "string"
+        },
+        {
+          "internalType": "enum LilypadResultType",
+          "name": "_resultType",
+          "type": "uint8"
+        }
+      ],
+      "name": "runBacalhauJob",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_authorizedContract",
+          "type": "address"
+        }
+      ],
+      "name": "setAuthorizedContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x3bc0d5ae99cd0e2c1aa0810dd5110e2f3da428dc7c483a11bde52d0e7f7bca87",
+  "receipt": {
+    "to": null,
+    "from": "0x013e84e68AF747DE29F224747011a9c7f8828f08",
+    "contractAddress": "0xE7326B4aE16A8aEE3698992EBf43a476AD199BD8",
+    "transactionIndex": 0,
+    "gasUsed": "59701046",
+    "logsBloom": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "blockHash": "0x1986db7120c2f1c5ab67eabb8281e8ccca2eeb96dce4fb943584e4cfc0c5de5d",
+    "transactionHash": "0x3bc0d5ae99cd0e2c1aa0810dd5110e2f3da428dc7c483a11bde52d0e7f7bca87",
+    "logs": [
+      {
+        "transactionIndex": 0,
+        "blockNumber": 189513,
+        "transactionHash": "0x3bc0d5ae99cd0e2c1aa0810dd5110e2f3da428dc7c483a11bde52d0e7f7bca87",
+        "address": "0xE7326B4aE16A8aEE3698992EBf43a476AD199BD8",
+        "topics": [
+          "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x000000000000000000000000013e84e68af747de29f224747011a9c7f8828f08"
+        ],
+        "data": "0x",
+        "logIndex": 0,
+        "blockHash": "0x1986db7120c2f1c5ab67eabb8281e8ccca2eeb96dce4fb943584e4cfc0c5de5d"
+      }
+    ],
+    "blockNumber": 189513,
+    "cumulativeGasUsed": "0",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "4901e916ff3392a69225afd46cc37c18",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.18+commit.87f61d96\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"result\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"indexed\":false,\"internalType\":\"struct LilypadEvents.BacalhauJobResult\",\"name\":\"result\",\"type\":\"tuple\"}],\"name\":\"BacalhauJobResultsReturned\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"spec\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"indexed\":false,\"internalType\":\"struct LilypadEvents.BacalhauJob\",\"name\":\"job\",\"type\":\"tuple\"}],\"name\":\"NewBacalhauJobSubmitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"bacalhauJobHistory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"spec\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"bacalhauJobResultByAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"result\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"bacalhauJobResultHistory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"result\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"currentJobID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fetchAllJobs\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"spec\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"internalType\":\"struct LilypadEvents.BacalhauJob[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fetchAllResults\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"result\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"internalType\":\"struct LilypadEvents.BacalhauJobResult[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_requestor\",\"type\":\"address\"}],\"name\":\"fetchJobsByAddress\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"requestor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"result\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"resultType\",\"type\":\"uint8\"}],\"internalType\":\"struct LilypadEvents.BacalhauJobResult[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_jobId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_errorMsg\",\"type\":\"string\"}],\"name\":\"returnBacalhauError\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_jobId\",\"type\":\"uint256\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"_resultType\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_result\",\"type\":\"string\"}],\"name\":\"returnBacalhauResults\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"_spec\",\"type\":\"string\"},{\"internalType\":\"enum LilypadResultType\",\"name\":\"_resultType\",\"type\":\"uint8\"}],\"name\":\"runBacalhauJob\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_authorizedContract\",\"type\":\"address\"}],\"name\":\"setAuthorizedContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"An experimental contract for POC work to call Bacalhau jobs from FVM smart contracts\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/lilypad/LilypadEvents.sol\":\"LilypadEvents\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[],\"viaIR\":true},\"sources\":{\"@openzeppelin/contracts/access/Ownable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract Ownable is Context {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    constructor() {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        _checkOwner();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if the sender is not the owner.\\n     */\\n    function _checkOwner() internal view virtual {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0xa94b34880e3c1b0b931662cb1c09e5dfa6662f31cba80e07c5ee71cd135c9673\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Counters.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Counters.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @title Counters\\n * @author Matt Condon (@shrugs)\\n * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number\\n * of elements in a mapping, issuing ERC721 ids, or counting request ids.\\n *\\n * Include with `using Counters for Counters.Counter;`\\n */\\nlibrary Counters {\\n    struct Counter {\\n        // This variable should never be directly accessed by users of the library: interactions must be restricted to\\n        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add\\n        // this feature: see https://github.com/ethereum/solidity/issues/4637\\n        uint256 _value; // default: 0\\n    }\\n\\n    function current(Counter storage counter) internal view returns (uint256) {\\n        return counter._value;\\n    }\\n\\n    function increment(Counter storage counter) internal {\\n        unchecked {\\n            counter._value += 1;\\n        }\\n    }\\n\\n    function decrement(Counter storage counter) internal {\\n        uint256 value = counter._value;\\n        require(value > 0, \\\"Counter: decrement overflow\\\");\\n        unchecked {\\n            counter._value = value - 1;\\n        }\\n    }\\n\\n    function reset(Counter storage counter) internal {\\n        counter._value = 0;\\n    }\\n}\\n\",\"keccak256\":\"0xf0018c2440fbe238dd3a8732fa8e17a0f9dce84d31451dc8a32f6d62b349c9f1\",\"license\":\"MIT\"},\"contracts/lilypad/LilypadCallerInterface.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.8.4;\\n\\nenum LilypadResultType {\\n    CID,\\n    StdOut,\\n    StdErr,\\n    ExitCode\\n}\\n\\ninterface LilypadCallerInterface {\\n    function lilypadFulfilled(\\n        address _from,\\n        uint _jobId,\\n        LilypadResultType _resultType,\\n        string calldata _result\\n    ) external;\\n\\n    function lilypadCancelled(\\n        address _from,\\n        uint _jobId,\\n        string calldata _errorMsg\\n    ) external;\\n}\\n\",\"keccak256\":\"0xb26a74a78a66fdb76ee9ad2540ffc31973209b0bd930118da910fa932aba6490\",\"license\":\"MIT\"},\"contracts/lilypad/LilypadEvents.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.8.4;\\n\\n// import \\\"hardhat/console.sol\\\";\\n\\nimport {Counters} from \\\"@openzeppelin/contracts/utils/Counters.sol\\\";\\nimport {Ownable} from \\\"@openzeppelin/contracts/access/Ownable.sol\\\";\\n\\nimport {LilypadCallerInterface, LilypadResultType} from \\\"./LilypadCallerInterface.sol\\\";\\n\\nerror LilypadEventsError();\\n\\n/**\\n    @notice An experimental contract for POC work to call Bacalhau jobs from FVM smart contracts\\n*/\\ncontract LilypadEvents is Ownable {\\n    using Counters for Counters.Counter; // create job id's?\\n    Counters.Counter private _jobIds;\\n\\n    // only this contract is allowed to call this bridge\\n    address private authorizedContract;\\n\\n    struct BacalhauJob {\\n        address requestor;\\n        // unique id - though uint only goes up to 2^265 -1 so probably want to handle\\n        // this better in future maybe a hash\\n        uint id;\\n        // stingified params? Seems rife for errors - we may need to consider a\\n        // Base contract and several others that verify details before calling\\n        // bacalhau. Or multiple functions in here to call specific things +\\n        // generic job\\n        string spec;\\n        // what type of result the job wants to receive\\n        LilypadResultType resultType;\\n    }\\n\\n    //testing\\n    struct BacalhauJobResult {\\n        address requestor;\\n        uint id;\\n        bool success;\\n        string result;\\n        LilypadResultType resultType;\\n    }\\n\\n    BacalhauJob[] public bacalhauJobHistory; //complete history of all jobs\\n    BacalhauJobResult[] public bacalhauJobResultHistory;\\n    mapping(address => BacalhauJobResult[]) public bacalhauJobResultByAddress; // jobs by requestor\\n\\n    event NewBacalhauJobSubmitted(BacalhauJob job);\\n    event BacalhauJobResultsReturned(BacalhauJobResult result);\\n\\n    // only this contract is allowed to call \\\"runBacalhauJob\\\"\\n    function setAuthorizedContract(\\n        address _authorizedContract\\n    ) public onlyOwner {\\n        authorizedContract = _authorizedContract;\\n    }\\n\\n    modifier callerIsAuthorizedContract() {\\n        require(msg.sender == authorizedContract, \\\"unauthorized\\\");\\n        _;\\n    }\\n\\n    //msg.sender is always the address where the current (external) function call came from.\\n    //need interface for different jobs available to verify params before sending\\n    function runBacalhauJob(\\n        address _from,\\n        string memory _spec,\\n        LilypadResultType _resultType\\n    ) public callerIsAuthorizedContract returns (uint) {\\n        _jobIds.increment();\\n        uint thisJobId = _jobIds.current();\\n        BacalhauJob memory jobCalled = BacalhauJob({\\n            requestor: _from,\\n            id: thisJobId,\\n            spec: _spec,\\n            resultType: _resultType\\n        });\\n\\n        bacalhauJobHistory.push(jobCalled);\\n        emit NewBacalhauJobSubmitted(jobCalled);\\n        return thisJobId;\\n    }\\n\\n    function currentJobID() public view returns (uint) {\\n        return _jobIds.current();\\n    }\\n\\n    function returnBacalhauResults(\\n        address _to,\\n        uint _jobId,\\n        LilypadResultType _resultType,\\n        string memory _result\\n    ) public onlyOwner {\\n        BacalhauJobResult memory jobResult = BacalhauJobResult({\\n            requestor: _to,\\n            id: _jobId,\\n            result: _result,\\n            success: true,\\n            resultType: _resultType\\n        });\\n        bacalhauJobResultHistory.push(jobResult);\\n        bacalhauJobResultByAddress[_to].push(jobResult);\\n\\n        emit BacalhauJobResultsReturned(jobResult);\\n        LilypadCallerInterface(_to).lilypadFulfilled(\\n            address(this),\\n            _jobId,\\n            _resultType,\\n            _result\\n        );\\n    }\\n\\n    function returnBacalhauError(\\n        address _to,\\n        uint _jobId,\\n        string memory _errorMsg\\n    ) public onlyOwner {\\n        BacalhauJobResult memory jobResult = BacalhauJobResult({\\n            requestor: _to,\\n            id: _jobId,\\n            success: false,\\n            result: _errorMsg,\\n            resultType: LilypadResultType.StdErr\\n        });\\n        bacalhauJobResultHistory.push(jobResult);\\n        bacalhauJobResultByAddress[_to].push(jobResult);\\n\\n        emit BacalhauJobResultsReturned(jobResult);\\n        LilypadCallerInterface(_to).lilypadCancelled(\\n            address(this),\\n            _jobId,\\n            _errorMsg\\n        );\\n    }\\n\\n    function fetchAllJobs() public view returns (BacalhauJob[] memory) {\\n        return bacalhauJobHistory;\\n    }\\n\\n    function fetchAllResults()\\n        public\\n        view\\n        returns (BacalhauJobResult[] memory)\\n    {\\n        return bacalhauJobResultHistory;\\n    }\\n\\n    function fetchJobsByAddress(\\n        address _requestor\\n    ) public view returns (BacalhauJobResult[] memory) {\\n        return bacalhauJobResultByAddress[_requestor];\\n    }\\n}\\n\",\"keccak256\":\"0x08f8cf868675cc5568b80158ee182edb3ab3d720c227093d25e2200f9763cfdc\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6080806040523461005b5760008054336001600160a01b0319821681178355916001600160a01b03909116907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09080a361153190816100618239f35b600080fdfe6080604081815260048036101561001557600080fd5b600092833560e01c908163055da1dd14610c4057508063399fad3714610b6f57806359759de514610a55578063715018a6146109fb578063807d6dcf1461097d5780638da5cb5b146109555780639aad69e714610915578063ada458be146108a5578063ce4af1d714610782578063d992cac8146104cf578063dc1c19ea146103cb578063ef2e0911146102f357838163f280ccb814610189575063f2fde38b146100bf57600080fd5b34610185576020366003190112610185576100d8610c5c565b906100e1611029565b6001600160a01b03918216928315610133575050600054826001600160601b0360a01b821617600055167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0600080a380f35b906020608492519162461bcd60e51b8352820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152fd5b8280fd5b929050346102ef5760803660031901126102ef576101a5610c5c565b916024359260443590828210156102eb5760643567ffffffffffffffff81116102e7576101d59036908501610e11565b946101de611029565b7f9c3599b1ae1172dc696af0b3987352577abf98ebc11cc2f7c3a8f0a08b20c0ef61026c86519361020e85610d8d565b6001600160a01b031680855260208501849052600188860152606085018990529361023c8660808301611081565b610245816110a5565b848a52600560205261025981898c20611333565b8751918291602083526020830190610cda565b0390a1813b156102e7578680946102b86102a7988851998a978896879563d5040d6560e01b8752309087015260248601526044850190610cb7565b608060648401526084830190610c77565b03925af19081156102de57506102cb5750f35b6102d490610dbf565b6102db5780f35b80fd5b513d84823e3d90fd5b8680fd5b8580fd5b5050fd5b5082346102db57806003193601126102db5790805490610312826114e3565b9261031f85519485610def565b828452818152906020907f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908286015b858510610367578751806103638982610d2b565b0390f35b6005846001928a5161037881610d8d565b848060a01b03875416815284870154838201526103bd60ff8d8160028b0154161515908401526103aa60038a01610ef2565b6060840152878901541660808301611081565b81520193019401939161034f565b50346101855760203660031901126101855780359080548210156104cb5790600591600052029061036360018060a01b03837f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b015416917f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19c8401549360ff7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19d8201541660ff7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19f6104bc7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19e8501610ef2565b93015416925195869586610fb4565b8380fd5b509034610185576060366003190112610185576104ea610c5c565b60249283359467ffffffffffffffff9586811161077e5761050e9036908401610e11565b9460443591838310156102db576002546001600160a01b0393908416330361074d576001978880540198898155858951986105488a610dd3565b16885260209a8b89018b81528a8a0193845261056860608b019586611081565b600354600160401b81101561073b5780846105869201600355610e68565b98909861072a578a51166001600160601b0360a01b89541617885551828801556002870192518051918211610718578c6105c08554610eb8565b601f81116106d0575b50508c908d601f841160011461066d57509282939183928894610662575b50501b916000199060031b1c19161790555b51938085101561065257505050916106386106499260037f9614ee9ca679bba6d8bd80a13dc0b8e76185314ed2abb02ae2b90dc59f6513cb950161108d565b835191829187835287830190610ff2565b0390a151908152f35b634e487b7160e01b825260219052fd5b0151925038806105e7565b919083601f198116878a52848a20948a905b888383106106b6575050501061069d575b505050811b0190556105f9565b015160001960f88460031b161c19169055388080610690565b85870151885590960195948501948793509081019061067f565b85885281882090601f850160051c820192851061070e575b601f0160051c019084905b82811061070357508e91506105c9565b8881550184906106f3565b90915081906106e8565b634e487b7160e01b8652604189528686fd5b634e487b7160e01b8752868a528787fd5b634e487b7160e01b875260418a528787fd5b865162461bcd60e51b8152602081870152600c818501526b1d5b985d5d1a1bdc9a5e995960a21b6044820152606490fd5b5080fd5b5082903461077e578160031936011261077e579060039081546107a4816114e3565b906107b186519283610def565b80825260209485830180958086527fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b9086925b858410610847575050505050508451938085019181865251809252858501958260051b8601019392955b82871061081b5785850386f35b909192938280610837600193603f198a82030186528851610ff2565b960192019601959291909261080e565b848a6001928d809d9a9b9d519061085d82610dd3565b858060a01b038854168252858801548483015261087c60028901610ef2565b9082015261089360ff878901541660608301611081565b815201930193019291989695986107e4565b5091903461077e578060031936011261077e576108c0610c5c565b6001600160a01b039081168352600560205281832080549193602435928310156102db575061036392916108f391610f98565b50928354169260018101549460ff80600284015416916104bc60038501610ef2565b83346102db5760203660031901126102db5761092f610c5c565b610937611029565b60018060a01b03166001600160601b0360a01b600254161760025580f35b50503461077e578160031936011261077e57905490516001600160a01b039091168152602090f35b5082903461077e57602036600319011261077e5735906003548210156102db57506109a790610e68565b509060018060a01b03825416906103636109f0600185015494608060ff60036109d260028501610ef2565b93015416948051978897885260208801528601526080850190610c77565b916060840190610cb7565b83346102db57806003193601126102db57610a14611029565b600080546001600160a01b0319811682556001600160a01b03167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b5090346101855760603660031901126101855782610a71610c5c565b6024359060443567ffffffffffffffff81116104cb57610a949036908701610e11565b91610a9d611029565b7f9c3599b1ae1172dc696af0b3987352577abf98ebc11cc2f7c3a8f0a08b20c0ef610b12865193610acd85610d8d565b6001600160a01b031680855260208501849052878501879052606085018690526002608086015293610afe816110a5565b848752600560205261025981898920611333565b0390a1813b156104cb5783610b4f96865197889586948593631a43c11f60e11b855230908501526024840152606060448401526064830190610c77565b03925af19081156102de5750610b63575080f35b610b6c90610dbf565b80f35b5091903461077e57602080600319360112610185576001600160a01b03929083610b97610c5c565b16825260059081815283832090815493610bb0856114e3565b96610bbd87519889610def565b85885282880193825282822091935b868510610be0578751806103638b82610d2b565b85846001928c610c328c805192610bf684610d8d565b888a54168452878a01548685015260ff918260028c015416151590850152610c2060038b01610ef2565b60608501528901541660808301611081565b815201930194019391610bcc565b84903461077e578160031936011261077e576020906001548152f35b600435906001600160a01b0382168203610c7257565b600080fd5b919082519283825260005b848110610ca3575050826000602080949584010152601f8019910116010190565b602081830181015184830182015201610c82565b906004821015610cc45752565b634e487b7160e01b600052602160045260246000fd5b90610d289060018060a01b03835116815260208301516020820152604083015115156040820152608080610d1d606086015160a0606086015260a0850190610c77565b940151910190610cb7565b90565b602080820190808352835180925260408301928160408460051b8301019501936000915b848310610d5f5750505050505090565b9091929394958480610d7d600193603f198682030187528a51610cda565b9801930193019194939290610d4f565b60a0810190811067ffffffffffffffff821117610da957604052565b634e487b7160e01b600052604160045260246000fd5b67ffffffffffffffff8111610da957604052565b6080810190811067ffffffffffffffff821117610da957604052565b90601f8019910116810190811067ffffffffffffffff821117610da957604052565b81601f82011215610c725780359067ffffffffffffffff8211610da95760405192610e46601f8401601f191660200185610def565b82845260208383010111610c7257816000926020809301838601378301015290565b600354811015610ea257600360005260021b7fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b0190600090565b634e487b7160e01b600052603260045260246000fd5b90600182811c92168015610ee8575b6020831014610ed257565b634e487b7160e01b600052602260045260246000fd5b91607f1691610ec7565b9060405191826000825492610f0684610eb8565b908184526001948581169081600014610f755750600114610f32575b5050610f3092500383610def565b565b9093915060005260209081600020936000915b818310610f5d575050610f3093508201013880610f22565b85548884018501529485019487945091830191610f45565b915050610f3094506020925060ff191682840152151560051b8201013880610f22565b8054821015610ea2576000526005602060002091020190600090565b95949293610f3094608093610fea9360018060a01b0316895260208901521515604088015260a0606088015260a0870190610c77565b940190610cb7565b90610d289060018060a01b03835116815260208301516020820152606080610d1d6040860151608060408601526080850190610c77565b6000546001600160a01b0316330361103d57565b606460405162461bcd60e51b815260206004820152602060248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152fd5b6004821015610cc45752565b906004811015610cc45760ff80198354169116179055565b906004908154600160401b81101561131e576001938482018085558210156113095760056000928584520290817f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b0160018060a01b038251166001600160601b0360a01b825416179055602095868201517f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19c8401557f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19d83016040830151151560ff801983541691161790557f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19e83019060608301519788519867ffffffffffffffff8a116112f6576111b68454610eb8565b601f81116112b0575b5081601f8b116001146112495750988092819288999a9b608098999461123e575b50501b916000199060031b1c19161790555b0151918483101561122b5750610f309293507f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19f0161108d565b634e487b7160e01b815260218552602490fd5b0151925038806111e0565b909991601f1983169a8589528289209289905b8d821061129957505083608098999a9b9c10611280575b505050811b0190556111f2565b015160001960f88460031b161c19169055388080611273565b80878596829496860151815501950193019061125c565b848852828820601f8c0160051c810191848d106112ec575b601f0160051c019084905b8281106112e15750506111bf565b8981550184906112d3565b90915081906112c8565b634e487b7160e01b875260418952602487fd5b603284634e487b7160e01b6000525260246000fd5b604183634e487b7160e01b6000525260246000fd5b91908254600160401b811015610da957611354906001948582018155610f98565b9190916114cd5760018060a01b038151166001600160601b0360a01b8354161782556020938482015181840155600283016040830151151560ff80198354169116179055600383019060608301519586519667ffffffffffffffff8811610da9576113bf8454610eb8565b601f8111611484575b5081601f891160011461141c575096809281926080979899600094611411575b50501b916000199060031b1c19161790555b01516004811015610cc4576004610f30920161108d565b0151925038806113e8565b909791601f198316988560005282600020926000905b8b821061146d57505083608098999a10611454575b505050811b0190556113fa565b015160001960f88460031b161c19169055388080611447565b808785968294968601518155019501930190611432565b6000858152838120601f8b0160051c810192858c106114c3575b601f0160051c019185905b8381106114b8575050506113c8565b8281550185906114a9565b909250829061149e565b634e487b7160e01b600052600060045260246000fd5b67ffffffffffffffff8111610da95760051b6020019056fea2646970667358221220becdf8a2eb848573932f3ff4d001cf0c6a0909ad34380b0de6533729c608673f64736f6c63430008120033",
+  "deployedBytecode": "0x6080604081815260048036101561001557600080fd5b600092833560e01c908163055da1dd14610c4057508063399fad3714610b6f57806359759de514610a55578063715018a6146109fb578063807d6dcf1461097d5780638da5cb5b146109555780639aad69e714610915578063ada458be146108a5578063ce4af1d714610782578063d992cac8146104cf578063dc1c19ea146103cb578063ef2e0911146102f357838163f280ccb814610189575063f2fde38b146100bf57600080fd5b34610185576020366003190112610185576100d8610c5c565b906100e1611029565b6001600160a01b03918216928315610133575050600054826001600160601b0360a01b821617600055167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0600080a380f35b906020608492519162461bcd60e51b8352820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152fd5b8280fd5b929050346102ef5760803660031901126102ef576101a5610c5c565b916024359260443590828210156102eb5760643567ffffffffffffffff81116102e7576101d59036908501610e11565b946101de611029565b7f9c3599b1ae1172dc696af0b3987352577abf98ebc11cc2f7c3a8f0a08b20c0ef61026c86519361020e85610d8d565b6001600160a01b031680855260208501849052600188860152606085018990529361023c8660808301611081565b610245816110a5565b848a52600560205261025981898c20611333565b8751918291602083526020830190610cda565b0390a1813b156102e7578680946102b86102a7988851998a978896879563d5040d6560e01b8752309087015260248601526044850190610cb7565b608060648401526084830190610c77565b03925af19081156102de57506102cb5750f35b6102d490610dbf565b6102db5780f35b80fd5b513d84823e3d90fd5b8680fd5b8580fd5b5050fd5b5082346102db57806003193601126102db5790805490610312826114e3565b9261031f85519485610def565b828452818152906020907f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908286015b858510610367578751806103638982610d2b565b0390f35b6005846001928a5161037881610d8d565b848060a01b03875416815284870154838201526103bd60ff8d8160028b0154161515908401526103aa60038a01610ef2565b6060840152878901541660808301611081565b81520193019401939161034f565b50346101855760203660031901126101855780359080548210156104cb5790600591600052029061036360018060a01b03837f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b015416917f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19c8401549360ff7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19d8201541660ff7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19f6104bc7f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19e8501610ef2565b93015416925195869586610fb4565b8380fd5b509034610185576060366003190112610185576104ea610c5c565b60249283359467ffffffffffffffff9586811161077e5761050e9036908401610e11565b9460443591838310156102db576002546001600160a01b0393908416330361074d576001978880540198898155858951986105488a610dd3565b16885260209a8b89018b81528a8a0193845261056860608b019586611081565b600354600160401b81101561073b5780846105869201600355610e68565b98909861072a578a51166001600160601b0360a01b89541617885551828801556002870192518051918211610718578c6105c08554610eb8565b601f81116106d0575b50508c908d601f841160011461066d57509282939183928894610662575b50501b916000199060031b1c19161790555b51938085101561065257505050916106386106499260037f9614ee9ca679bba6d8bd80a13dc0b8e76185314ed2abb02ae2b90dc59f6513cb950161108d565b835191829187835287830190610ff2565b0390a151908152f35b634e487b7160e01b825260219052fd5b0151925038806105e7565b919083601f198116878a52848a20948a905b888383106106b6575050501061069d575b505050811b0190556105f9565b015160001960f88460031b161c19169055388080610690565b85870151885590960195948501948793509081019061067f565b85885281882090601f850160051c820192851061070e575b601f0160051c019084905b82811061070357508e91506105c9565b8881550184906106f3565b90915081906106e8565b634e487b7160e01b8652604189528686fd5b634e487b7160e01b8752868a528787fd5b634e487b7160e01b875260418a528787fd5b865162461bcd60e51b8152602081870152600c818501526b1d5b985d5d1a1bdc9a5e995960a21b6044820152606490fd5b5080fd5b5082903461077e578160031936011261077e579060039081546107a4816114e3565b906107b186519283610def565b80825260209485830180958086527fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b9086925b858410610847575050505050508451938085019181865251809252858501958260051b8601019392955b82871061081b5785850386f35b909192938280610837600193603f198a82030186528851610ff2565b960192019601959291909261080e565b848a6001928d809d9a9b9d519061085d82610dd3565b858060a01b038854168252858801548483015261087c60028901610ef2565b9082015261089360ff878901541660608301611081565b815201930193019291989695986107e4565b5091903461077e578060031936011261077e576108c0610c5c565b6001600160a01b039081168352600560205281832080549193602435928310156102db575061036392916108f391610f98565b50928354169260018101549460ff80600284015416916104bc60038501610ef2565b83346102db5760203660031901126102db5761092f610c5c565b610937611029565b60018060a01b03166001600160601b0360a01b600254161760025580f35b50503461077e578160031936011261077e57905490516001600160a01b039091168152602090f35b5082903461077e57602036600319011261077e5735906003548210156102db57506109a790610e68565b509060018060a01b03825416906103636109f0600185015494608060ff60036109d260028501610ef2565b93015416948051978897885260208801528601526080850190610c77565b916060840190610cb7565b83346102db57806003193601126102db57610a14611029565b600080546001600160a01b0319811682556001600160a01b03167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b5090346101855760603660031901126101855782610a71610c5c565b6024359060443567ffffffffffffffff81116104cb57610a949036908701610e11565b91610a9d611029565b7f9c3599b1ae1172dc696af0b3987352577abf98ebc11cc2f7c3a8f0a08b20c0ef610b12865193610acd85610d8d565b6001600160a01b031680855260208501849052878501879052606085018690526002608086015293610afe816110a5565b848752600560205261025981898920611333565b0390a1813b156104cb5783610b4f96865197889586948593631a43c11f60e11b855230908501526024840152606060448401526064830190610c77565b03925af19081156102de5750610b63575080f35b610b6c90610dbf565b80f35b5091903461077e57602080600319360112610185576001600160a01b03929083610b97610c5c565b16825260059081815283832090815493610bb0856114e3565b96610bbd87519889610def565b85885282880193825282822091935b868510610be0578751806103638b82610d2b565b85846001928c610c328c805192610bf684610d8d565b888a54168452878a01548685015260ff918260028c015416151590850152610c2060038b01610ef2565b60608501528901541660808301611081565b815201930194019391610bcc565b84903461077e578160031936011261077e576020906001548152f35b600435906001600160a01b0382168203610c7257565b600080fd5b919082519283825260005b848110610ca3575050826000602080949584010152601f8019910116010190565b602081830181015184830182015201610c82565b906004821015610cc45752565b634e487b7160e01b600052602160045260246000fd5b90610d289060018060a01b03835116815260208301516020820152604083015115156040820152608080610d1d606086015160a0606086015260a0850190610c77565b940151910190610cb7565b90565b602080820190808352835180925260408301928160408460051b8301019501936000915b848310610d5f5750505050505090565b9091929394958480610d7d600193603f198682030187528a51610cda565b9801930193019194939290610d4f565b60a0810190811067ffffffffffffffff821117610da957604052565b634e487b7160e01b600052604160045260246000fd5b67ffffffffffffffff8111610da957604052565b6080810190811067ffffffffffffffff821117610da957604052565b90601f8019910116810190811067ffffffffffffffff821117610da957604052565b81601f82011215610c725780359067ffffffffffffffff8211610da95760405192610e46601f8401601f191660200185610def565b82845260208383010111610c7257816000926020809301838601378301015290565b600354811015610ea257600360005260021b7fc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b0190600090565b634e487b7160e01b600052603260045260246000fd5b90600182811c92168015610ee8575b6020831014610ed257565b634e487b7160e01b600052602260045260246000fd5b91607f1691610ec7565b9060405191826000825492610f0684610eb8565b908184526001948581169081600014610f755750600114610f32575b5050610f3092500383610def565b565b9093915060005260209081600020936000915b818310610f5d575050610f3093508201013880610f22565b85548884018501529485019487945091830191610f45565b915050610f3094506020925060ff191682840152151560051b8201013880610f22565b8054821015610ea2576000526005602060002091020190600090565b95949293610f3094608093610fea9360018060a01b0316895260208901521515604088015260a0606088015260a0870190610c77565b940190610cb7565b90610d289060018060a01b03835116815260208301516020820152606080610d1d6040860151608060408601526080850190610c77565b6000546001600160a01b0316330361103d57565b606460405162461bcd60e51b815260206004820152602060248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152fd5b6004821015610cc45752565b906004811015610cc45760ff80198354169116179055565b906004908154600160401b81101561131e576001938482018085558210156113095760056000928584520290817f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b0160018060a01b038251166001600160601b0360a01b825416179055602095868201517f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19c8401557f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19d83016040830151151560ff801983541691161790557f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19e83019060608301519788519867ffffffffffffffff8a116112f6576111b68454610eb8565b601f81116112b0575b5081601f8b116001146112495750988092819288999a9b608098999461123e575b50501b916000199060031b1c19161790555b0151918483101561122b5750610f309293507f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19f0161108d565b634e487b7160e01b815260218552602490fd5b0151925038806111e0565b909991601f1983169a8589528289209289905b8d821061129957505083608098999a9b9c10611280575b505050811b0190556111f2565b015160001960f88460031b161c19169055388080611273565b80878596829496860151815501950193019061125c565b848852828820601f8c0160051c810191848d106112ec575b601f0160051c019084905b8281106112e15750506111bf565b8981550184906112d3565b90915081906112c8565b634e487b7160e01b875260418952602487fd5b603284634e487b7160e01b6000525260246000fd5b604183634e487b7160e01b6000525260246000fd5b91908254600160401b811015610da957611354906001948582018155610f98565b9190916114cd5760018060a01b038151166001600160601b0360a01b8354161782556020938482015181840155600283016040830151151560ff80198354169116179055600383019060608301519586519667ffffffffffffffff8811610da9576113bf8454610eb8565b601f8111611484575b5081601f891160011461141c575096809281926080979899600094611411575b50501b916000199060031b1c19161790555b01516004811015610cc4576004610f30920161108d565b0151925038806113e8565b909791601f198316988560005282600020926000905b8b821061146d57505083608098999a10611454575b505050811b0190556113fa565b015160001960f88460031b161c19169055388080611447565b808785968294968601518155019501930190611432565b6000858152838120601f8b0160051c810192858c106114c3575b601f0160051c019185905b8381106114b8575050506113c8565b8281550185906114a9565b909250829061149e565b634e487b7160e01b600052600060045260246000fd5b67ffffffffffffffff8111610da95760051b6020019056fea2646970667358221220becdf8a2eb848573932f3ff4d001cf0c6a0909ad34380b0de6533729c608673f64736f6c63430008120033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "An experimental contract for POC work to call Bacalhau jobs from FVM smart contracts",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 7,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "_owner",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 5143,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "_jobIds",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_struct(Counter)1683_storage"
+      },
+      {
+        "astId": 5145,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "authorizedContract",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_address"
+      },
+      {
+        "astId": 5171,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "bacalhauJobHistory",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_array(t_struct(BacalhauJob)5155_storage)dyn_storage"
+      },
+      {
+        "astId": 5175,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "bacalhauJobResultHistory",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_array(t_struct(BacalhauJobResult)5167_storage)dyn_storage"
+      },
+      {
+        "astId": 5181,
+        "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+        "label": "bacalhauJobResultByAddress",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_mapping(t_address,t_array(t_struct(BacalhauJobResult)5167_storage)dyn_storage)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_struct(BacalhauJob)5155_storage)dyn_storage": {
+        "base": "t_struct(BacalhauJob)5155_storage",
+        "encoding": "dynamic_array",
+        "label": "struct LilypadEvents.BacalhauJob[]",
+        "numberOfBytes": "32"
+      },
+      "t_array(t_struct(BacalhauJobResult)5167_storage)dyn_storage": {
+        "base": "t_struct(BacalhauJobResult)5167_storage",
+        "encoding": "dynamic_array",
+        "label": "struct LilypadEvents.BacalhauJobResult[]",
+        "numberOfBytes": "32"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_enum(LilypadResultType)5100": {
+        "encoding": "inplace",
+        "label": "enum LilypadResultType",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_array(t_struct(BacalhauJobResult)5167_storage)dyn_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => struct LilypadEvents.BacalhauJobResult[])",
+        "numberOfBytes": "32",
+        "value": "t_array(t_struct(BacalhauJobResult)5167_storage)dyn_storage"
+      },
+      "t_string_storage": {
+        "encoding": "bytes",
+        "label": "string",
+        "numberOfBytes": "32"
+      },
+      "t_struct(BacalhauJob)5155_storage": {
+        "encoding": "inplace",
+        "label": "struct LilypadEvents.BacalhauJob",
+        "members": [
+          {
+            "astId": 5147,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "requestor",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 5149,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "id",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5151,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "spec",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_string_storage"
+          },
+          {
+            "astId": 5154,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "resultType",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_enum(LilypadResultType)5100"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_struct(BacalhauJobResult)5167_storage": {
+        "encoding": "inplace",
+        "label": "struct LilypadEvents.BacalhauJobResult",
+        "members": [
+          {
+            "astId": 5157,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "requestor",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 5159,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "id",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5161,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "success",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_bool"
+          },
+          {
+            "astId": 5163,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "result",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_string_storage"
+          },
+          {
+            "astId": 5166,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "resultType",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_enum(LilypadResultType)5100"
+          }
+        ],
+        "numberOfBytes": "160"
+      },
+      "t_struct(Counter)1683_storage": {
+        "encoding": "inplace",
+        "label": "struct Counters.Counter",
+        "members": [
+          {
+            "astId": 1682,
+            "contract": "contracts/lilypad/LilypadEvents.sol:LilypadEvents",
+            "label": "_value",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "32"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
