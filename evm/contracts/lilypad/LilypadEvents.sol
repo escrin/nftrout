@@ -18,7 +18,7 @@ contract LilypadEvents is Ownable {
     Counters.Counter private _jobIds;
 
     // only this contract is allowed to call this bridge
-    address private authorizedContract;
+    address public authorizedContract;
 
     struct BacalhauJob {
         address requestor;
