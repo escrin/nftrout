@@ -1,9 +1,7 @@
 {
-  "name": "@escrin/contracts",
-  "version": "0.0.0",
+  "private": true,
+  "name": "@escrin/nftrout-evm",
   "license": "MIT",
-  "keywords": [],
-  "author": "Nick Hynes <nhynes@enshrine.ai>",
   "main": "./lib/cjs/src/index.js",
   "module": "./lib/esm/src/index.js",
   "types": "./lib/cjs/src/index.d.ts",
