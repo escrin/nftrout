@@ -114,7 +114,10 @@ const mintingFee = ref<BigNumber | undefined>();
       owned: Math.random() < 0.3,
     };
   }
-  nftrout.value.callStatic.mintFee().then((f) => (mintingFee.value = f)).catch(() => {});
+  nftrout.value.callStatic
+    .mintFee()
+    .then((f) => (mintingFee.value = f))
+    .catch(() => {});
   // const { number: blockTag } = await eth.provider.getBlock('latest');
   // await Promise.all([
   // fetchMyTrouts(nftrout.value!, blockTag),
@@ -190,7 +193,11 @@ async function troutSelected(e: Event) {
             :selected="isSelected(trout.id.toHexString())"
           />
         </li>
-        <li v-if="breeding" class="m-5 flex flex-col items-center justify-center border-2 border-gray-500 rounded-sm" style="width:128px;height:128px">
+        <li
+          v-if="breeding"
+          class="m-5 flex flex-col items-center justify-center border-2 border-gray-500 rounded-sm"
+          style="width: 128px; height: 128px"
+        >
           <CirclesToRhombusesSpinner :circleSize="9" />
         </li>
       </ul>

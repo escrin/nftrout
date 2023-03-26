@@ -1,7 +1,7 @@
-import detectEthereumProvider from '@metamask/detect-provider';
-import { ethers } from 'ethers';
-import { defineStore } from 'pinia';
-import { markRaw, ref, shallowRef } from 'vue';
+import detectEthereumProvider from "@metamask/detect-provider";
+import { ethers } from "ethers";
+import { defineStore } from "pinia";
+import { markRaw, ref, shallowRef } from "vue";
 
 type Provider = ethers.providers.Provider;
 const JsonRpcProvider = ethers.providers.JsonRpcProvider;
@@ -25,26 +25,26 @@ export enum ConnectionStatus {
 }
 
 function networkFromChainId(chainId: number | string): Network {
-  const id = typeof chainId === 'string' ? parseInt(chainId, 16) : chainId;
+  const id = typeof chainId === "string" ? parseInt(chainId, 16) : chainId;
   if (Network[id]) return id as Network;
   return Network.Unknown;
 }
 
 export function networkName(network?: Network): string {
-  if (network === Network.Local) return 'Local Network';
-  if (network === Network.EmeraldTestnet) return 'Emerald Testnet';
-  if (network === Network.EmeraldMainnet) return 'Emerald Mainnet';
-  if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
-  if (network === Network.SapphireMainnet) return 'Sapphire Mainnet';
-  if (network === Network.Hyperspace) return 'FIL Hyperspace';
-  if (network === Network.Filecoin) return 'FIL Mainnet';
-  return 'Unknown Network';
+  if (network === Network.Local) return "Local Network";
+  if (network === Network.EmeraldTestnet) return "Emerald Testnet";
+  if (network === Network.EmeraldMainnet) return "Emerald Mainnet";
+  if (network === Network.SapphireTestnet) return "Sapphire Testnet";
+  if (network === Network.SapphireMainnet) return "Sapphire Mainnet";
+  if (network === Network.Hyperspace) return "FIL Hyperspace";
+  if (network === Network.Filecoin) return "FIL Mainnet";
+  return "Unknown Network";
 }
 
-export const useEthereumStore = defineStore('ethereum', () => {
+export const useEthereumStore = defineStore("ethereum", () => {
   const signer = shallowRef<ethers.Signer | undefined>(undefined);
   const provider = shallowRef<Provider>(
-      new JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL),
+    new JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL)
   );
   const network = ref(Network.Hyperspace);
   const address = ref<string | undefined>(undefined);
@@ -52,9 +52,9 @@ export const useEthereumStore = defineStore('ethereum', () => {
 
   async function connect() {
     const eth = await detectEthereumProvider();
-    if (eth === null) throw new Error('no provider detected'); // TODO: catch error
+    if (eth === null) throw new Error("no provider detected"); // TODO: catch error
     const s = new BrowserProvider(eth as any).getSigner();
-    await s.provider.send('eth_requestAccounts', []);
+    await s.provider.send("eth_requestAccounts", []);
 
     const setSigner = (addr: string | undefined, net: Network) => {
       signer.value = s;
@@ -65,7 +65,9 @@ export const useEthereumStore = defineStore('ethereum', () => {
 
     const [addr, net] = await Promise.all([
       s.getAddress(),
-      s.provider.getNetwork().then(({chainId}) => networkFromChainId(Number(chainId))),
+      s.provider
+        .getNetwork()
+        .then(({ chainId }) => networkFromChainId(Number(chainId))),
     ]);
     setSigner(addr, net);
 
@@ -73,21 +75,21 @@ export const useEthereumStore = defineStore('ethereum', () => {
       status.value = ConnectionStatus.Connected;
       return;
     }
-    eth.on('accountsChanged', (accounts) => {
+    eth.on("accountsChanged", (accounts) => {
       setSigner(accounts[0], network.value);
     });
-    eth.on('chainChanged', (chainId) => {
+    eth.on("chainChanged", (chainId) => {
       setSigner(address.value, networkFromChainId(chainId));
     });
-    eth.on('connect', () => (status.value = ConnectionStatus.Connected));
-    eth.on('disconnect', () => (status.value = ConnectionStatus.Disconnected));
+    eth.on("connect", () => (status.value = ConnectionStatus.Connected));
+    eth.on("disconnect", () => (status.value = ConnectionStatus.Disconnected));
   }
 
   async function switchNetwork(network: Network) {
     const eth = (window as any).ethereum;
     if (!eth) return;
     await eth.request({
-      method: 'wallet_switchEthereumChain',
+      method: "wallet_switchEthereumChain",
       params: [{ chainId: toBeHex(network) }],
     });
   }

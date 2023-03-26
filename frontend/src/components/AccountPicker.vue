@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 
-import { Network, networkName, useEthereumStore } from '../stores/ethereum';
-import JazzIcon from './JazzIcon.vue';
+import { Network, networkName, useEthereumStore } from "../stores/ethereum";
+import JazzIcon from "./JazzIcon.vue";
 
 const eth = useEthereumStore();
 
@@ -10,7 +10,7 @@ const iconsize = 30;
 
 const abbrAddr = computed(() => {
   if (!eth.address) return;
-  const addr = eth.address.replace('0x', '');
+  const addr = eth.address.replace("0x", "");
   return `${addr.slice(0, 5)}…${addr.slice(-5)}`;
 });
 const netName = computed(() => networkName(eth.network));
@@ -82,7 +82,7 @@ async function connectWallet() {
   &::after {
     position: relative;
     line-height: var(--icon-size);
-    content: '👋';
+    content: "👋";
   }
 }
 
