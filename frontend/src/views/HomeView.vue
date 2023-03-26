@@ -1,142 +1,225 @@
 <script setup lang="ts">
-import { CirclesToRhombusesSpinner } from 'epic-spinners';
-import { ref, watch } from 'vue';
-import { ContentLoader } from 'vue-content-loader';
-import { useRouter } from 'vue-router';
+import { BigNumber } from "ethers";
+import { CirclesToRhombusesSpinner } from "epic-spinners";
+import { computed, reactive, ref, watch } from "vue";
+import { ContentLoader } from "vue-content-loader";
 
-import type { NFTrout } from '@escrin/nftrout-evm';
+import type { NFTrout } from "@escrin/nftrout-evm";
 
-import { useNFTrout } from '../contracts';
-import { check as checkWord } from '../dictionary';
-import { useEthereumStore } from '../stores/ethereum';
+import TroutCard from "../components/TroutCard.vue";
+import { useNFTrout } from "../contracts";
+import { useEthereumStore } from "../stores/ethereum";
+import type { Trout } from "../trouts";
 
-const router = useRouter();
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
 
-// let numGames = ref<number | undefined>(undefined);
-// async function updateNumGames(nftrout: NFTrout) {
-//   console.log('updating num games');
-//   try {
-//     const id = await nftrout.callStatic.nextGameId();
-//     numGames.value = id.toNumber();
-//   } catch (e: any) {
-//     console.error(e);
-//     numGames.value = undefined;
-//   }
-// }
-// watch(nftrout, (w) => updateNumGames(w.read));
-// updateNumGames(nftrout.value.read);
+type BlockTag = number | string;
 
-// let gameId = ref<string>();
-// let showingNoGame = ref(false);
-// async function joinGame(e: Event): Promise<void> {
-//   showingNoGame.value = false;
-//   if (e.target instanceof HTMLFormElement) {
-//     e.target.checkValidity();
-//     e.target.reportValidity();
-//   }
-//   e.preventDefault();
-//   if (
-//     typeof numGames.value === 'number' &&
-//     Number.parseInt(gameId.value!, 10) > numGames.value
-//   ) {
-//     showingNoGame.value = true;
-//     return;
-//   }
-//   router.push({ name: 'game', params: { gameId: gameId.value } });
-// }
+const trouts = reactive<Record<string, Trout>>({});
+const myTrouts = computed(() =>
+  Object.values(trouts).filter((t) => t.owned ?? false)
+);
+const notMyBreedableTrouts = computed(() =>
+  Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined)
+);
+const loadingMyTrouts = ref(true);
+const loadingBreedable = ref(true);
 
-// let newGameWord = ref('');
-// let creatingGame = ref(false);
-// let showingNotWord = ref(false);
-// async function createGame(e: Event): Promise<void> {
-//   showingNotWord.value = false;
-//   if (e.target instanceof HTMLFormElement) {
-//     e.target.checkValidity();
-//     e.target.reportValidity();
-//   }
-//   e.preventDefault();
-//   creatingGame.value = true;
-//   try {
-//     await eth.connect();
-//     if (!(await checkWord(newGameWord.value))) {
-//       showingNotWord.value = true;
-//       throw new Error('not word');
-//     }
-//     const tx = await nftrout.value.write!.startGame(a2i(newGameWord.value), {
-//       gasLimit: 200_000,
-//     });
-//     console.log('creating game in', tx.hash);
-//     const receipt = await tx.wait();
-//     const startedLog = receipt.logs[0];
-//     const { gameId } = nftrout.value.read.interface.decodeEventLog(
-//       'GameStarted',
-//       startedLog.data,
-//       startedLog.topics,
-//     );
-//     router.push({ name: 'game', params: { gameId: gameId.toNumber() + 1 } });
-//   } catch (e: any) {
-//     if (e.message !== 'not word') console.error(e.message);
-//   } finally {
-//     creatingGame.value = false;
-//   }
-// }
+async function fetchMyTrouts(
+  nftrout: NFTrout,
+  blockTag: number
+): Promise<void> {
+  loadingMyTrouts.value = true;
+  if (!eth.address) return;
+  const numTrouts = await nftrout.callStatic.balanceOf(eth.address, {
+    blockTag,
+  });
+  const troutIdPs: Promise<BigNumber>[] = [];
+  for (let i = 0; i < numTrouts.toNumber(); i++) {
+    troutIdPs.push(
+      nftrout.callStatic.tokenOfOwnerByIndex(eth.address!, i, { blockTag })
+    );
+  }
+  const troutIds = await Promise.all(troutIdPs);
+  await Promise.all(
+    troutIds.map(async (id) => {
+      const key = id.toHexString();
+      if (trouts[key] === undefined) {
+        const imageUrl = await nftrout.callStatic.tokenURI(id, { blockTag });
+        if (!imageUrl) return;
+        trouts[key] = {
+          id,
+          owned: true,
+          imageUrl,
+        };
+      } else {
+        trouts[key].owned = true;
+      }
+    })
+  );
+  loadingMyTrouts.value = false;
+}
+
+async function fetchBreedableTrouts(
+  nftrout: NFTrout,
+  blockTag: BlockTag
+): Promise<void> {
+  loadingBreedable.value = true;
+  const batchSize = 100;
+  for (let offset = 0; ; offset += batchSize) {
+    let studs: NFTrout.StudStructOutput[] = [];
+    try {
+      studs = await nftrout.callStatic.getStuds(offset, batchSize, {
+        blockTag,
+      });
+    } catch (e: any) {
+      console.error("failed to fetch studs", e);
+      break;
+    }
+    await Promise.all(
+      studs.map(async ({ tokenId, fee }) => {
+        const key = tokenId.toHexString();
+        if (trouts[key] === undefined) {
+          const imageUrl = await nftrout.callStatic.tokenURI(tokenId);
+          if (!imageUrl) return;
+          trouts[key] = {
+            id: tokenId,
+            fee,
+            imageUrl,
+            owned: false,
+          };
+        } else {
+          trouts[key].fee = fee;
+        }
+      })
+    );
+    if (studs.length < batchSize) break;
+  }
+  loadingBreedable.value = false;
+}
+
+const mintingFee = ref<BigNumber | undefined>();
+
+(async () => {
+  await eth.connect();
+  loadingMyTrouts.value = false;
+  loadingBreedable.value = false;
+  for (let i = 0; i < 15; i++) {
+    trouts[BigNumber.from(i).toHexString()] = {
+      id: BigNumber.from(i),
+      fee: BigNumber.from(0),
+      imageUrl:
+        "https://img.plasmic.app/img-optimizer/v1/img/2af909482e749130fd3c55041746e8b6.png?q=75",
+      owned: Math.random() < 0.3,
+    };
+  }
+  nftrout.value.callStatic.mintFee().then((f) => (mintingFee.value = f)).catch(() => {});
+  // const { number: blockTag } = await eth.provider.getBlock('latest');
+  // await Promise.all([
+  // fetchMyTrouts(nftrout.value!, blockTag),
+  // fetchBreedableTrouts(nftrout.value!, blockTag),
+  // ]);
+})();
+
+const selectedTrouts = ref<string[]>([]);
+function isSelected(troutId: string): boolean {
+  for (const selId of selectedTrouts.value) {
+    if (selId === troutId) return true;
+  }
+  return false;
+}
+
+const breeding = ref(false);
+
+async function troutSelected(e: Event) {
+  if (breeding.value || !e.target || !(e.target instanceof HTMLElement)) return;
+  const troutId = e.target.getAttribute("data-troutid")!;
+  if (!troutId) return;
+  selectedTrouts.value.push(troutId);
+  if (selectedTrouts.value.length < 2) return;
+  const [leftId, rightId] = selectedTrouts.value;
+  const [left, right] = selectedTrouts.value.map((id) => trouts[id]);
+  const zero = BigNumber.from(0);
+  const leftFee = left.owned ? zero : left.fee ?? zero;
+  const rightFee = right.owned ? zero : right.fee ?? zero;
+  const mintFee = mintingFee.value ?? zero;
+  const fee = leftFee.add(rightFee).add(mintFee);
+  breeding.value = true;
+  try {
+    const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
+    console.log("breeding", tx.hash);
+    const receipt = await tx.wait();
+    let newTokenId = BigNumber.from(0);
+    for (const event of receipt.events ?? []) {
+      if (
+        event.address === nftrout.value.address &&
+        event.event === "Spawned"
+      ) {
+        newTokenId = BigNumber.from(event.data.slice(event.data.length - 64));
+      }
+    }
+    if (!newTokenId) return;
+    setTimeout(async () => {
+      trouts[newTokenId.toHexString()].imageUrl =
+        await nftrout.value.callStatic.tokenURI(newTokenId);
+    }, 30_000);
+  } finally {
+    selectedTrouts.value.splice(0, selectedTrouts.value.length);
+    breeding.value = false;
+  }
+}
 </script>
 
 <template>
   <main style="max-width: 60ch" class="py-5 m-auto w-4/5">
-    <form class="mb-8" @submit="joinGame">
-      <h2>Solve a Puzzle</h2>
-      <span v-if="numGames !== undefined">{{ numGames }}</span
-      ><ContentLoader v-else class="inline" width="1em" height="1em"
-        ><rect x="0" y="0" rx="3" ry="3" width="1em" height="1em"
-      /></ContentLoader>
-      puzzles have been created so far.
-      <Dropdown
-        :triggers="[]"
-        :shown="showingNoGame"
-        placement="top"
-        @apply-hide="showingNoGame = false"
-      >
-        <input
-          title="numeric game id"
-          required
-          minlength="1"
-          size="3"
-          placeholder="42"
-          pattern="^\d+$"
-          v-model="gameId"
-        />
-        <template #popper>
-          <p class="p-2">This puzzle does not exist.</p>
-        </template>
-      </Dropdown>
-      <button class="bg-rose-500">Go</button>
-    </form>
-    <form class="mt-16" @submit="createGame">
-      <h2>Create a Puzzle</h2>
-      <Dropdown :triggers="[]" :shown="showingNotWord" placement="top">
-        <input
-          title="five-letter English word"
-          required
-          minlength="5"
-          maxlength="5"
-          size="5"
-          placeholder="ideal"
-          pattern="^\w{5,5}$"
-          v-model="newGameWord"
-          :disabled="creatingGame"
-        />
-        <template #popper>
-          <p class="p-2">This word is not recognized.</p>
-        </template>
-      </Dropdown>
-      <button class="bg-lime-500" :disabled="creatingGame">
-        <span v-if="!creatingGame">Create</span>
-        <CirclesToRhombusesSpinner class="m-auto" v-else :circleSize="9" />
-      </button>
-    </form>
+    <h2>My Trout 🎣</h2>
+    <div>
+      <template v-if="loadingMyTrouts">
+        <ContentLoader class="inline" width="278" height="128">
+          <rect x="0" y="0" width="128" height="128" />
+          <rect x="150" y="0" width="128" height="128" />
+        </ContentLoader>
+      </template>
+      <ul v-else class="flex flex-row flex-wrap">
+        <li class="m-5" v-for="trout in myTrouts" :key="trout.id.toHexString()">
+          <TroutCard
+            @click="troutSelected"
+            :trout="{ ...trout, fee: undefined }"
+            :data-troutid="trout.id.toHexString()"
+            :selected="isSelected(trout.id.toHexString())"
+          />
+        </li>
+        <li v-if="breeding" class="m-5 flex flex-col items-center justify-center border-2 border-gray-500 rounded-sm" style="width:128px;height:128px">
+          <CirclesToRhombusesSpinner :circleSize="9" />
+        </li>
+      </ul>
+    </div>
+
+    <h2>Breedable Trout 🎏</h2>
+    <div>
+      <template v-if="loadingBreedable">
+        <ContentLoader class="inline" width="428" height="128">
+          <rect x="0" y="0" width="128" height="128" />
+          <rect x="150" y="0" width="128" height="128" />
+          <rect x="300" y="0" width="128" height="128" />
+        </ContentLoader>
+      </template>
+      <ul v-else class="flex flex-row flex-wrap">
+        <li
+          class="m-5"
+          v-for="trout in notMyBreedableTrouts"
+          :key="trout.id.toHexString()"
+        >
+          <TroutCard
+            @click="troutSelected"
+            :trout="trout"
+            :data-troutid="trout.id.toHexString()"
+            :selected="isSelected(trout.id.toHexString())"
+          />
+        </li>
+      </ul>
+    </div>
   </main>
 </template>
 

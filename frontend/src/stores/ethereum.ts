@@ -44,19 +44,17 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const provider = shallowRef<Provider>(
       new JsonRpcProvider('https://rpc.ankr.com/filecoin_testnet'),
   );
-  const network = ref(Network.SapphireMainnet);
+  const network = ref(Network.Hyperspace);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
 
   async function connect() {
-    if (signer.value) return;
     const eth = await detectEthereumProvider();
     if (eth === null) throw new Error('no provider detected'); // TODO: catch error
     const s = new BrowserProvider(eth as any).getSigner();
     await s.provider.send('eth_requestAccounts', []);
 
     const setSigner = (addr: string | undefined, net: Network) => {
-      if (!net) return;
       signer.value = s;
       provider.value = s.provider;
       network.value = net;

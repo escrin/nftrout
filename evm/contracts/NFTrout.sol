@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
@@ -11,7 +12,13 @@ import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap
 import {LilypadEvents} from "./lilypad/LilypadEvents.sol";
 import {LilypadCallerInterface, LilypadResultType} from "./lilypad/LilypadCallerInterface.sol";
 
-contract NFTrout is ERC721, ERC721URIStorage, LilypadCallerInterface, Ownable {
+contract NFTrout is
+    ERC721,
+    ERC721Enumerable,
+    ERC721URIStorage,
+    LilypadCallerInterface,
+    Ownable
+{
     using Counters for Counters.Counter;
     using EnumerableMap for EnumerableMap.UintToUintMap;
 
@@ -95,8 +102,8 @@ contract NFTrout is ERC721, ERC721URIStorage, LilypadCallerInterface, Ownable {
     }
 
     /// If the trout didn't spawn correctly, you can call this as a last-ditch way to respawn it.
-    function respawn(uint256 jobId) external {
-        Receipt memory receipt = receipts[jobId];
+    function respawn(uint256 _jobId) external {
+        Receipt memory receipt = receipts[_jobId];
         require(
             receipt.left != 0 && receipt.right != 0 && receipt.tokenId != 0,
             "no job"
@@ -199,5 +206,20 @@ contract NFTrout is ERC721, ERC721URIStorage, LilypadCallerInterface, Ownable {
         uint256 _tokenId
     ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(_tokenId);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
