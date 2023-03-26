@@ -14,6 +14,7 @@ export enum Network {
   SapphireTestnet = 0x5aff,
   SapphireMainnet = 0x5afe,
   Hyperspace = 3141,
+  Filecoin = 314,
   Local = 1337,
 }
 
@@ -35,14 +36,15 @@ export function networkName(network?: Network): string {
   if (network === Network.EmeraldMainnet) return 'Emerald Mainnet';
   if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
   if (network === Network.SapphireMainnet) return 'Sapphire Mainnet';
-  if (network === Network.Hyperspace) return 'Hyperspace';
+  if (network === Network.Hyperspace) return 'FIL Hyperspace';
+  if (network === Network.Filecoin) return 'FIL Mainnet';
   return 'Unknown Network';
 }
 
 export const useEthereumStore = defineStore('ethereum', () => {
   const signer = shallowRef<ethers.Signer | undefined>(undefined);
   const provider = shallowRef<Provider>(
-      new JsonRpcProvider('https://rpc.ankr.com/filecoin_testnet'),
+      new JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL),
   );
   const network = ref(Network.Hyperspace);
   const address = ref<string | undefined>(undefined);
