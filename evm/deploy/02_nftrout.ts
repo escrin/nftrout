@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 async function authorizeContract(lilypadEventsAddr: string, nftroutAddr: string): Promise<void> {
   const LilypadEvents = await ethers.getContractFactory(LILYPAD_EVENTS);
   const lilypadEvents = LilypadEvents.attach(lilypadEventsAddr);
-  if ((await lilypadEvents.callStatic.authorizedContract()) === lilypadEventsAddr) return;
+  if ((await lilypadEvents.callStatic.authorizedContract()) === nftroutAddr) return;
   const tx = await lilypadEvents.setAuthorizedContract(nftroutAddr);
   await tx.wait();
 }
