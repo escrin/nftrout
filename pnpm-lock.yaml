@@ -11,7 +11,7 @@ importers:
       '@nomicfoundation/hardhat-chai-matchers': ^1.0.0
       '@nomicfoundation/hardhat-network-helpers': ^1.0.0
       '@nomicfoundation/hardhat-toolbox': ^2.0.0
-      '@nomiclabs/hardhat-ethers': ^2.0.0
+      '@nomiclabs/hardhat-ethers': npm:hardhat-deploy-ethers@0.3.0-beta.13
       '@nomiclabs/hardhat-etherscan': ^3.0.0
       '@oasisprotocol/sapphire-contracts': ^0.2.1
       '@oasisprotocol/sapphire-paratime': ^1.0.14
@@ -25,6 +25,7 @@ importers:
       ethers: ^5.7.2
       hardhat: ^2.13.0
       hardhat-deploy: ^0.11.25
+      hardhat-deploy-ethers: 0.3.0-beta.13
       hardhat-gas-reporter: ^1.0.8
       hardhat-watcher: ^2.5.0
       npm-run-all: ^4.1.5
@@ -43,10 +44,10 @@ importers:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
       '@ethersproject/providers': 5.7.2
-      '@nomicfoundation/hardhat-chai-matchers': 1.0.6_dntrasblfyeflsnrtjxr3d547a
+      '@nomicfoundation/hardhat-chai-matchers': 1.0.6_6ydlat7c4avoezpjew7zq5tbum
       '@nomicfoundation/hardhat-network-helpers': 1.0.8_hardhat@2.13.0
-      '@nomicfoundation/hardhat-toolbox': 2.0.2_yxopyvldi2a63kuuvzm7pdg6pq
-      '@nomiclabs/hardhat-ethers': 2.2.2_wknqauzjtp3mhprkntsmqpccee
+      '@nomicfoundation/hardhat-toolbox': 2.0.2_oejelxebtqcnpgpxjdeldjcdze
+      '@nomiclabs/hardhat-ethers': /hardhat-deploy-ethers/0.3.0-beta.13_wknqauzjtp3mhprkntsmqpccee
       '@nomiclabs/hardhat-etherscan': 3.1.7_hardhat@2.13.0
       '@oasisprotocol/sapphire-paratime': 1.0.14
       '@typechain/ethers-v5': 10.2.0_3j7r5nxxske4oddcicgvma5gkq
@@ -58,6 +59,7 @@ importers:
       ethers: 5.7.2
       hardhat: 2.13.0_6oasmw356qmm23djlsjgkwvrtm
       hardhat-deploy: 0.11.25
+      hardhat-deploy-ethers: 0.3.0-beta.13_wknqauzjtp3mhprkntsmqpccee
       hardhat-gas-reporter: 1.0.9_hardhat@2.13.0
       hardhat-watcher: 2.5.0_hardhat@2.13.0
       npm-run-all: 4.1.5
@@ -944,7 +946,7 @@ packages:
       - supports-color
     dev: true
 
-  /@nomicfoundation/hardhat-chai-matchers/1.0.6_dntrasblfyeflsnrtjxr3d547a:
+  /@nomicfoundation/hardhat-chai-matchers/1.0.6_6ydlat7c4avoezpjew7zq5tbum:
     resolution: {integrity: sha512-f5ZMNmabZeZegEfuxn/0kW+mm7+yV7VNDxLpMOMGXWFJ2l/Ct3QShujzDRF9cOkK9Ui/hbDeOWGZqyQALDXVCQ==}
     peerDependencies:
       '@nomiclabs/hardhat-ethers': ^2.0.0
@@ -953,7 +955,7 @@ packages:
       hardhat: ^2.9.4
     dependencies:
       '@ethersproject/abi': 5.7.0
-      '@nomiclabs/hardhat-ethers': 2.2.2_wknqauzjtp3mhprkntsmqpccee
+      '@nomiclabs/hardhat-ethers': /hardhat-deploy-ethers/0.3.0-beta.13_wknqauzjtp3mhprkntsmqpccee
       '@types/chai-as-promised': 7.1.5
       chai: 4.3.7
       chai-as-promised: 7.1.1_chai@4.3.7
@@ -972,7 +974,7 @@ packages:
       hardhat: 2.13.0_6oasmw356qmm23djlsjgkwvrtm
     dev: true
 
-  /@nomicfoundation/hardhat-toolbox/2.0.2_yxopyvldi2a63kuuvzm7pdg6pq:
+  /@nomicfoundation/hardhat-toolbox/2.0.2_oejelxebtqcnpgpxjdeldjcdze:
     resolution: {integrity: sha512-vnN1AzxbvpSx9pfdRHbUzTRIXpMLPXnUlkW855VaDk6N1pwRaQ2gNzEmFAABk4lWf11E00PKwFd/q27HuwYrYg==}
     peerDependencies:
       '@ethersproject/abi': ^5.4.7
@@ -997,9 +999,9 @@ packages:
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/providers': 5.7.2
-      '@nomicfoundation/hardhat-chai-matchers': 1.0.6_dntrasblfyeflsnrtjxr3d547a
+      '@nomicfoundation/hardhat-chai-matchers': 1.0.6_6ydlat7c4avoezpjew7zq5tbum
       '@nomicfoundation/hardhat-network-helpers': 1.0.8_hardhat@2.13.0
-      '@nomiclabs/hardhat-ethers': 2.2.2_wknqauzjtp3mhprkntsmqpccee
+      '@nomiclabs/hardhat-ethers': /hardhat-deploy-ethers/0.3.0-beta.13_wknqauzjtp3mhprkntsmqpccee
       '@nomiclabs/hardhat-etherscan': 3.1.7_hardhat@2.13.0
       '@typechain/ethers-v5': 10.2.0_3j7r5nxxske4oddcicgvma5gkq
       '@typechain/hardhat': 6.1.5_i2fwc4p7n2iltkzqmr3qbux6yq
@@ -1120,16 +1122,6 @@ packages:
       '@nomicfoundation/solidity-analyzer-win32-arm64-msvc': 0.1.1
       '@nomicfoundation/solidity-analyzer-win32-ia32-msvc': 0.1.1
       '@nomicfoundation/solidity-analyzer-win32-x64-msvc': 0.1.1
-    dev: true
-
-  /@nomiclabs/hardhat-ethers/2.2.2_wknqauzjtp3mhprkntsmqpccee:
-    resolution: {integrity: sha512-NLDlDFL2us07C0jB/9wzvR0kuLivChJWCXTKcj3yqjZqMoYp7g7wwS157F70VHx/+9gHIBGzak5pKDwG8gEefA==}
-    peerDependencies:
-      ethers: ^5.0.0
-      hardhat: ^2.0.0
-    dependencies:
-      ethers: 5.7.2
-      hardhat: 2.13.0_6oasmw356qmm23djlsjgkwvrtm
     dev: true
 
   /@nomiclabs/hardhat-etherscan/3.1.7_hardhat@2.13.0:
@@ -3979,6 +3971,16 @@ packages:
       har-schema: 2.0.0
     dev: true
 
+  /hardhat-deploy-ethers/0.3.0-beta.13_wknqauzjtp3mhprkntsmqpccee:
+    resolution: {integrity: sha512-PdWVcKB9coqWV1L7JTpfXRCI91Cgwsm7KLmBcwZ8f0COSm1xtABHZTyz3fvF6p42cTnz1VM0QnfDvMFlIRkSNw==}
+    peerDependencies:
+      ethers: ^5.0.0
+      hardhat: ^2.0.0
+    dependencies:
+      ethers: 5.7.2
+      hardhat: 2.13.0_6oasmw356qmm23djlsjgkwvrtm
+    dev: true
+
   /hardhat-deploy/0.11.25:
     resolution: {integrity: sha512-ppSgrVE9A13YgTmf2PQGoyIs9o/jgJOMORrUP/rblU5K8mQ2YHWlPvkzZmP4h+SBW+tNmlnvSrf5K5DmMmExhw==}
     dependencies:
@@ -6364,7 +6366,7 @@ packages:
       table: 6.8.1
       text-table: 0.2.0
     optionalDependencies:
-      prettier: 2.8.5
+      prettier: 2.8.7
     dev: true
 
   /solidity-comments-extractor/0.0.7:

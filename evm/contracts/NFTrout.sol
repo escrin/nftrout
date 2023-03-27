@@ -64,7 +64,7 @@ contract NFTrout is
 
     /// Transmutes money into trout.
     function mint() external payable returns (uint256 tokenId, uint256 jobId) {
-        require(msg.value < mintFee, "payment required");
+        require(msg.value >= mintFee, "payment required");
         tokenId = _mint(msg.sender);
         jobId = _enqueueJob(Receipt({tokenId: tokenId, left: 0, right: 0}));
     }
@@ -127,7 +127,7 @@ contract NFTrout is
     ) external onlyLilypadEvents {
         require(_resultType == LilypadResultType.CID, "not CID");
         Receipt memory receipt = receipts[_jobId];
-        _setTokenURI(receipt.tokenId, _result);
+        _setTokenURI(receipt.tokenId, string.concat("/ipfs/", _result));
     }
 
     function lilypadCancelled(
@@ -169,7 +169,7 @@ contract NFTrout is
         );
         // solhint-enable quotes
         jobId = lilypadEvents.runBacalhauJob(
-            msg.sender,
+            address(this),
             spec,
             LilypadResultType.CID
         );

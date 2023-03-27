@@ -2,6 +2,7 @@ import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-watcher";
 import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 
 const accounts = process.env.PRIVATE_KEY
   ? [process.env.PRIVATE_KEY]
@@ -22,6 +23,33 @@ task('accounts')
     }
     console.log(signers[i].address, num);
   }
+});
+
+task('mint')
+.setAction(async (_, hre) => {
+  const { ethers } = hre;
+  const nftrout = await ethers.getContract('NFTrout')
+  const tx = await nftrout.mint({
+    value: await nftrout.callStatic.mintFee(),
+  });
+  console.log(tx.hash);
+  const receipt = await tx.wait();
+  for (const event of receipt.events) {
+    console.log(event.event);
+  }
+  for (const event of receipt.events) {
+    if (event.event !== 'Transfer') continue;
+    console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
+    break;
+  }
+});
+
+task('uri')
+.addParam('id')
+.setAction(async (args, hre) => {
+  const { ethers } = hre;
+  const nftrout = await ethers.getContract('NFTrout')
+  console.log(await nftrout.callStatic.tokenURI(args.id));
 });
 
 const config: HardhatUserConfig = {
