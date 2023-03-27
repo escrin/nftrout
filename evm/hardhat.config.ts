@@ -35,8 +35,22 @@ task('mint')
   console.log(tx.hash);
   const receipt = await tx.wait();
   for (const event of receipt.events) {
-    console.log(event.event);
+    if (event.event !== 'Transfer') continue;
+    console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
+    break;
   }
+});
+
+task('breed')
+.addPositionalParam('left')
+.addPositionalParam('right')
+.setAction(async (args, hre) => {
+  const { ethers } = hre;
+  const nftrout = await ethers.getContract('NFTrout')
+  const breedingFee = await nftrout.callStatic.getBreedingFee(args.left, args.right);
+  const tx = await nftrout.breed(args.left, args.right, { value: breedingFee });
+  console.log(tx.hash);
+  const receipt = await tx.wait();
   for (const event of receipt.events) {
     if (event.event !== 'Transfer') continue;
     console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());

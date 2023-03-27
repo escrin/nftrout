@@ -91,11 +91,9 @@ contract NFTrout is
         uint256 _right
     ) external payable returns (uint256 tokenId) {
         require(_left != _right, "trout cannot self-breed");
-        uint256 change = msg.value;
-        change = _payStudFee(msg.sender, _left, change);
-        change = _payStudFee(msg.sender, _right, change);
-        change -= mintFee;
-        require(change == 0, "incorrect fee");
+        require(msg.value >= getBreedingFee(_left, _right), "insufficient fee");
+        _payStudFee(msg.sender, _left);
+        _payStudFee(msg.sender, _right);
         tokenId = _mint(msg.sender);
         _enqueueJob(Receipt({left: _left, right: _right, tokenId: tokenId}));
         emit Spawned(_left, _right, tokenId);
@@ -117,6 +115,10 @@ contract NFTrout is
 
     function setMintFee(uint256 amount) external onlyOwner {
         mintFee = amount;
+    }
+
+    function withdraw() external onlyOwner {
+        payable(msg.sender).transfer(address(this).balance);
     }
 
     function lilypadFulfilled(
@@ -154,6 +156,24 @@ contract NFTrout is
         return studz;
     }
 
+    function getBreedingFee(
+        uint256 _left,
+        uint256 _right
+    ) public view returns (uint256 fee) {
+        fee += _getBreedingFee(msg.sender, _left);
+        fee += _getBreedingFee(msg.sender, _right);
+        fee += mintFee;
+    }
+
+    function _getBreedingFee(
+        address _payer,
+        uint256 _tokenId
+    ) internal view returns (uint256) {
+        address owner = ownerOf(_tokenId);
+        if (owner == _payer) return 0;
+        return studs.get(_tokenId, "not listed");
+    }
+
     function _enqueueJob(
         Receipt memory _receipt
     ) internal returns (uint256 jobId) {
@@ -184,14 +204,11 @@ contract NFTrout is
 
     function _payStudFee(
         address _payer,
-        uint256 _tokenId,
-        uint256 _payment
+        uint256 _tokenId
     ) internal returns (uint256 change) {
         address owner = ownerOf(_tokenId);
-        if (owner == _payer) return _payment;
-        uint256 cost = studs.get(_tokenId, "not listed");
-        payable(owner).transfer(cost);
-        return _payment - cost;
+        if (owner == _payer) return 0;
+        payable(owner).transfer(_getBreedingFee(_payer, _tokenId));
     }
 
     // The following functions are overrides required by Solidity.
