@@ -4,16 +4,19 @@ import "hardhat-watcher";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 
+import { NFTrout } from "./src/index";
+
 const accounts = process.env.PRIVATE_KEY
   ? [process.env.PRIVATE_KEY]
   : process.env.MNEMONIC
   ? { mnemonic: process.env.MNEMONIC }
   : [];
 
-task('accounts')
-.setAction(async (_, hre) => {
+task("accounts").setAction(async (_, hre) => {
   const signers = await hre.ethers.getSigners();
-  const balances = await Promise.all(signers.map(s => hre.ethers.provider.getBalance(s.address)));
+  const balances = await Promise.all(
+    signers.map((s) => hre.ethers.provider.getBalance(s.address))
+  );
   for (let i = 0; i < signers.length; i++) {
     let num: string | number;
     try {
@@ -25,45 +28,110 @@ task('accounts')
   }
 });
 
-task('mint')
-.setAction(async (_, hre) => {
+task("mint").setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = await ethers.getContract('NFTrout')
+  const nftrout = await ethers.getContract("NFTrout");
   const tx = await nftrout.mint({
     value: await nftrout.callStatic.mintFee(),
   });
   console.log(tx.hash);
   const receipt = await tx.wait();
   for (const event of receipt.events) {
-    if (event.event !== 'Transfer') continue;
+    if (event.event !== "Transfer") continue;
     console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
     break;
   }
 });
 
-task('breed')
-.addPositionalParam('left')
-.addPositionalParam('right')
-.setAction(async (args, hre) => {
-  const { ethers } = hre;
-  const nftrout = await ethers.getContract('NFTrout')
-  const breedingFee = await nftrout.callStatic.getBreedingFee(args.left, args.right);
-  const tx = await nftrout.breed(args.left, args.right, { value: breedingFee });
-  console.log(tx.hash);
-  const receipt = await tx.wait();
-  for (const event of receipt.events) {
-    if (event.event !== 'Transfer') continue;
-    console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
-    break;
-  }
-});
+task("breed")
+  .addPositionalParam("left")
+  .addPositionalParam("right")
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = await ethers.getContract("NFTrout");
+    const breedingFee = await nftrout.callStatic.getBreedingFee(
+      args.left,
+      args.right
+    );
+    const tx = await nftrout.breed(args.left, args.right, {
+      value: breedingFee,
+    });
+    console.log(tx.hash);
+    const receipt = await tx.wait();
+    for (const event of receipt.events) {
+      if (event.event !== "Transfer") continue;
+      console.log(
+        ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber()
+      );
+      break;
+    }
+  });
 
-task('uri')
-.addParam('id')
-.setAction(async (args, hre) => {
+task("uri")
+  .addParam("id")
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    console.log(await nftrout.callStatic.tokenURI(args.id));
+  });
+
+task("list")
+  .addParam("id")
+  .addParam("fee")
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const tx = await nftrout.list(args.id, ethers.utils.parseEther(args.fee));
+    console.log(tx.hash);
+    await tx.wait();
+  });
+
+task("respawn")
+  .addParam("id")
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const tx = await nftrout.respawn(args.id);
+    console.log(tx.hash);
+    await tx.wait();
+  });
+
+task("transfer")
+  .addParam("id")
+  .addParam("to")
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const tx = await nftrout.transferFrom(
+      await nftrout.signer.getAddress(),
+      args.to,
+      args.id
+    );
+    console.log(tx.hash);
+    await tx.wait();
+  });
+
+task("list-breedable").setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = await ethers.getContract('NFTrout')
-  console.log(await nftrout.callStatic.tokenURI(args.id));
+  const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+  const { number: blockTag } = await ethers.provider.getBlock("latest");
+  const batchSize = 100;
+  for (let offset = 0; ; offset += batchSize) {
+    let studs: NFTrout.StudStructOutput[] = [];
+    try {
+      studs = await nftrout.callStatic.getStuds(offset, batchSize, {
+        blockTag,
+      });
+    } catch (e: any) {
+      console.error("failed to fetch studs", e);
+      break;
+    }
+    await Promise.all(studs.map(async ({ tokenId, fee }) => {
+      const tokenUri = await nftrout.callStatic.tokenURI(tokenId);
+      console.log(tokenId.toNumber(), ethers.utils.formatEther(fee), tokenUri);
+    }));
+    if (studs.length < batchSize) break;
+  }
 });
 
 const config: HardhatUserConfig = {

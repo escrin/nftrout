@@ -101,8 +101,7 @@ contract NFTrout is
 
     /// If the trout didn't spawn correctly, you can call this as a last-ditch way to respawn it.
     function respawn(uint256 _jobId) external {
-        Receipt memory receipt = receipts[_jobId];
-        _enqueueJob(receipt);
+        _enqueueJob(receipts[_jobId]);
     }
 
     function setLilypadEvents(LilypadEvents _lilypadEvents) external onlyOwner {
