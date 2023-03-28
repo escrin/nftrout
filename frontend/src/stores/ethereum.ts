@@ -1,7 +1,7 @@
 import detectEthereumProvider from "@metamask/detect-provider";
 import { ethers } from "ethers";
 import { defineStore } from "pinia";
-import { markRaw, ref, shallowRef } from "vue";
+import { ref, shallowRef } from "vue";
 
 type Provider = ethers.providers.Provider;
 const JsonRpcProvider = ethers.providers.JsonRpcProvider;
@@ -16,6 +16,7 @@ export enum Network {
   Hyperspace = 3141,
   Filecoin = 314,
   Local = 1337,
+  Hardhat = 31337,
 }
 
 export enum ConnectionStatus {
@@ -32,6 +33,7 @@ function networkFromChainId(chainId: number | string): Network {
 
 export function networkName(network?: Network): string {
   if (network === Network.Local) return "Local Network";
+  if (network === Network.Hardhat) return "Hardhat Network";
   if (network === Network.EmeraldTestnet) return "Emerald Testnet";
   if (network === Network.EmeraldMainnet) return "Emerald Mainnet";
   if (network === Network.SapphireTestnet) return "Sapphire Testnet";
@@ -46,7 +48,7 @@ export const useEthereumStore = defineStore("ethereum", () => {
   const provider = shallowRef<Provider>(
     new JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL)
   );
-  const network = ref(Network.Hyperspace);
+  const network = ref(import.meta.env.VITE_CHAIN_ID);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
 
@@ -99,5 +101,5 @@ export const useEthereumStore = defineStore("ethereum", () => {
 
 function toBeHex(num: number): string {
   // return ethers.toBeHex(num);
-  return ethers.utils.hexlify(num);
+  return ethers.utils.hexlify(num).replace("0x0", "0x");
 }

@@ -8,7 +8,12 @@ import { Network, useEthereumStore } from "./stores/ethereum";
 const eth = useEthereumStore();
 
 watch(eth, async (eth) => {
-  if (eth.network !== Network.Hyperspace && eth.network !== Network.Filecoin)
+  if (
+    eth.network !== Network.Local &&
+    eth.network !== Network.Hardhat &&
+    eth.network !== Network.Hyperspace &&
+    eth.network !== Network.Filecoin
+  )
     await eth.switchNetwork(Network.Hyperspace);
 });
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BigNumber } from "ethers";
 import { CirclesToRhombusesSpinner } from "epic-spinners";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import { ContentLoader } from "vue-content-loader";
 
 import type { NFTrout } from "@escrin/nftrout-evm";
@@ -31,6 +31,7 @@ async function fetchMyTrouts(
   blockTag: number
 ): Promise<void> {
   loadingMyTrouts.value = true;
+  await eth.connect();
   if (!eth.address) return;
   const numTrouts = await nftrout.callStatic.balanceOf(eth.address, {
     blockTag,
@@ -46,12 +47,12 @@ async function fetchMyTrouts(
     troutIds.map(async (id) => {
       const key = id.toHexString();
       if (trouts[key] === undefined) {
-        const imageUrl = await nftrout.callStatic.tokenURI(id, { blockTag });
-        if (!imageUrl) return;
+        const cid = await nftrout.callStatic.tokenURI(id, { blockTag });
+        if (!cid) return;
         trouts[key] = {
           id,
           owned: true,
-          imageUrl,
+          cid,
         };
       } else {
         trouts[key].owned = true;
@@ -81,12 +82,12 @@ async function fetchBreedableTrouts(
       studs.map(async ({ tokenId, fee }) => {
         const key = tokenId.toHexString();
         if (trouts[key] === undefined) {
-          const imageUrl = await nftrout.callStatic.tokenURI(tokenId);
-          if (!imageUrl) return;
+          const cid = await nftrout.callStatic.tokenURI(tokenId);
+          if (!cid) return;
           trouts[key] = {
             id: tokenId,
             fee,
-            imageUrl,
+            cid,
             owned: false,
           };
         } else {
@@ -99,30 +100,12 @@ async function fetchBreedableTrouts(
   loadingBreedable.value = false;
 }
 
-const mintingFee = ref<BigNumber | undefined>();
-
 (async () => {
-  await eth.connect();
-  loadingMyTrouts.value = false;
-  loadingBreedable.value = false;
-  for (let i = 0; i < 15; i++) {
-    trouts[BigNumber.from(i).toHexString()] = {
-      id: BigNumber.from(i),
-      fee: BigNumber.from(0),
-      imageUrl:
-        "https://img.plasmic.app/img-optimizer/v1/img/2af909482e749130fd3c55041746e8b6.png?q=75",
-      owned: Math.random() < 0.3,
-    };
-  }
-  nftrout.value.callStatic
-    .mintFee()
-    .then((f) => (mintingFee.value = f))
-    .catch(() => {});
-  // const { number: blockTag } = await eth.provider.getBlock('latest');
-  // await Promise.all([
-  // fetchMyTrouts(nftrout.value!, blockTag),
-  // fetchBreedableTrouts(nftrout.value!, blockTag),
-  // ]);
+  const { number: blockTag } = await eth.provider.getBlock("latest");
+  await Promise.all([
+    fetchMyTrouts(nftrout.value!, blockTag),
+    fetchBreedableTrouts(nftrout.value!, blockTag),
+  ]);
 })();
 
 const selectedTrouts = ref<string[]>([]);
@@ -135,38 +118,40 @@ function isSelected(troutId: string): boolean {
 
 const breeding = ref(false);
 
-async function troutSelected(e: Event) {
-  if (breeding.value || !e.target || !(e.target instanceof HTMLElement)) return;
-  const troutId = e.target.getAttribute("data-troutid")!;
-  if (!troutId) return;
+async function troutSelected(troutId: string) {
+  console.log("selected", troutId);
+  if (isSelected(troutId)) {
+    console.log("troutisselected");
+    selectedTrouts.value = selectedTrouts.value.filter(
+      (tid) => tid !== troutId
+    );
+    return;
+  }
   selectedTrouts.value.push(troutId);
   if (selectedTrouts.value.length < 2) return;
-  const [leftId, rightId] = selectedTrouts.value;
-  const [left, right] = selectedTrouts.value.map((id) => trouts[id]);
-  const zero = BigNumber.from(0);
-  const leftFee = left.owned ? zero : left.fee ?? zero;
-  const rightFee = right.owned ? zero : right.fee ?? zero;
-  const mintFee = mintingFee.value ?? zero;
-  const fee = leftFee.add(rightFee).add(mintFee);
   breeding.value = true;
+  const [leftId, rightId] = selectedTrouts.value;
+  const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
   try {
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
-    console.log("breeding", tx.hash);
     const receipt = await tx.wait();
     let newTokenId = BigNumber.from(0);
     for (const event of receipt.events ?? []) {
-      if (
-        event.address === nftrout.value.address &&
-        event.event === "Spawned"
-      ) {
-        newTokenId = BigNumber.from(event.data.slice(event.data.length - 64));
-      }
+      if (event.event !== "Transfer") continue;
+      newTokenId = BigNumber.from(receipt.events![0].topics[3]);
+      break;
     }
-    if (!newTokenId) return;
-    setTimeout(async () => {
-      trouts[newTokenId.toHexString()].imageUrl =
-        await nftrout.value.callStatic.tokenURI(newTokenId);
-    }, 30_000);
+    if (!newTokenId) throw new Error("breeding did not create new token");
+    let cid = "";
+    while (cid === "") {
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      cid = await nftrout.value.callStatic.tokenURI(newTokenId);
+    }
+    trouts[newTokenId.toHexString()] = {
+      id: newTokenId,
+      cid,
+      owned: true,
+    };
   } finally {
     selectedTrouts.value.splice(0, selectedTrouts.value.length);
     breeding.value = false;
@@ -175,8 +160,8 @@ async function troutSelected(e: Event) {
 </script>
 
 <template>
-  <main style="max-width: 60ch" class="py-5 m-auto w-4/5">
-    <h2>My Trout 🎣</h2>
+  <main class="py-5 m-auto md:w-2/3 sm:w-4/5">
+    <h2 class="">My Trout 🎣</h2>
     <div>
       <template v-if="loadingMyTrouts">
         <ContentLoader class="inline" width="278" height="128">
@@ -187,10 +172,10 @@ async function troutSelected(e: Event) {
       <ul v-else class="flex flex-row flex-wrap">
         <li class="m-5" v-for="trout in myTrouts" :key="trout.id.toHexString()">
           <TroutCard
-            @click="troutSelected"
-            :trout="{ ...trout, fee: undefined }"
-            :data-troutid="trout.id.toHexString()"
+            @selected="() => troutSelected(trout.id.toHexString())"
+            :trout="trout"
             :selected="isSelected(trout.id.toHexString())"
+            :editable="true"
           />
         </li>
         <li
@@ -203,7 +188,7 @@ async function troutSelected(e: Event) {
       </ul>
     </div>
 
-    <h2>Breedable Trout 🎏</h2>
+    <h2 class="">Breedable Trout 🎏</h2>
     <div>
       <template v-if="loadingBreedable">
         <ContentLoader class="inline" width="428" height="128">
@@ -219,9 +204,8 @@ async function troutSelected(e: Event) {
           :key="trout.id.toHexString()"
         >
           <TroutCard
-            @click="troutSelected"
+            @selected="() => troutSelected(trout.id.toHexString())"
             :trout="trout"
-            :data-troutid="trout.id.toHexString()"
             :selected="isSelected(trout.id.toHexString())"
           />
         </li>
@@ -240,7 +224,7 @@ input {
 }
 
 h2 {
-  @apply font-bold text-2xl my-2;
+  @apply font-bold text-2xl my-2 bg-white bg-opacity-50 inline-block px-3 py-1 rounded-lg;
 }
 
 button {
