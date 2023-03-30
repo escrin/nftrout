@@ -1,10 +1,10 @@
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import "hardhat-watcher";
-import "hardhat-deploy";
-import "hardhat-deploy-ethers";
+import { HardhatUserConfig, task } from 'hardhat/config';
+import '@nomicfoundation/hardhat-toolbox';
+import 'hardhat-watcher';
+import 'hardhat-deploy';
+import 'hardhat-deploy-ethers';
 
-import { NFTrout } from "./src/index";
+import { NFTrout } from './src/index';
 
 const accounts = process.env.PRIVATE_KEY
   ? [process.env.PRIVATE_KEY]
@@ -12,11 +12,9 @@ const accounts = process.env.PRIVATE_KEY
   ? { mnemonic: process.env.MNEMONIC }
   : [];
 
-task("accounts").setAction(async (_, hre) => {
+task('accounts').setAction(async (_, hre) => {
   const signers = await hre.ethers.getSigners();
-  const balances = await Promise.all(
-    signers.map((s) => hre.ethers.provider.getBalance(s.address))
-  );
+  const balances = await Promise.all(signers.map((s) => hre.ethers.provider.getBalance(s.address)));
   for (let i = 0; i < signers.length; i++) {
     let num: string | number;
     try {
@@ -28,93 +26,84 @@ task("accounts").setAction(async (_, hre) => {
   }
 });
 
-task("mint").setAction(async (_, hre) => {
+task('mint').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = await ethers.getContract("NFTrout");
+  const nftrout = await ethers.getContract('NFTrout');
   const tx = await nftrout.mint({
     value: await nftrout.callStatic.mintFee(),
   });
   console.log(tx.hash);
   const receipt = await tx.wait();
   for (const event of receipt.events) {
-    if (event.event !== "Transfer") continue;
+    if (event.event !== 'Transfer') continue;
     console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
     break;
   }
 });
 
-task("breed")
-  .addPositionalParam("left")
-  .addPositionalParam("right")
+task('breed')
+  .addPositionalParam('left')
+  .addPositionalParam('right')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = await ethers.getContract("NFTrout");
-    const breedingFee = await nftrout.callStatic.getBreedingFee(
-      args.left,
-      args.right
-    );
+    const nftrout = await ethers.getContract('NFTrout');
+    const breedingFee = await nftrout.callStatic.getBreedingFee(args.left, args.right);
     const tx = await nftrout.breed(args.left, args.right, {
       value: breedingFee,
     });
     console.log(tx.hash);
     const receipt = await tx.wait();
     for (const event of receipt.events) {
-      if (event.event !== "Transfer") continue;
-      console.log(
-        ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber()
-      );
+      if (event.event !== 'Transfer') continue;
+      console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
       break;
     }
   });
 
-task("uri")
-  .addParam("id")
+task('uri')
+  .addParam('id')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     console.log(await nftrout.callStatic.tokenURI(args.id));
   });
 
-task("list")
-  .addParam("id")
-  .addParam("fee")
+task('list')
+  .addParam('id')
+  .addParam('fee')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const tx = await nftrout.list(args.id, ethers.utils.parseEther(args.fee));
     console.log(tx.hash);
     await tx.wait();
   });
 
-task("respawn")
-  .addParam("id")
+task('respawn')
+  .addParam('id')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const tx = await nftrout.respawn(args.id);
     console.log(tx.hash);
     await tx.wait();
   });
 
-task("transfer")
-  .addParam("id")
-  .addParam("to")
+task('transfer')
+  .addParam('id')
+  .addParam('to')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
-    const tx = await nftrout.transferFrom(
-      await nftrout.signer.getAddress(),
-      args.to,
-      args.id
-    );
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const tx = await nftrout.transferFrom(await nftrout.signer.getAddress(), args.to, args.id);
     console.log(tx.hash);
     await tx.wait();
   });
 
-task("list-breedable").setAction(async (_, hre) => {
+task('list-breedable').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = (await ethers.getContract("NFTrout")) as NFTrout;
-  const { number: blockTag } = await ethers.provider.getBlock("latest");
+  const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+  const { number: blockTag } = await ethers.provider.getBlock('latest');
   const batchSize = 100;
   for (let offset = 0; ; offset += batchSize) {
     let studs: NFTrout.StudStructOutput[] = [];
@@ -123,20 +112,22 @@ task("list-breedable").setAction(async (_, hre) => {
         blockTag,
       });
     } catch (e: any) {
-      console.error("failed to fetch studs", e);
+      console.error('failed to fetch studs', e);
       break;
     }
-    await Promise.all(studs.map(async ({ tokenId, fee }) => {
-      const tokenUri = await nftrout.callStatic.tokenURI(tokenId);
-      console.log(tokenId.toNumber(), ethers.utils.formatEther(fee), tokenUri);
-    }));
+    await Promise.all(
+      studs.map(async ({ tokenId, fee }) => {
+        const tokenUri = await nftrout.callStatic.tokenURI(tokenId);
+        console.log(tokenId.toNumber(), ethers.utils.formatEther(fee), tokenUri);
+      }),
+    );
     if (studs.length < batchSize) break;
   }
 });
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.18",
+    version: '0.8.18',
     settings: {
       optimizer: {
         enabled: true,
@@ -146,27 +137,27 @@ const config: HardhatUserConfig = {
   },
   networks: {
     local: {
-      url: "http://127.0.0.1:8545",
+      url: 'http://127.0.0.1:8545',
     },
-    "sapphire-testnet": {
-      url: "https://testnet.sapphire.oasis.dev",
+    'sapphire-testnet': {
+      url: 'https://testnet.sapphire.oasis.dev',
       chainId: 0x5aff,
       accounts,
     },
     sapphire: {
-      url: "https://sapphire.oasis.io",
+      url: 'https://sapphire.oasis.io',
       chainId: 0x5afe,
       accounts,
     },
     hyperspace: {
-      url: "https://rpc.ankr.com/filecoin_testnet",
+      url: 'https://rpc.ankr.com/filecoin_testnet',
       chainId: 3141,
       accounts,
     },
   },
   watcher: {
     compile: {
-      tasks: ["compile"],
+      tasks: ['compile'],
     },
   },
   namedAccounts: {
