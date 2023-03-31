@@ -1,2 +1,2 @@
-packages: [frontend, evm]
+packages: [frontend, evm, job]
 

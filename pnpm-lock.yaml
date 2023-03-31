@@ -5,8 +5,8 @@ importers:
   evm:
     dependencies:
       '@escrin/evm':
-        specifier: link:../../escrin/evm
-        version: link:../../escrin/evm
+        specifier: ^0.1.0-alpha.1
+        version: 0.1.0-alpha.1
       '@oasisprotocol/sapphire-contracts':
         specifier: ^0.2.1
         version: 0.2.1
@@ -195,9 +195,12 @@ importers:
 
   job:
     dependencies:
+      '@escrin/evm':
+        specifier: ^0.1.0-alpha.1
+        version: 0.1.0-alpha.1
       '@oasisprotocol/sapphire-paratime':
-        specifier: ^1.0.14
-        version: 1.0.14
+        specifier: ./oasisprotocol-sapphire-paratime-1.0.15.tgz
+        version: file:job/oasisprotocol-sapphire-paratime-1.0.15.tgz
       deoxysii:
         specifier: ^0.0.2
         version: 0.0.2
@@ -214,6 +217,9 @@ importers:
       '@types/node':
         specifier: ^18.15.11
         version: 18.15.11
+      dotenv:
+        specifier: ^16.0.3
+        version: 16.0.3
       esbuild:
         specifier: ^0.17.14
         version: 0.17.14
@@ -667,6 +673,14 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
+
+  /@escrin/evm@0.1.0-alpha.1:
+    resolution: {integrity: sha512-jM+dIPEbZoRH0xUCiFQuqh967xJutaATR0ZtCHtZKxIqnkPzB1tp7HpxyOVzuFtsgGVC1WDxqcXj7Q6mim1FEQ==}
+    engines: {node: '>=16', pnpm: '>=7'}
+    dependencies:
+      '@oasisprotocol/sapphire-contracts': 0.2.1
+      '@openzeppelin/contracts': 4.8.2
+    dev: false
 
   /@eslint-community/eslint-utils@4.4.0(eslint@8.36.0):
     resolution: {integrity: sha512-1/sA4dwrzBAyeUoQ6oxahHKmrZvsnLCg4RfxW3ZFGGmQkSNQPFNLV9CUEFQP1x9EYXHTo5p6xdhZM1Ne9p/AfA==}
@@ -1455,6 +1469,7 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    dev: true
 
   /@openzeppelin/contracts@4.8.2:
     resolution: {integrity: sha512-kEUOgPQszC0fSYWpbh2kT94ltOJwj1qfT2DWo+zVttmGmf97JZ99LspePNaeeaLhCImaHVeBbjaQFZQn7+Zc5g==}
@@ -3230,6 +3245,11 @@ packages:
       dom-serializer: 2.0.0
       domelementtype: 2.3.0
       domhandler: 5.0.3
+    dev: true
+
+  /dotenv@16.0.3:
+    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+    engines: {node: '>=12'}
     dev: true
 
   /ecc-jsbn@0.1.2:
@@ -7777,3 +7797,26 @@ packages:
     dependencies:
       ethers: 5.7.2
     dev: true
+
+  file:job/oasisprotocol-sapphire-paratime-1.0.15.tgz:
+    resolution: {integrity: sha512-cNCQ6VwzFmlMFD/rLafLXW/3uo/adazbLU+0fQ6OMqBO1SuwzpCmGKDIUY0QmWMuiIf/FWQB4yaa9tN/55mLSw==, tarball: file:job/oasisprotocol-sapphire-paratime-1.0.15.tgz}
+    name: '@oasisprotocol/sapphire-paratime'
+    version: 1.0.15
+    dependencies:
+      '@ethersproject/abstract-provider': 5.7.0
+      '@ethersproject/abstract-signer': 5.7.0
+      '@ethersproject/address': 5.7.0
+      '@ethersproject/bignumber': 5.7.0
+      '@ethersproject/bytes': 5.7.0
+      '@ethersproject/providers': 5.7.2
+      '@ethersproject/rlp': 5.7.0
+      '@ethersproject/transactions': 5.7.0
+      cborg: 1.10.1
+      deoxysii: 0.0.2
+      js-sha512: 0.8.0
+      tweetnacl: 1.0.3
+      type-fest: 2.19.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false

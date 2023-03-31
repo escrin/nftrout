@@ -1,4 +1,5 @@
 trout.*
 inputs/
 outputs/
+gas_wallet.json
 bin/

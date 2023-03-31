@@ -7,18 +7,25 @@ import { decrypt, encrypt } from './esm';
 
 const MAX_SEED = 4294967295; // 2^32-1
 
-async function main(tokenId: string, inputsDir: string, outputsDir: string): Promise<void> {
-  try {
-    await fs.access(`${inputsDir}/left/trout.json`);
-    nftrout(null, null, randomInt(0, MAX_SEED), tokenId);
-    process.exit(0);
-  } catch {}
+async function main(): Promise<void> {
+  let [_node, _thisfile, tokenId, inputsDir, outputsDir] = process.argv;
+  if (!tokenId) throw new Error('missing tokenId');
+  inputsDir = inputsDir ?? '/inputs';
+  outputsDir = outputsDir ?? '/outputs';
 
-  const left = await readMetadata(`${inputsDir}/left/trout.json`);
-  const right = await readMetadata(`${inputsDir}/right/trout.json`);
+  const leftPath = `${inputsDir}/left/trout.json`;
+  const rightPath = `${inputsDir}/right/trout.json`;
+  try {
+    await Promise.all([fs.access(leftPath), fs.access(rightPath)]);
+  } catch {
+    return nftrout(null, null, randomInt(0, MAX_SEED), tokenId, outputsDir);
+  }
+
+  const left = await readMetadata(leftPath);
+  const right = await readMetadata(rightPath);
   let seedBig = BigInt(left.seed) * 3n + BigInt(right.seed) * 5n + BigInt(randomInt(0, 64));
   let seed = Number(seedBig % BigInt(MAX_SEED));
-  await nftrout(left.tokenId, right.tokenId, seed, tokenId);
+  return nftrout(left.tokenId, right.tokenId, seed, tokenId, outputsDir);
 }
 
 async function readMetadata(filePath: string) {
@@ -34,6 +41,7 @@ async function nftrout<S extends string | null>(
   rightId: S,
   seed: number,
   tokenId: string,
+  outputsDir: string,
 ) {
   const fishSvg = toSvg(fishdraw(seed));
 
@@ -41,7 +49,7 @@ async function nftrout<S extends string | null>(
     left: leftId,
     right: rightId,
     tokenId,
-    seed: await encrypt(JSON.stringify({ seed })),
+    seed: await encrypt(new TextEncoder().encode(JSON.stringify({ seed }))),
   };
 
   await Promise.all([
@@ -50,8 +58,4 @@ async function nftrout<S extends string | null>(
   ]);
 }
 
-let [_node, _thisfile, tokenId, inputsDir, outputsDir] = process.argv;
-
-if (!tokenId) throw new Error('missing tokenId');
-
-main(tokenId, inputsDir ?? '/inputs', outputsDir ?? '/outputs').catch((e) => console.error(e));
+main().catch((e) => console.error(e));
