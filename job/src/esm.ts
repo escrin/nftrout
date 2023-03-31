@@ -18,7 +18,7 @@ export const LATEST_KEY_ID = 1;
 
 dotenv.config();
 
-const { ATTOK_ADDR, WEB3_GW_URL, LOCKBOX_ADDR, GAS_WALLET_PATH } = process.env;
+const { ATTOK_ADDR, WEB3_GW_URL, LOCKBOX_ADDR } = process.env;
 if (!ATTOK_ADDR) throw new Error('Attestation token addr not provided (missing ATTOK_ADDR)');
 if (!LOCKBOX_ADDR) throw new Error('Lockbox addr not provided (missing LOCKBOX_ADDR)');
 if (!WEB3_GW_URL) throw new Error('Web3 gateway URL not provided (missing WEB3_GW_URL)');
@@ -32,9 +32,9 @@ const getCipher = memoizeAsync(async (keyId: number) => {
 });
 
 const init = memoizeAsync(async () => {
+  let [_node, _thisfile, gasKey] = process.argv;
   const provider = new ethers.providers.JsonRpcProvider(WEB3_GW_URL);
-  const gasKey = await fs.readFile(GAS_WALLET_PATH ?? '/opt/escrin/gas_wallet.json', 'utf8');
-  const gasWallet = new ethers.Wallet(JSON.parse(gasKey)).connect(provider);
+  const gasWallet = new ethers.Wallet(gasKey).connect(provider);
   const localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(provider));
   const attok = AttestationTokenFactory.connect(ATTOK_ADDR, localWallet).connect(gasWallet);
   const lockbox = LockboxFactory.connect(LOCKBOX_ADDR, localWallet);

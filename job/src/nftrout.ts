@@ -8,7 +8,7 @@ import { decrypt, encrypt } from './esm';
 const MAX_SEED = 4294967295; // 2^32-1
 
 async function main(): Promise<void> {
-  let [_node, _thisfile, tokenId, inputsDir, outputsDir] = process.argv;
+  let [_node, _thisfile, _gasKey, tokenId, inputsDir, outputsDir] = process.argv;
   if (!tokenId) throw new Error('missing tokenId');
   inputsDir = inputsDir ?? '/inputs';
   outputsDir = outputsDir ?? '/outputs';
