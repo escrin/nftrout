@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 
-import { Network, networkName, useEthereumStore } from "../stores/ethereum";
-import JazzIcon from "./JazzIcon.vue";
+import { Network, networkName, useEthereumStore } from '../stores/ethereum';
+import JazzIcon from './JazzIcon.vue';
 
 const eth = useEthereumStore();
 
@@ -10,7 +10,7 @@ const iconsize = 30;
 
 const abbrAddr = computed(() => {
   if (!eth.address) return;
-  const addr = eth.address.replace("0x", "");
+  const addr = eth.address.replace('0x', '');
   return `${addr.slice(0, 5)}…${addr.slice(-5)}`;
 });
 const netName = computed(() => networkName(eth.network));
@@ -34,20 +34,12 @@ async function connectWallet() {
 </script>
 
 <template>
-  <button
-    class="v-align"
-    :class="{ 'cursor-default': !!eth.address }"
-    @click="connectWallet"
-  >
+  <button class="v-align" :class="{ 'cursor-default': !!eth.address }" @click="connectWallet">
     <div class="v-align" v-if="!connecting && eth.address">
       <JazzIcon :size="iconsize" :address="eth.address" />
       <div class="text-xs leading-none ml-1">
-        <abbr :title="eth.address" class="font-mono block no-underline">{{
-          abbrAddr
-        }}</abbr>
-        <span class="text-2xs" :class="{ 'unk-net': unkNet }">{{
-          netName
-        }}</span>
+        <abbr :title="eth.address" class="font-mono block no-underline">{{ abbrAddr }}</abbr>
+        <span class="text-2xs" :class="{ 'unk-net': unkNet }">{{ netName }}</span>
       </div>
     </div>
     <div class="v-align" v-else>
@@ -56,9 +48,7 @@ async function connectWallet() {
         <span v-if="showingConnecting">Connecting…</span>
         <div v-else>
           <span class="block" style="margin-bottom: -4px">Connect Wallet</span>
-          <span class="text-xs" :class="{ 'unk-net': unkNet }">{{
-            netName
-          }}</span>
+          <span class="text-xs" :class="{ 'unk-net': unkNet }">{{ netName }}</span>
         </div>
       </span>
     </div>
@@ -82,7 +72,7 @@ async function connectWallet() {
   &::after {
     position: relative;
     line-height: var(--icon-size);
-    content: "👋";
+    content: '👋';
   }
 }
 

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { BigNumber } from "ethers";
-import { ethers } from "ethers";
-import { computed, defineProps, ref } from "vue";
+import type { BigNumber } from 'ethers';
+import { ethers } from 'ethers';
+import { computed, defineProps, ref } from 'vue';
 
-import { useNFTrout } from "../contracts";
-import type { Trout } from "../trouts";
+import { useNFTrout } from '../contracts';
+import type { Trout } from '../trouts';
 
 const nftrout = useNFTrout();
 
-const emit = defineEmits(["feeUpdated", "selected"]); // TODO: use pinia store
+const emit = defineEmits(['feeUpdated', 'selected']); // TODO: use pinia store
 
 const props = defineProps<{
   trout: Trout;
@@ -17,12 +17,10 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 3 / 8);
-const imageUrl = computed(
-  () => `https://gateway.ipfs.io${props.trout.cid}/outputs/trout.svg`
-);
+const imageUrl = computed(() => `https://gateway.ipfs.io${props.trout.cid}/outputs/trout.svg`);
 
 function formatFee(fee: BigNumber): string {
-  return fee.isZero() ? "0 FIL" : `${ethers.utils.formatEther(fee)} FIL`;
+  return fee.isZero() ? '0 FIL' : `${ethers.utils.formatEther(fee)} FIL`;
 }
 
 const fee = ref<number | undefined>(undefined);
@@ -39,13 +37,13 @@ async function listTrout(e: Event) {
     if (!fee.value) return;
     const tx = await nftrout.value.list(
       props.trout.id,
-      ethers.utils.parseEther(fee.value.toString())
+      ethers.utils.parseEther(fee.value.toString()),
     );
-    console.log("listing trout", tx.hash);
+    console.log('listing trout', tx.hash);
     const receipt = await tx.wait();
-    if (receipt.status !== 1) throw new Error("tx failed");
-    emit("feeUpdated", fee);
-    console.log("trout listed");
+    if (receipt.status !== 1) throw new Error('tx failed');
+    emit('feeUpdated', fee);
+    console.log('trout listed');
   } catch {
     listDisabled.value = false;
   }
@@ -75,14 +73,7 @@ async function listTrout(e: Event) {
     </div>
     <form v-if="props.editable" @submit="listTrout" class="mx-auto my-3">
       Fee:
-      <input
-        required
-        type="number"
-        min="0.01"
-        step="0.01"
-        v-model="fee"
-        class="w-16 border"
-      />
+      <input required type="number" min="0.01" step="0.01" v-model="fee" class="w-16 border" />
       FIL
       <button
         class="bg-red-500 px-2 rounded-md text-white cursor-pointer m-1 disabled:bg-red-200 disabled:cursor-default"

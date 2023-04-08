@@ -1,10 +1,10 @@
-import type { ComputedRef } from "vue";
-import { computed } from "vue";
+import type { ComputedRef } from 'vue';
+import { computed } from 'vue';
 
-import type { NFTrout } from "@escrin/nftrout-evm";
-import { NFTroutFactory } from "@escrin/nftrout-evm";
+import type { NFTrout } from '@escrin/nftrout-evm';
+import { NFTroutFactory } from '@escrin/nftrout-evm';
 
-import { useEthereumStore } from "./stores/ethereum";
+import { useEthereumStore } from './stores/ethereum';
 
 export function useNFTrout(): ComputedRef<NFTrout> {
   const eth = useEthereumStore();

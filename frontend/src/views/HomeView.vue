@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { BigNumber } from "ethers";
-import { CirclesToRhombusesSpinner } from "epic-spinners";
-import { computed, reactive, ref } from "vue";
-import { ContentLoader } from "vue-content-loader";
+import { BigNumber } from 'ethers';
+import { CirclesToRhombusesSpinner } from 'epic-spinners';
+import { computed, reactive, ref } from 'vue';
+import { ContentLoader } from 'vue-content-loader';
 
-import type { NFTrout } from "@escrin/nftrout-evm";
+import type { NFTrout } from '@escrin/nftrout-evm';
 
-import TroutCard from "../components/TroutCard.vue";
-import { useNFTrout } from "../contracts";
-import { useEthereumStore } from "../stores/ethereum";
-import type { Trout } from "../trouts";
+import TroutCard from '../components/TroutCard.vue';
+import { useNFTrout } from '../contracts';
+import { useEthereumStore } from '../stores/ethereum';
+import type { Trout } from '../trouts';
 
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
@@ -17,19 +17,14 @@ const nftrout = useNFTrout();
 type BlockTag = number | string;
 
 const trouts = reactive<Record<string, Trout>>({});
-const myTrouts = computed(() =>
-  Object.values(trouts).filter((t) => t.owned ?? false)
-);
+const myTrouts = computed(() => Object.values(trouts).filter((t) => t.owned ?? false));
 const notMyBreedableTrouts = computed(() =>
-  Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined)
+  Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined),
 );
 const loadingMyTrouts = ref(true);
 const loadingBreedable = ref(true);
 
-async function fetchMyTrouts(
-  nftrout: NFTrout,
-  blockTag: number
-): Promise<void> {
+async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> {
   loadingMyTrouts.value = true;
   await eth.connect();
   if (!eth.address) return;
@@ -48,15 +43,12 @@ async function fetchMyTrouts(
       } else {
         trouts[key].owned = true;
       }
-    })
+    }),
   );
   loadingMyTrouts.value = false;
 }
 
-async function fetchBreedableTrouts(
-  nftrout: NFTrout,
-  blockTag: BlockTag
-): Promise<void> {
+async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promise<void> {
   loadingBreedable.value = true;
   const batchSize = 100;
   for (let offset = 0; ; offset += batchSize) {
@@ -66,7 +58,7 @@ async function fetchBreedableTrouts(
         blockTag,
       });
     } catch (e: any) {
-      console.error("failed to fetch studs", e);
+      console.error('failed to fetch studs', e);
       break;
     }
     await Promise.all(
@@ -84,7 +76,7 @@ async function fetchBreedableTrouts(
         } else {
           trouts[key].fee = fee;
         }
-      })
+      }),
     );
     if (studs.length < batchSize) break;
   }
@@ -92,7 +84,7 @@ async function fetchBreedableTrouts(
 }
 
 (async () => {
-  const { number: blockTag } = await eth.provider.getBlock("latest");
+  const { number: blockTag } = await eth.provider.getBlock('latest');
   await Promise.all([
     fetchMyTrouts(nftrout.value!, blockTag),
     fetchBreedableTrouts(nftrout.value!, blockTag),
@@ -110,12 +102,10 @@ function isSelected(troutId: string): boolean {
 const breeding = ref(false);
 
 async function troutSelected(troutId: string) {
-  console.log("selected", troutId);
+  console.log('selected', troutId);
   if (isSelected(troutId)) {
-    console.log("troutisselected");
-    selectedTrouts.value = selectedTrouts.value.filter(
-      (tid) => tid !== troutId
-    );
+    console.log('troutisselected');
+    selectedTrouts.value = selectedTrouts.value.filter((tid) => tid !== troutId);
     return;
   }
   selectedTrouts.value.push(troutId);
@@ -128,7 +118,7 @@ async function troutSelected(troutId: string) {
     const receipt = await tx.wait();
     let newTokenId = BigNumber.from(0);
     for (const event of receipt.events ?? []) {
-      if (event.event !== "Transfer") continue;
+      if (event.event !== 'Transfer') continue;
       newTokenId = BigNumber.from(receipt.events![0].topics[3]);
       break;
     }
@@ -189,11 +179,7 @@ async function troutSelected(troutId: string) {
         </ContentLoader>
       </template>
       <ul v-else class="flex flex-row flex-wrap">
-        <li
-          class="m-5"
-          v-for="trout in notMyBreedableTrouts"
-          :key="trout.id.toHexString()"
-        >
+        <li class="m-5" v-for="trout in notMyBreedableTrouts" :key="trout.id.toHexString()">
           <TroutCard
             @selected="() => troutSelected(trout.id.toHexString())"
             :trout="trout"
