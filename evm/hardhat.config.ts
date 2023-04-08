@@ -125,6 +125,11 @@ task('list-breedable').setAction(async (_, hre) => {
   }
 });
 
+task('coverage', async (_args, hre, runSuper) => {
+  hre.config.solidity.compilers.forEach((sc) => (sc.settings.viaIR = false));
+  await runSuper();
+});
+
 const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.18',
@@ -158,6 +163,15 @@ const config: HardhatUserConfig = {
   watcher: {
     compile: {
       tasks: ['compile'],
+      files: ['./contracts/'],
+    },
+    test: {
+      tasks: ['test'],
+      files: ['./contracts/', './test'],
+    },
+    coverage: {
+      tasks: ['coverage'],
+      files: ['./contracts/', './test'],
     },
   },
   namedAccounts: {

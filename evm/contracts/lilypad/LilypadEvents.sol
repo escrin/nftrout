@@ -51,9 +51,7 @@ contract LilypadEvents is Ownable {
     event BacalhauJobResultsReturned(BacalhauJobResult result);
 
     // only this contract is allowed to call "runBacalhauJob"
-    function setAuthorizedContract(
-        address _authorizedContract
-    ) public onlyOwner {
+    function setAuthorizedContract(address _authorizedContract) public onlyOwner {
         authorizedContract = _authorizedContract;
     }
 
@@ -104,12 +102,7 @@ contract LilypadEvents is Ownable {
         bacalhauJobResultByAddress[_to].push(jobResult);
 
         emit BacalhauJobResultsReturned(jobResult);
-        LilypadCallerInterface(_to).lilypadFulfilled(
-            address(this),
-            _jobId,
-            _resultType,
-            _result
-        );
+        LilypadCallerInterface(_to).lilypadFulfilled(address(this), _jobId, _resultType, _result);
     }
 
     function returnBacalhauError(
@@ -128,22 +121,14 @@ contract LilypadEvents is Ownable {
         bacalhauJobResultByAddress[_to].push(jobResult);
 
         emit BacalhauJobResultsReturned(jobResult);
-        LilypadCallerInterface(_to).lilypadCancelled(
-            address(this),
-            _jobId,
-            _errorMsg
-        );
+        LilypadCallerInterface(_to).lilypadCancelled(address(this), _jobId, _errorMsg);
     }
 
     function fetchAllJobs() public view returns (BacalhauJob[] memory) {
         return bacalhauJobHistory;
     }
 
-    function fetchAllResults()
-        public
-        view
-        returns (BacalhauJobResult[] memory)
-    {
+    function fetchAllResults() public view returns (BacalhauJobResult[] memory) {
         return bacalhauJobResultHistory;
     }
 

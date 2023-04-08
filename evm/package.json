@@ -69,6 +69,7 @@
   "dependencies": {
     "@escrin/evm": "^0.1.0-alpha.1",
     "@oasisprotocol/sapphire-contracts": "^0.2.1",
-    "@openzeppelin/contracts": "^4.8.2"
+    "@openzeppelin/contracts": "^4.8.2",
+    "erc721a": "^4.2.3"
   }
 }

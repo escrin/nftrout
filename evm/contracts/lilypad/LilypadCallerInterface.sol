@@ -16,9 +16,5 @@ interface LilypadCallerInterface {
         string calldata _result
     ) external;
 
-    function lilypadCancelled(
-        address _from,
-        uint _jobId,
-        string calldata _errorMsg
-    ) external;
+    function lilypadCancelled(address _from, uint _jobId, string calldata _errorMsg) external;
 }
