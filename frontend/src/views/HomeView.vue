@@ -33,16 +33,7 @@ async function fetchMyTrouts(
   loadingMyTrouts.value = true;
   await eth.connect();
   if (!eth.address) return;
-  const numTrouts = await nftrout.callStatic.balanceOf(eth.address, {
-    blockTag,
-  });
-  const troutIdPs: Promise<BigNumber>[] = [];
-  for (let i = 0; i < numTrouts.toNumber(); i++) {
-    troutIdPs.push(
-      nftrout.callStatic.tokenOfOwnerByIndex(eth.address!, i, { blockTag })
-    );
-  }
-  const troutIds = await Promise.all(troutIdPs);
+  const troutIds = await nftrout.callStatic.tokensOfOwner(eth.address!, { blockTag });
   await Promise.all(
     troutIds.map(async (id) => {
       const key = id.toHexString();
@@ -82,12 +73,12 @@ async function fetchBreedableTrouts(
       studs.map(async ({ tokenId, fee }) => {
         const key = tokenId.toHexString();
         if (trouts[key] === undefined) {
-          const cid = await nftrout.callStatic.tokenURI(tokenId);
-          if (!cid) return;
+          const uri = await nftrout.callStatic.tokenURI(tokenId);
+          if (!uri) return;
           trouts[key] = {
             id: tokenId,
             fee,
-            cid,
+            cid: uri.replace('ipfs://', ''),
             owned: false,
           };
         } else {
@@ -141,15 +132,15 @@ async function troutSelected(troutId: string) {
       newTokenId = BigNumber.from(receipt.events![0].topics[3]);
       break;
     }
-    if (!newTokenId) throw new Error("breeding did not create new token");
-    let cid = "";
-    while (cid === "") {
+    if (!newTokenId) throw new Error('breeding did not create new token');
+    let uri = '';
+    while (uri === '') {
       await new Promise((resolve) => setTimeout(resolve, 3_000));
-      cid = await nftrout.value.callStatic.tokenURI(newTokenId);
+      uri = await nftrout.value.callStatic.tokenURI(newTokenId);
     }
     trouts[newTokenId.toHexString()] = {
       id: newTokenId,
-      cid,
+      cid: uri.replace('ipfs://', ''),
       owned: true,
     };
   } finally {
