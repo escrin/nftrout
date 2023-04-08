@@ -1,5 +1,4 @@
 import { randomBytes } from 'crypto';
-import { promises as fs } from 'fs';
 
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
 // @ts-expect-error missing declaration
