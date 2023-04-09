@@ -125,6 +125,20 @@ task('list-breedable').setAction(async (_, hre) => {
   }
 });
 
+task('owners').setAction(async (_, hre) => {
+  const { ethers } = hre;
+  const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+  const numTrouts = (await nftrout.callStatic.totalSupply()).toNumber();
+  const ownersP = [];
+  for (let i = 0; i < numTrouts; i++) {
+    ownersP.push(nftrout.callStatic.ownerOf(i));
+  }
+  const owners = await Promise.all(ownersP);
+  for (const owner of owners) {
+    console.log(owner);
+  }
+});
+
 const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.18',
