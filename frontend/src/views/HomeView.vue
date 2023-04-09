@@ -17,10 +17,16 @@ const nftrout = useNFTrout();
 type BlockTag = number | string;
 
 const trouts = reactive<Record<string, Trout>>({});
-const myTrouts = computed(() => Object.values(trouts).filter((t) => t.owned ?? false));
-const notMyBreedableTrouts = computed(() =>
-  Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined),
-);
+const myTrouts = computed(() => {
+  const ts = Object.values(trouts).filter((t) => t.owned ?? false);
+  ts.sort();
+  return ts;
+});
+const notMyBreedableTrouts = computed(() => {
+  const ts = Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined);
+  ts.sort();
+  return ts;
+});
 const loadingMyTrouts = ref(true);
 const loadingBreedable = ref(true);
 
