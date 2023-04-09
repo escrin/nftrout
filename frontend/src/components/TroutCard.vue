@@ -17,7 +17,9 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 3 / 8);
-const imageUrl = computed(() => `https://gateway.ipfs.io${props.trout.cid}/outputs/trout.svg`);
+const imageUrl = computed(
+  () => `https://ipfs.escrin.org/ipfs/${props.trout.cid}/outputs/trout.svg`,
+);
 
 function formatFee(fee: BigNumber): string {
   return fee.isZero() ? '0 FIL' : `${ethers.utils.formatEther(fee)} FIL`;

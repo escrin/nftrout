@@ -33,7 +33,7 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
     troutIds.map(async (id) => {
       const key = id.toHexString();
       if (trouts[key] === undefined) {
-        const cid = await nftrout.callStatic.tokenURI(id, { blockTag });
+        const cid = await troutCid(nftrout, id, blockTag);
         if (!cid) return;
         trouts[key] = {
           id,
@@ -46,6 +46,16 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
     }),
   );
   loadingMyTrouts.value = false;
+}
+
+async function troutCid(
+  nftrout: NFTrout,
+  troutId: BigNumber,
+  blockTag: string | number = 'latest',
+): Promise<string | undefined> {
+  const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
+  if (!uri) return;
+  return uri.replace('ipfs://', '');
 }
 
 async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promise<void> {
@@ -65,12 +75,12 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
       studs.map(async ({ tokenId, fee }) => {
         const key = tokenId.toHexString();
         if (trouts[key] === undefined) {
-          const uri = await nftrout.callStatic.tokenURI(tokenId);
-          if (!uri) return;
+          const cid = await troutCid(nftrout, tokenId);
+          if (!cid) return;
           trouts[key] = {
             id: tokenId,
             fee,
-            cid: uri.replace('ipfs://', ''),
+            cid,
             owned: false,
           };
         } else {
@@ -123,14 +133,14 @@ async function troutSelected(troutId: string) {
       break;
     }
     if (!newTokenId) throw new Error('breeding did not create new token');
-    let uri = '';
-    while (uri === '') {
+    let cid: string | undefined = undefined;
+    while (!cid) {
       await new Promise((resolve) => setTimeout(resolve, 3_000));
-      uri = await nftrout.value.callStatic.tokenURI(newTokenId);
+      cid = await troutCid(nftrout.value, newTokenId);
     }
     trouts[newTokenId.toHexString()] = {
       id: newTokenId,
-      cid: uri.replace('ipfs://', ''),
+      cid,
       owned: true,
     };
   } finally {
