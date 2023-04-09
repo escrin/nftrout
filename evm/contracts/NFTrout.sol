@@ -17,15 +17,15 @@ type TokenId is uint256;
 /// The caller must be lilypad.
 error NotLilypad();
 /// You are not the owner of the trout;
-error NotOwner();
+error NotOwner(); // 30cd7471
 /// The token does not exist;
 error NoSuchToken(TokenId id);
 /// One of the trout you tried to breed is neither owned by you nor listed for public breeding.
 error NotListed();
 /// Not enough value was sent.
-error PaymentRequired(uint256 amount);
+error PaymentRequired(uint256 amount); // 8c4fcd93
 /// A trout cannot breed with itself.
-error CannotSelfBreed();
+error CannotSelfBreed(); // 56938583
 
 contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     using EnumerableMap for EnumerableMap.UintToUintMap;
@@ -35,12 +35,14 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     /// The trout is no longer breedable.
     event Delisted(TokenId indexed tokenId);
     /// Two trouts have bred to produce a new trout.
-    event Spawned(TokenId indexed left, TokenId indexed right, TokenId child);
+    event Spawned(TokenId indexed left, TokenId indexed right, JobId job, TokenId child);
+    event FeesChanged(uint256 mintFee, uint256 matchmakingBps);
 
     struct Receipt {
         TokenId tokenId;
         TokenId left;
         TokenId right;
+        JobId jobId;
     }
 
     struct Stud {
@@ -51,14 +53,13 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     uint256 public mintFee;
     uint256 public matchmakingBps;
     mapping(address => uint256) public earnings;
-
+    mapping(TokenId => Receipt) public receipts;
     LilypadEvents public lilypadEvents;
 
-    mapping(TokenId => Receipt) private receipts;
-    mapping(TokenId => string) private tokenUris;
-    mapping(JobId => TokenId) private tokensByJob;
     /// token id -> fee
     EnumerableMap.UintToUintMap private studs;
+    mapping(TokenId => string) private tokenCids;
+    mapping(JobId => TokenId) private tokensByJob;
 
     modifier onlyLilypadEvents() {
         if (msg.sender != address(lilypadEvents)) revert NotLilypad();
@@ -73,21 +74,36 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     constructor(
         LilypadEvents _lilypadEvents,
         uint256 _mintFee,
-        uint256 _matchmakingBps
-    ) ERC721A("NFTrout Gen 1", unicode"NF🐟1") {
+        uint256 _matchmakingBps,
+        bool _genesisMint
+    ) ERC721A("NFTrout Gen 1", "TROUT1") {
         lilypadEvents = _lilypadEvents;
         mintFee = _mintFee;
         matchmakingBps = _matchmakingBps;
+
+        if (_genesisMint) {
+            _mintERC2309(0xa885B1F77e4185F98b4D4dBe752B212B18b5d551, 36);
+            _mintERC2309(0x56e5F834F88F9f7631E9d6a43254e173478cE06a, 35);
+            _mintERC2309(0xF29Ac257c03CBA76DA7d3c4A34f2cA14B563260d, 25);
+            _mintERC2309(0xbd34678C8e17d4D6F221B4Cb912D79C3443F8034, 12);
+            _mintERC2309(0x7B9Bb19911763A372E35f95d0E31031C0884b6EC, 11);
+            _mintERC2309(0xEd03EA9c96ec39097548256E428a163E5f524e47, 9);
+            _mintERC2309(0x404E70A162487c9Af8982a89a5453f389d5257b1, 6);
+            _mintERC2309(0x7Fdb709F97dcd5F5a51054aD84A51107B2C15EF3, 5);
+            _mintERC2309(0xAE378d2e106d5C3ebDb7D960BD9c9093e23e680F, 4);
+            _mintERC2309(0x0532Bf0916F509883eaA1ECA5b270D753E152855, 3);
+            _mintERC2309(0x2772c7DF084Cbe204576731d711B622234BdD9A7, 3);
+            _mintERC2309(0xa9ad6C62611884672DfEf7e20a115778C4b0bAb1, 1);
+        }
     }
 
     /// Transmutes money into trout.
-    function mint() external payable returns (TokenId tokenId, JobId jobId) {
+    function mint() external payable returns (Receipt memory) {
         uint256 fee = _getMintFee(msg.sender);
         if (_pay(owner(), fee, 0) != msg.value) revert PaymentRequired(mintFee);
-        tokenId = _mint(msg.sender);
+        TokenId tokenId = _mint(msg.sender);
         TokenId z = TokenId.wrap(0);
-        jobId = _enqueueJob(Receipt({tokenId: tokenId, left: z, right: z}));
-        emit Spawned(z, z, tokenId);
+        return _spawn(tokenId, z, z);
     }
 
     /// Makes a trout breedable.
@@ -105,11 +121,9 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     /// Breeds any two trout to produce a third trout that will be owned by the caller.
     /// This method must be called with enough value to pay for the two trouts' fees and the minting fee.
     function breed(TokenId _left, TokenId _right) external payable returns (TokenId tokenId) {
-        uint256 leftId = TokenId.unwrap(_left);
-        uint256 rightId = TokenId.unwrap(_right);
-        if (!_exists(leftId)) revert NoSuchToken(_left);
-        if (!_exists(rightId)) revert NoSuchToken(_right);
-        if (leftId == rightId) revert CannotSelfBreed();
+        if (!_exists(_left)) revert NoSuchToken(_left);
+        if (!_exists(_right)) revert NoSuchToken(_right);
+        if (TokenId.unwrap(_left) == TokenId.unwrap(_right)) revert CannotSelfBreed();
 
         uint256 subtotal;
         subtotal += _pay(owner(), _getMintFee(msg.sender), 0);
@@ -117,8 +131,7 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
         subtotal += _pay(_ownerOf(_right), _getBreedingFee(msg.sender, _right), matchmakingBps);
         if (subtotal != msg.value) revert PaymentRequired(subtotal);
         tokenId = _mint(msg.sender);
-        _enqueueJob(Receipt({left: _left, right: _right, tokenId: tokenId}));
-        emit Spawned(_left, _right, tokenId);
+        _spawn(tokenId, _left, _right);
     }
 
     function withdraw() external {
@@ -134,6 +147,7 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     function setFees(uint256 _mintFee, uint256 _matchBps) external onlyOwner {
         mintFee = _mintFee;
         matchmakingBps = _matchBps;
+        emit FeesChanged(_mintFee, _matchBps);
     }
 
     function lilypadFulfilled(
@@ -143,13 +157,16 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
         string calldata _result
     ) external onlyLilypadEvents {
         if (_resultType != LilypadResultType.CID) return;
-        TokenId tokenId = tokensByJob[JobId.wrap(_jobId)];
-        tokenUris[tokenId] = string.concat("ipfs://", _result);
+        JobId jobId = JobId.wrap(_jobId);
+        TokenId tokenId = tokensByJob[jobId];
+        if (!_exists(tokenId)) return;
+        tokenCids[tokenId] = _result;
     }
 
     function lilypadCancelled(address, uint256 _jobId, string calldata) external onlyLilypadEvents {
-        Receipt memory receipt = receipts[tokensByJob[JobId.wrap(_jobId)]];
-        _enqueueJob(Receipt({left: receipt.left, right: receipt.right, tokenId: receipt.tokenId}));
+        JobId jobId = JobId.wrap(_jobId);
+        Receipt memory receipt = receipts[tokensByJob[jobId]];
+        _doSpawn(receipt.tokenId, receipt.left, receipt.right);
     }
 
     /// Paginated list of trout listed for breeding.
@@ -166,6 +183,7 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     }
 
     /// Returns the number of tokens that must be paid to breed the two trout.
+    /// This is also the minting fee when the parents are unset.
     function getBreedingFee(TokenId _left, TokenId _right) public view returns (uint256 fee) {
         fee += _getBreedingFee(msg.sender, _left);
         fee += _getBreedingFee(msg.sender, _right);
@@ -175,13 +193,12 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     function tokenURI(
         uint256 _tokenId
     ) public view virtual override(IERC721A, ERC721A) returns (string memory) {
-        return tokenUris[TokenId.wrap(_tokenId)];
+        return string.concat("ipfs://", tokenCids[TokenId.wrap(_tokenId)]);
     }
 
     /// Returns a cost for the payer to breed the trout that is no larger than the list price.
     function _getBreedingFee(address _payer, TokenId _tokenId) internal view returns (uint256) {
-        address owner = _ownerOf(_tokenId);
-        if (owner == _payer) return 0;
+        if (TokenId.unwrap(_tokenId) == 0 || _payer == _ownerOf(_tokenId)) return 0;
         (bool exists, uint256 fee) = studs.tryGet(TokenId.unwrap(_tokenId));
         if (!exists) revert NotListed();
         return fee;
@@ -191,23 +208,37 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
         return _minter == owner() ? 0 : mintFee;
     }
 
-    function _enqueueJob(Receipt memory _receipt) internal returns (JobId jobId) {
+    function _spawn(
+        TokenId _id,
+        TokenId _left,
+        TokenId _right
+    ) internal returns (Receipt memory receipt) {
+        receipt = _doSpawn(_id, _left, _right);
+        emit Spawned(_left, _right, receipt.jobId, _id);
+    }
+
+    function _doSpawn(
+        TokenId _id,
+        TokenId _left,
+        TokenId _right
+    ) internal returns (Receipt memory receipt) {
         // solhint-disable quotes
         string memory spec = string.concat(
             '{"_lilypad_template": "nftrout", "left": "',
-            Strings.toString(TokenId.unwrap(_receipt.left)),
+            tokenCids[_left],
             '", "right": "',
-            Strings.toString(TokenId.unwrap(_receipt.right)),
+            tokenCids[_right],
             '", "tokenId": "',
-            Strings.toString(TokenId.unwrap(_receipt.tokenId)),
+            Strings.toString(TokenId.unwrap(_id)),
             '"}'
         );
         // solhint-enable quotes
-        jobId = JobId.wrap(
+        JobId jobId = JobId.wrap(
             lilypadEvents.runBacalhauJob(address(this), spec, LilypadResultType.CID)
         );
-        receipts[_receipt.tokenId] = _receipt;
-        tokensByJob[jobId] = _receipt.tokenId;
+        receipt = Receipt({tokenId: _id, left: _left, right: _right, jobId: jobId});
+        receipts[_id] = receipt;
+        tokensByJob[receipt.jobId] = receipt.tokenId;
     }
 
     function _pay(
@@ -228,6 +259,10 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
 
     function _ownerOf(TokenId _id) internal view returns (address) {
         return ownerOf(TokenId.unwrap(_id));
+    }
+
+    function _exists(TokenId _id) internal view returns (bool) {
+        return _exists(TokenId.unwrap(_id));
     }
 
     function _startTokenId() internal view virtual override returns (uint256) {

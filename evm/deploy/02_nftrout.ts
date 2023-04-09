@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { address: lilypadEventsAddr } = await hre.deployments.get(LILYPAD_EVENTS);
   const result = await hre.deployments.deploy(NAME, {
     from: deployer,
-    args: [lilypadEventsAddr, ethers.utils.parseEther('1'), 500 /* 5% */],
+    args: [lilypadEventsAddr, ethers.utils.parseEther('1'), 500, true],
     log: true,
     autoMine: true,
   });

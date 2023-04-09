@@ -1,11 +1,6 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import {
-  LilypadEvents,
-  LilypadEvents__factory,
-  NFTrout,
-  NFTrout__factory,
-} from '../typechain-types';
+import { LilypadEvents, NFTrout } from '../typechain-types';
 import { SignerWithAddress } from 'hardhat-deploy-ethers/signers';
 
 const MINT_FEE = 100;
@@ -29,7 +24,12 @@ describe('NFTrout', () => {
     await lilypadEvents.deployed();
 
     const NFTrout = await ethers.getContractFactory('NFTrout');
-    nft = (await NFTrout.deploy(lilypadEvents.address, MINT_FEE, MATCHMAKING_BPS)) as NFTrout;
+    nft = (await NFTrout.deploy(
+      lilypadEvents.address,
+      MINT_FEE,
+      MATCHMAKING_BPS,
+      false,
+    )) as NFTrout;
     await nft.deployed();
 
     await (await lilypadEvents.setAuthorizedContract(nft.address)).wait();

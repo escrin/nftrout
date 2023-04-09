@@ -29,9 +29,7 @@ task('accounts').setAction(async (_, hre) => {
 task('mint').setAction(async (_, hre) => {
   const { ethers } = hre;
   const nftrout = await ethers.getContract('NFTrout');
-  const tx = await nftrout.mint({
-    value: await nftrout.callStatic.mintFee(),
-  });
+  const tx = await nftrout.mint({ value: await nftrout.callStatic.getBreedingFee(0, 0) });
   console.log(tx.hash);
   const receipt = await tx.wait();
   for (const event of receipt.events) {
@@ -75,16 +73,6 @@ task('list')
     const { ethers } = hre;
     const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const tx = await nftrout.list(args.id, ethers.utils.parseEther(args.fee));
-    console.log(tx.hash);
-    await tx.wait();
-  });
-
-task('respawn')
-  .addParam('id')
-  .setAction(async (args, hre) => {
-    const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
-    const tx = await nftrout.respawn(args.id);
     console.log(tx.hash);
     await tx.wait();
   });
