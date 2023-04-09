@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { BigNumber } from 'ethers';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { computed, defineProps, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
@@ -16,81 +15,124 @@ const props = defineProps<{
   selected?: boolean;
   editable?: boolean;
 }>();
-const scale = computed(() => props.scale ?? 3 / 8);
+const scale = computed(() => props.scale ?? 0.45);
 const imageUrl = computed(
   () => `https://ipfs.escrin.org/ipfs/${props.trout.cid}/outputs/trout.svg`,
 );
+const w = computed(() => 500 * scale.value + 2);
 
 function formatFee(fee: BigNumber): string {
   return fee.isZero() ? '0 FIL' : `${ethers.utils.formatEther(fee)} FIL`;
 }
 
-const fee = ref<number | undefined>(undefined);
-const listDisabled = ref(false);
+const fee = ref<number | undefined>((props.trout.fee?.div(1e15).toNumber() ?? 0) / 1e3);
+const feeBig = computed(() => BigNumber.from(Math.floor((fee.value ?? 0) * 1e9)).mul(1e9));
+const isListing = ref(false);
 
-async function listTrout(e: Event) {
+async function zlistTrout(e: Event) {
   if (e.target instanceof HTMLFormElement) {
     e.target.checkValidity();
     e.target.reportValidity();
   }
   e.preventDefault();
-  listDisabled.value = true;
+  isListing.value = true;
   try {
-    if (!fee.value) return;
-    const tx = await nftrout.value.list(
-      props.trout.id,
-      ethers.utils.parseEther(fee.value.toString()),
-    );
-    console.log('listing trout', tx.hash);
-    const receipt = await tx.wait();
-    if (receipt.status !== 1) throw new Error('tx failed');
-    emit('feeUpdated', fee);
-    console.log('trout listed');
-  } catch {
-    listDisabled.value = false;
+    if (props.trout.fee && !fee.value) await delistTrout();
+    else if (props.trout.fee !== feeBig.value) await listTrout();
+    emit('feeUpdated', feeBig.value);
+  } finally {
+    isListing.value = false;
   }
+}
+
+async function listTrout() {
+  if (!fee.value) throw new Error('cannot list trout without fee');
+  const tx = await nftrout.value.list(props.trout.id, feeBig.value);
+  console.log('listing trout', tx.hash);
+  const receipt = await tx.wait();
+  if (receipt.status !== 1) throw new Error('tx failed');
+  console.log('trout listed');
+}
+
+async function delistTrout() {
+  const tx = await nftrout.value.delist(props.trout.id);
+  console.log('delisting trout', tx.hash);
+  const receipt = await tx.wait();
+  if (receipt.status !== 1) throw new Error('tx failed');
+  console.log('trout delisted');
 }
 </script>
 
 <template>
-  <div
-    class="bg-white border-gray-600 border-4 rounded-md p-1 text-center"
-    :class="{ selected: props.selected }"
-  >
+  <div class="bg-white border-gray-600 border-4 rounded-md" :class="{ selected: props.selected }">
     <div
       @click="$emit('selected')"
-      class="bg-contain bg-no-repeat bg-cover cursor-pointer"
+      class="bg-contain bg-no-repeat bg-cover cursor-pointer rounded-sm"
       :style="{
         'background-image': `url('${imageUrl}')`,
-        width: `${500 * scale}px`,
-        height: `${310 * scale}px`,
+        width: `${w}px`,
+        height: `${300 * scale + 4}px`,
       }"
     >
-      <p
-        v-if="props.trout.fee !== undefined"
-        class="p-1 text-center bg-white rounded-full text-xs m-1 opacity-60 px-1 font-medium text-black float-right"
-      >
+      <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
         <span>{{ formatFee(props.trout.fee) }}</span>
       </p>
+      <p class="fishhead float-left">
+        <span class="pl-1">#{{ props.trout.id }}</span>
+      </p>
     </div>
-    <form v-if="props.editable" @submit="listTrout" class="mx-auto my-3">
-      Fee:
-      <input required type="number" min="0.01" step="0.01" v-model="fee" class="w-16 border" />
-      FIL
+    <form
+      v-if="props.editable && selected"
+      class="absolute -translate-y-full text-center py-1 bg-amber-50/80 flex justify-around items-center text-gray-700 rounded-b-sm text-sm"
+      @submit.stop="zlistTrout"
+      :style="{ width: `${w}px` }"
+    >
+      <span>Fee:</span>
+      <span>
+        <input
+          required
+          :disabled="isListing"
+          type="number"
+          min="0"
+          step="1"
+          v-model="fee"
+          class="w-12 border"
+          @click.stop="() => {}"
+        />
+        FIL
+      </span>
       <button
-        class="bg-red-500 px-2 rounded-md text-white cursor-pointer m-1 disabled:bg-red-200 disabled:cursor-default"
-        :disabled="listDisabled"
+        v-if="!isListing"
+        :disabled="
+          isListing || (!props.trout.fee && !fee) || (props.trout.fee && feeBig.eq(props.trout.fee))
+        "
+        class="enabled:bg-rose-500 px-3 py-1 enabled:rounded-md enabled:text-white enabled:cursor-pointer enabled:cursor-pointer"
+        :class="{ delist: props.trout.fee && !fee }"
       >
-        List
+        <span v-if="props.trout.fee && !fee">Delist</span>
+        <span v-else-if="props.trout.fee">Relist</span>
+        <span v-else>Breed</span>
       </button>
+      <span v-else-if="!fee">Delisting</span>
+      <span v-else>Listing</span>
     </form>
-    <!-- <form v-if="!props.trout.fee"> -->
-    <!-- </form> -->
   </div>
 </template>
 
 <style lang="postcss" scoped>
 .selected {
-  @apply border-pink-400;
+  @apply border-orange-600;
+}
+
+fieldset legend {
+  @apply mx-1 px-1;
+}
+
+.fishhead {
+  @apply p-1 text-center text-xs m-1 px-1 font-medium text-gray-700;
+}
+
+.delist {
+  @apply bg-sky-500;
 }
 </style>

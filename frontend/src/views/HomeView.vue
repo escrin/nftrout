@@ -2,7 +2,6 @@
 import { BigNumber } from 'ethers';
 import { CirclesToRhombusesSpinner } from 'epic-spinners';
 import { computed, reactive, ref } from 'vue';
-import { ContentLoader } from 'vue-content-loader';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
 
@@ -16,15 +15,17 @@ const nftrout = useNFTrout();
 
 type BlockTag = number | string;
 
+const troutSorter = (a: Trout, b: Trout) => a.id.sub(b.id).toNumber();
+
 const trouts = reactive<Record<string, Trout>>({});
 const myTrouts = computed(() => {
   const ts = Object.values(trouts).filter((t) => t.owned ?? false);
-  ts.sort();
+  ts.sort(troutSorter);
   return ts;
 });
 const notMyBreedableTrouts = computed(() => {
   const ts = Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined);
-  ts.sort();
+  ts.sort(troutSorter);
   return ts;
 });
 const loadingMyTrouts = ref(true);
@@ -38,11 +39,12 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
   await Promise.all(
     troutIds.map(async (id) => {
       const key = id.toHexString();
+      const cid = await troutCid(nftrout, id, blockTag);
+      if (!cid) return;
       if (trouts[key] === undefined) {
-        const cid = await troutCid(nftrout, id, blockTag);
-        if (!cid) return;
         trouts[key] = {
           id,
+          key,
           owned: true,
           cid,
         };
@@ -80,11 +82,12 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
     await Promise.all(
       studs.map(async ({ tokenId, fee }) => {
         const key = tokenId.toHexString();
+        const cid = await troutCid(nftrout, tokenId);
+        if (!cid) return;
         if (trouts[key] === undefined) {
-          const cid = await troutCid(nftrout, tokenId);
-          if (!cid) return;
           trouts[key] = {
             id: tokenId,
+            key,
             fee,
             cid,
             owned: false,
@@ -115,18 +118,16 @@ function isSelected(troutId: string): boolean {
   return false;
 }
 
-const breeding = ref(false);
+const isBreeding = ref(false);
 
 async function troutSelected(troutId: string) {
-  console.log('selected', troutId);
   if (isSelected(troutId)) {
-    console.log('troutisselected');
     selectedTrouts.value = selectedTrouts.value.filter((tid) => tid !== troutId);
     return;
   }
   selectedTrouts.value.push(troutId);
   if (selectedTrouts.value.length < 2) return;
-  breeding.value = true;
+  isBreeding.value = true;
   const [leftId, rightId] = selectedTrouts.value;
   const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
   try {
@@ -144,39 +145,36 @@ async function troutSelected(troutId: string) {
       await new Promise((resolve) => setTimeout(resolve, 3_000));
       cid = await troutCid(nftrout.value, newTokenId);
     }
-    trouts[newTokenId.toHexString()] = {
+    const key = newTokenId.toHexString();
+    trouts[key] = {
       id: newTokenId,
+      key,
       cid,
       owned: true,
     };
   } finally {
     selectedTrouts.value.splice(0, selectedTrouts.value.length);
-    breeding.value = false;
+    isBreeding.value = false;
   }
 }
 </script>
 
 <template>
-  <main class="py-5 m-auto md:w-2/3 sm:w-4/5">
-    <h2 class="">My Trout 🎣</h2>
+  <main class="m-auto md:w-2/3 sm:w-4/5">
+    <h2>Owned Trout 🎣</h2>
     <div>
-      <template v-if="loadingMyTrouts">
-        <ContentLoader class="inline" width="278" height="128">
-          <rect x="0" y="0" width="128" height="128" />
-          <rect x="150" y="0" width="128" height="128" />
-        </ContentLoader>
-      </template>
-      <ul v-else class="flex flex-row flex-wrap">
-        <li class="m-5" v-for="trout in myTrouts" :key="trout.id.toHexString()">
+      <ul class="flex flex-row flex-wrap">
+        <li class="mx-auto my-5" v-for="trout in myTrouts" :key="trout.key">
           <TroutCard
-            @selected="() => troutSelected(trout.id.toHexString())"
+            @selected="() => troutSelected(trout.key)"
+            @feeUpdated="(fee) => (trouts[trout.key].fee = fee)"
             :trout="trout"
-            :selected="isSelected(trout.id.toHexString())"
-            :editable="true"
+            :selected="isSelected(trout.key)"
+            :editable="selectedTrouts.length == 1"
           />
         </li>
         <li
-          v-if="breeding"
+          v-if="isBreeding"
           class="m-5 flex flex-col items-center justify-center border-2 border-gray-500 rounded-sm"
           style="width: 128px; height: 128px"
         >
@@ -185,21 +183,14 @@ async function troutSelected(troutId: string) {
       </ul>
     </div>
 
-    <h2 class="">Breedable Trout 🎏</h2>
+    <h2>Trout Market 🎏</h2>
     <div>
-      <template v-if="loadingBreedable">
-        <ContentLoader class="inline" width="428" height="128">
-          <rect x="0" y="0" width="128" height="128" />
-          <rect x="150" y="0" width="128" height="128" />
-          <rect x="300" y="0" width="128" height="128" />
-        </ContentLoader>
-      </template>
-      <ul v-else class="flex flex-row flex-wrap">
-        <li class="m-5" v-for="trout in notMyBreedableTrouts" :key="trout.id.toHexString()">
+      <ul class="flex flex-row flex-wrap">
+        <li class="m-5" v-for="trout in notMyBreedableTrouts" :key="trout.key">
           <TroutCard
-            @selected="() => troutSelected(trout.id.toHexString())"
+            @selected="() => troutSelected(trout.key)"
             :trout="trout"
-            :selected="isSelected(trout.id.toHexString())"
+            :selected="isSelected(trout.key)"
           />
         </li>
       </ul>
@@ -217,7 +208,7 @@ input {
 }
 
 h2 {
-  @apply font-bold text-2xl my-2 bg-white bg-opacity-50 inline-block px-3 py-1 rounded-lg;
+  @apply font-bold text-2xl mt-8 mb-4 text-center;
 }
 
 button {

@@ -128,9 +128,6 @@ importers:
       vue:
         specifier: ^3.2.47
         version: 3.2.47
-      vue-content-loader:
-        specifier: ^2.0.1
-        version: 2.0.1(vue@3.2.47)
       vue-router:
         specifier: ^4.1.6
         version: 4.1.6(vue@3.2.47)
@@ -7467,14 +7464,6 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
-
-  /vue-content-loader@2.0.1(vue@3.2.47):
-    resolution: {integrity: sha512-pkof4+q2xmzNEdhqelxtJejeP/vQUJtLle4/v2ueG+HURqM9Q/GIGC8GJ2bVVWeLfTDET51jqimwQdmxJTlu0g==}
-    peerDependencies:
-      vue: ^3
-    dependencies:
-      vue: 3.2.47
-    dev: false
 
   /vue-demi@0.13.11(vue@3.2.47):
     resolution: {integrity: sha512-IR8HoEEGM65YY3ZJYAjMlKygDQn25D5ajNFNoKh9RSDMQtlzCxtfQjdQgv9jjK+m3377SsJXY8ysq8kLCZL25A==}
