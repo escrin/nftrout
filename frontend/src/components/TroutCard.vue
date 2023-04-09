@@ -13,6 +13,7 @@ const props = defineProps<{
   trout: Trout;
   scale?: number;
   selected?: boolean;
+  selectable?: boolean;
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 0.45);
@@ -67,7 +68,7 @@ async function delistTrout() {
   <div class="bg-white border-gray-600 border-4 rounded-md" :class="{ selected: props.selected }">
     <div
       @click="$emit('selected')"
-      class="bg-contain bg-no-repeat bg-cover cursor-pointer rounded-sm"
+      class="bg-contain bg-no-repeat bg-cover enabled:cursor-pointer rounded-sm"
       :style="{
         'background-image': `url('${imageUrl}')`,
         width: `${w}px`,
@@ -83,15 +84,15 @@ async function delistTrout() {
     </div>
     <form
       v-if="props.editable && selected"
-      class="absolute -translate-y-full text-center py-1 bg-amber-50/80 flex justify-around items-center text-gray-700 rounded-b-sm text-sm"
+      class="absolute -translate-y-full text-center py-1 backdrop-blur-sm flex justify-around items-center text-gray-700 rounded-b-sm text-sm"
       @submit.stop="zlistTrout"
       :style="{ width: `${w}px` }"
     >
-      <span>Fee:</span>
+      <span>Stud Fee:</span>
       <span>
         <input
           required
-          :disabled="isListing"
+          :disabled="isListing && props.selectable"
           type="number"
           min="0"
           step="1"
@@ -104,14 +105,17 @@ async function delistTrout() {
       <button
         v-if="!isListing"
         :disabled="
-          isListing || (!props.trout.fee && !fee) || (props.trout.fee && feeBig.eq(props.trout.fee))
+          isListing ||
+          (!props.trout.fee && !fee) ||
+          (props.trout.fee && feeBig.eq(props.trout.fee)) ||
+          !props.selectable
         "
-        class="enabled:bg-rose-500 px-3 py-1 enabled:rounded-md enabled:text-white enabled:cursor-pointer enabled:cursor-pointer"
+        class="enabled:bg-rose-500 disabled:bg-gray-400 px-3 py-1 rounded-md text-white enabled:cursor-pointer"
         :class="{ delist: props.trout.fee && !fee }"
       >
         <span v-if="props.trout.fee && !fee">Delist</span>
         <span v-else-if="props.trout.fee">Relist</span>
-        <span v-else>Breed</span>
+        <span v-else>List</span>
       </button>
       <span v-else-if="!fee">Delisting</span>
       <span v-else>Listing</span>

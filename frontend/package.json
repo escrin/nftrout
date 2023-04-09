@@ -19,7 +19,6 @@
     "@escrin/nftrout-evm": "workspace:^",
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
-    "epic-spinners": "^2.0.0",
     "ethers": "^5.7.2",
     "pinia": "^2.0.33",
     "vue": "^3.2.47",

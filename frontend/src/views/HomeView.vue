@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BigNumber } from 'ethers';
-import { CirclesToRhombusesSpinner } from 'epic-spinners';
 import { computed, reactive, ref } from 'vue';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
@@ -19,17 +18,19 @@ const troutSorter = (a: Trout, b: Trout) => a.id.sub(b.id).toNumber();
 
 const trouts = reactive<Record<string, Trout>>({});
 const myTrouts = computed(() => {
-  const ts = Object.values(trouts).filter((t) => t.owned ?? false);
+  const ts = Object.values(trouts).filter((t) => t.cid && (t.owned ?? false));
   ts.sort(troutSorter);
   return ts;
 });
 const notMyBreedableTrouts = computed(() => {
-  const ts = Object.values(trouts).filter((t) => !t.owned && t.fee !== undefined);
+  const ts = Object.values(trouts).filter((t) => t.cid && !t.owned && t.fee !== undefined);
   ts.sort(troutSorter);
   return ts;
 });
 const loadingMyTrouts = ref(true);
 const loadingBreedable = ref(true);
+
+const pendingTrout = reactive(new Set<string>());
 
 async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> {
   loadingMyTrouts.value = true;
@@ -40,7 +41,7 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
     troutIds.map(async (id) => {
       const key = id.toHexString();
       const cid = await troutCid(nftrout, id, blockTag);
-      if (!cid) return;
+      if (!cid) watchPendingTroutCid(key);
       if (trouts[key] === undefined) {
         trouts[key] = {
           id,
@@ -60,10 +61,19 @@ async function troutCid(
   nftrout: NFTrout,
   troutId: BigNumber,
   blockTag: string | number = 'latest',
-): Promise<string | undefined> {
-  const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
-  if (!uri) return;
-  return uri.replace('ipfs://', '');
+): Promise<string> {
+  try {
+    const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
+    const cid = uri.replace('ipfs://', '');
+    if (!cid) throw new Error('no uri');
+    const res = await fetch(`https://ipfs.escrin.org/ipfs/${cid}/outputs/trout.svg`, {
+      mode: 'cors',
+    });
+    if (!res.ok) throw new Error('request failed');
+    return cid;
+  } catch {
+    return '';
+  }
 }
 
 async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promise<void> {
@@ -83,7 +93,10 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
       studs.map(async ({ tokenId, fee }) => {
         const key = tokenId.toHexString();
         const cid = await troutCid(nftrout, tokenId);
-        if (!cid) return;
+        if (!cid) {
+          watchPendingTroutCid(key);
+          return;
+        }
         if (trouts[key] === undefined) {
           trouts[key] = {
             id: tokenId,
@@ -100,6 +113,21 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
     if (studs.length < batchSize) break;
   }
   loadingBreedable.value = false;
+}
+
+function watchPendingTroutCid(key: string) {
+  const wait = 60 * 1000;
+  pendingTrout.add(key);
+  async function watcher() {
+    const cid = await troutCid(nftrout.value, BigNumber.from(key));
+    if (cid) {
+      trouts[key].cid = cid;
+      pendingTrout.delete(key);
+      return;
+    }
+    setTimeout(watcher, wait);
+  }
+  setTimeout(watcher, wait);
 }
 
 (async () => {
@@ -121,6 +149,7 @@ function isSelected(troutId: string): boolean {
 const isBreeding = ref(false);
 
 async function troutSelected(troutId: string) {
+  if (isBreeding.value) return;
   if (isSelected(troutId)) {
     selectedTrouts.value = selectedTrouts.value.filter((tid) => tid !== troutId);
     return;
@@ -132,7 +161,9 @@ async function troutSelected(troutId: string) {
   const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
   try {
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
+    console.log('breeding', tx.hash);
     const receipt = await tx.wait();
+    console.log('breeding completed');
     let newTokenId = BigNumber.from(0);
     for (const event of receipt.events ?? []) {
       if (event.event !== 'Transfer') continue;
@@ -140,16 +171,12 @@ async function troutSelected(troutId: string) {
       break;
     }
     if (!newTokenId) throw new Error('breeding did not create new token');
-    let cid: string | undefined = undefined;
-    while (!cid) {
-      await new Promise((resolve) => setTimeout(resolve, 3_000));
-      cid = await troutCid(nftrout.value, newTokenId);
-    }
     const key = newTokenId.toHexString();
+    watchPendingTroutCid(key);
     trouts[key] = {
       id: newTokenId,
       key,
-      cid,
+      cid: '',
       owned: true,
     };
   } finally {
@@ -161,8 +188,20 @@ async function troutSelected(troutId: string) {
 
 <template>
   <main class="m-auto md:w-2/3 sm:w-4/5">
-    <h2>Owned Trout 🎣</h2>
-    <div>
+    <section class="text-center">
+      <h2>Owned Trout 🎣</h2>
+      <div class="my-2">
+        <p
+          v-if="pendingTrout.size > 0"
+          class="text-center px-3 py-2 font-medium bg-blue-200 border-2 border-blue-700 inline-block mx-auto rounded-md"
+        >
+          Waiting on {{ pendingTrout.size }} trout to spawn.
+          <span v-if="isBreeding">
+            <br />
+            A pair is currently breeding.
+          </span>
+        </p>
+      </div>
       <ul class="flex flex-row flex-wrap">
         <li class="mx-auto my-5" v-for="trout in myTrouts" :key="trout.key">
           <TroutCard
@@ -170,31 +209,26 @@ async function troutSelected(troutId: string) {
             @feeUpdated="(fee) => (trouts[trout.key].fee = fee)"
             :trout="trout"
             :selected="isSelected(trout.key)"
+            :selectable="!isBreeding"
             :editable="selectedTrouts.length == 1"
           />
         </li>
-        <li
-          v-if="isBreeding"
-          class="m-5 flex flex-col items-center justify-center border-2 border-gray-500 rounded-sm"
-          style="width: 128px; height: 128px"
-        >
-          <CirclesToRhombusesSpinner :circleSize="9" />
-        </li>
       </ul>
-    </div>
+    </section>
 
-    <h2>Trout Market 🎏</h2>
-    <div>
+    <section>
+      <h2>Trout Market 🎏</h2>
       <ul class="flex flex-row flex-wrap">
-        <li class="m-5" v-for="trout in notMyBreedableTrouts" :key="trout.key">
+        <li class="mx-auto m-5" v-for="trout in notMyBreedableTrouts" :key="trout.key">
           <TroutCard
             @selected="() => troutSelected(trout.key)"
             :trout="trout"
             :selected="isSelected(trout.key)"
+            :selectable="!isBreeding"
           />
         </li>
       </ul>
-    </div>
+    </section>
   </main>
 </template>
 
