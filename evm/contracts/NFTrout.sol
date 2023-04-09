@@ -165,6 +165,8 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
 
     function lilypadCancelled(address, uint256 _jobId, string calldata) external onlyLilypadEvents {
         JobId jobId = JobId.wrap(_jobId);
+        TokenId tokenId = tokensByJob[jobId];
+        if (bytes(tokenCids[tokenId]).length > 0) return;
         Receipt memory receipt = receipts[tokensByJob[jobId]];
         _doSpawn(receipt.tokenId, receipt.left, receipt.right);
     }
