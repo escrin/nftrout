@@ -125,7 +125,7 @@ async function delistTrout() {
 
 <style lang="postcss" scoped>
 .selected {
-  @apply border-orange-600;
+  @apply border-rose-500;
 }
 
 fieldset legend {

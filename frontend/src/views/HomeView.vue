@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BigNumber } from 'ethers';
-import { computed, reactive, ref } from 'vue';
+import { BigNumber, ethers } from 'ethers';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
 
@@ -166,12 +166,61 @@ async function troutSelected(troutId: string) {
     isBreeding.value = false;
   }
 }
+
+const earnings = ref(BigNumber.from(0));
+let earningsPollerId: ReturnType<typeof setInterval>;
+
+async function checkEarnings() {
+  const caller = await nftrout.value?.signer?.getAddress();
+  if (caller) {
+    earnings.value = await nftrout.value.callStatic.earnings(caller);
+  }
+  earningsPollerId = setTimeout(checkEarnings, caller ? 30 * 1000 : 1_000);
+}
+
+onMounted(() => (checkEarnings()));
+
+onBeforeUnmount(() => {
+  clearInterval(earningsPollerId);
+});
+
+const isWithdrawing = ref(false);
+
+async function withdrawEarnings() {
+  isWithdrawing.value = true;
+  try {
+    const tx = await nftrout.value.withdraw();
+    console.log('withdrawing', tx);
+    const receipt = await tx.wait();
+    if (receipt.status !== 1) throw new Error('withdraw failed');
+    earnings.value = BigNumber.from(0);
+  } finally {
+    isWithdrawing.value = false;
+  }
+}
 </script>
 
 <template>
   <main class="m-auto md:w-2/3 sm:w-4/5">
     <section class="text-center">
       <h2>Owned Trout 🎣</h2>
+      <div class="my-2">
+        <form
+          v-if="!earnings.isZero()"
+          @submit.prevent="withdrawEarnings"
+          class="text-center px-3 py-2 font-medium border-2 border-yellow-400 inline-block mx-auto rounded-md text-black-600 bg-yellow-100"
+        >
+          You have <span class="text-green-800">{{ ethers.utils.formatEther(earnings) }}</span
+          >&nbsp;FIL
+          <span v-if="isWithdrawing">
+            being withdrawn now.
+          </span>
+          <template v-else>
+            available to
+            <button class="bg-green-500 px-2 py-1 rounded-md text-white" >withdraw</button>
+          </template>
+        </form>
+      </div>
       <div class="my-2">
         <p
           v-if="pendingTrout.size > 0"
@@ -215,21 +264,11 @@ async function troutSelected(troutId: string) {
 </template>
 
 <style scoped lang="postcss">
-form {
-  @apply text-center;
-}
-
 input {
   @apply block my-4 p-1 mx-auto text-3xl text-center border border-gray-400 rounded-md;
 }
 
 h2 {
   @apply font-bold text-2xl mt-8 mb-4 text-center;
-}
-
-button {
-  @apply block mx-auto my-4 p-2 rounded-xl font-medium transition-transform enabled:hover:scale-110 enabled:active:scale-90 disabled:scale-90 disabled:bg-gray-400;
-  width: 7ch;
-  height: 2.5em;
 }
 </style>
