@@ -8,6 +8,7 @@ import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
 import type { Trout } from '../trouts';
+import { troutCid } from '../trouts';
 
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
@@ -57,25 +58,6 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
   loadingMyTrouts.value = false;
 }
 
-async function troutCid(
-  nftrout: NFTrout,
-  troutId: BigNumber,
-  blockTag: string | number = 'latest',
-): Promise<string> {
-  try {
-    const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
-    const cid = uri.replace('ipfs://', '');
-    if (!cid) throw new Error('no uri');
-    const res = await fetch(`https://ipfs.escrin.org/ipfs/${cid}/outputs/trout.svg`, {
-      mode: 'cors',
-    });
-    if (!res.ok) throw new Error('request failed');
-    return cid;
-  } catch {
-    return '';
-  }
-}
-
 async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promise<void> {
   loadingBreedable.value = true;
   const batchSize = 100;
@@ -115,14 +97,14 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
   loadingBreedable.value = false;
 }
 
-function watchPendingTroutCid(key: string) {
-  const wait = 60 * 1000;
-  pendingTrout.add(key);
+function watchPendingTroutCid(troutId: string) {
+  const wait = 3 * 60 * 1000;
+  pendingTrout.add(troutId);
   async function watcher() {
-    const cid = await troutCid(nftrout.value, BigNumber.from(key));
+    const cid = await troutCid(nftrout.value, BigNumber.from(troutId));
     if (cid) {
-      trouts[key].cid = cid;
-      pendingTrout.delete(key);
+      trouts[troutId].cid = cid;
+      pendingTrout.delete(troutId);
       return;
     }
     setTimeout(watcher, wait);
@@ -158,8 +140,8 @@ async function troutSelected(troutId: string) {
   if (selectedTrouts.value.length < 2) return;
   isBreeding.value = true;
   const [leftId, rightId] = selectedTrouts.value;
-  const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
   try {
+    const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
     console.log('breeding', tx.hash);
     const receipt = await tx.wait();
@@ -195,7 +177,7 @@ async function troutSelected(troutId: string) {
           v-if="pendingTrout.size > 0"
           class="text-center px-3 py-2 font-medium bg-blue-200 border-2 border-blue-700 inline-block mx-auto rounded-md"
         >
-          Waiting on {{ pendingTrout.size }} trout to spawn.
+          You have {{ pendingTrout.size }} trout currently incubating.
           <span v-if="isBreeding">
             <br />
             A pair is currently breeding.

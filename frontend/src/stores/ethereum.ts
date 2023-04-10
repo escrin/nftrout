@@ -74,6 +74,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
       return;
     }
     eth.on('accountsChanged', (accounts) => {
+      window.location.reload();
       setSigner(accounts[0], network.value);
     });
     eth.on('chainChanged', (chainId) => {
@@ -90,6 +91,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: toBeHex(network) }],
     });
+    window.location.reload();
   }
 
   return { signer, provider, address, network, connect, switchNetwork };
