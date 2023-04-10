@@ -1,6 +1,8 @@
 import { randomInt } from 'crypto';
 import { promises as fs } from 'fs';
 
+import { BigNumber } from 'ethers';
+
 // @ts-expect-error missing declaration
 import { main as fishdraw, draw_svg as toSvg } from './fishdraw';
 import { decrypt, encrypt } from './esm';
@@ -43,7 +45,8 @@ async function nftrout<S extends string | null>(
   tokenId: string,
   outputsDir: string,
 ) {
-  const fishSvg = toSvg(fishdraw(seed));
+  const isGenesisTrout = BigNumber.from(tokenId).lte(150);
+  const fishSvg = toSvg(fishdraw(seed), isGenesisTrout ? 'snow' : undefined);
 
   const troutDescriptor = {
     left: leftId,

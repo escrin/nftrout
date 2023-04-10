@@ -779,9 +779,9 @@ function poissondisk(W, H, r, samples) {
 }
 
 
-function draw_svg(polylines){
+function draw_svg(polylines,fillcolor='floralwhite'){
   let o = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320">`
-  o += `<rect x="0" y="0" width="520" height="320" fill="floralwhite"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/><path stroke="black" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="`
+  o += `<rect x="0" y="0" width="520" height="320" fill="${fillcolor}"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/><path stroke="black" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="`
   for (let i = 0; i < polylines.length; i++){
     o += '\nM ';
     for (let j = 0; j < polylines[i].length; j++){
