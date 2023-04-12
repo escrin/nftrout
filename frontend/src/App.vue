@@ -1,21 +1,7 @@
 <script setup lang="ts">
-import { watch } from 'vue';
 import { RouterView } from 'vue-router';
 
 import AccountPicker from './components/AccountPicker.vue';
-import { Network, useEthereumStore } from './stores/ethereum';
-
-const eth = useEthereumStore();
-
-watch(eth, async (eth) => {
-  if (
-    eth.network !== Network.Local &&
-    eth.network !== Network.Hardhat &&
-    eth.network !== Network.Hyperspace &&
-    eth.network !== Network.Filecoin
-  )
-    await eth.switchNetwork(Network.Hyperspace);
-});
 </script>
 
 <template>
