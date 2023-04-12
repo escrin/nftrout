@@ -9,9 +9,7 @@ const BrowserProvider = ethers.providers.Web3Provider;
 
 export enum Network {
   Unknown = 0,
-  EmeraldTestnet = 0xa515,
-  EmeraldMainnet = 0xa516,
-  SapphireTestnet = 0x5aff,
+  // SapphireTestnet = 0x5aff,
   SapphireMainnet = 0x5afe,
   Hyperspace = 3141,
   Filecoin = 314,
@@ -34,9 +32,7 @@ function networkFromChainId(chainId: number | string): Network {
 export function networkName(network?: Network): string {
   if (network === Network.Local) return 'Local Network';
   if (network === Network.Hardhat) return 'Hardhat Network';
-  if (network === Network.EmeraldTestnet) return 'Emerald Testnet';
-  if (network === Network.EmeraldMainnet) return 'Emerald Mainnet';
-  if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
+  // if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
   if (network === Network.SapphireMainnet) return 'Sapphire Mainnet';
   if (network === Network.Hyperspace) return 'FIL Hyperspace';
   if (network === Network.Filecoin) return 'FIL Mainnet';
