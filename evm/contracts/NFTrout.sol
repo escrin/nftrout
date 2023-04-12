@@ -36,6 +36,8 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     event Delisted(TokenId indexed tokenId);
     /// Two trouts have bred to produce a new trout.
     event Spawned(TokenId indexed left, TokenId indexed right, JobId job, TokenId child);
+    /// The trout has finished incubating.
+    event Incubated(TokenId indexed tokenId);
     event FeesChanged(uint256 mintFee, uint256 matchmakingBps);
 
     struct Receipt {
@@ -161,6 +163,7 @@ contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
         TokenId tokenId = tokensByJob[jobId];
         if (!_exists(tokenId)) return;
         tokenCids[tokenId] = _result;
+        emit Incubated(tokenId);
     }
 
     function lilypadCancelled(address, uint256 _jobId, string calldata) external onlyLilypadEvents {
