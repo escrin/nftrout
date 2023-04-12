@@ -1,4 +1,5 @@
 import { HardhatUserConfig, task } from 'hardhat/config';
+import '@oasisprotocol/sapphire-hardhat';
 import '@nomicfoundation/hardhat-toolbox';
 import 'hardhat-watcher';
 import 'hardhat-deploy';
