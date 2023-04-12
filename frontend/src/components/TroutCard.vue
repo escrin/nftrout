@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BigNumber, ethers } from 'ethers';
-import { computed, defineProps, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import type { Trout } from '../trouts';
