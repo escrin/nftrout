@@ -1,3 +1,4 @@
+import * as sapphire from '@oasisprotocol/sapphire-paratime';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 
@@ -21,4 +22,10 @@ export function useNFTrout(): ComputedRef<NFTrout | undefined> {
     }
     return NFTroutFactory.connect(addr, eth.signer ?? eth.provider);
   });
+}
+
+export function sapphireWrap(nftrout: NFTrout): NFTrout {
+  const eth = useEthereumStore();
+  if (eth.network !== Network.SapphireMainnet) return nftrout;
+  return nftrout.connect(sapphire.wrap(eth.signer as any ?? eth.provider));
 }

@@ -3,6 +3,7 @@
   "proseWrap": "always",
   "singleQuote": true,
   "trailingComma": "all",
+  "htmlWhitespaceSensitivity": "strict",
   "overrides": [
     {
       "files": "*.sol",

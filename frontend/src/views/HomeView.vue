@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { NFTrout } from '@escrin/nftrout-evm';
 
 import TroutCard from '../components/TroutCard.vue';
-import { useNFTrout } from '../contracts';
+import { sapphireWrap, useNFTrout } from '../contracts';
 import { Network, useEthereumStore } from '../stores/ethereum';
 import type { Trout } from '../trouts';
 import { troutCid } from '../trouts';
@@ -137,7 +137,7 @@ async function troutSelected(troutId: string) {
   const [leftId, rightId] = selectedTrouts.value;
   try {
     if (!nftrout.value) return;
-    const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
+    const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(leftId, rightId);
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
     console.log('breeding', tx.hash);
     const receipt = await tx.wait();
@@ -207,10 +207,71 @@ async function withdrawEarnings() {
     isWithdrawing.value = false;
   }
 }
+
+const hidingIntro = ref<boolean>(!!window.localStorage.hideIntro ?? false);
+
+function hideIntro() {
+  hidingIntro.value = true;
+  window.localStorage.hideIntro = true;
+}
 </script>
 
 <template>
   <main class="m-auto md:w-2/3 sm:w-4/5">
+    <section class="text-center" v-if="!hidingIntro">
+      <h2>Introduction 🏞️</h2>
+      <p>
+        NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because trout
+        genes are secret and known only to the game itself. Since nobody knows the genes, each trout
+        is unpredictable and cannot be forged, just like a real trout.
+      </p>
+      <p>
+        NFTrout is a tech demo of Escrin, which you can learn more by reading
+        <a href="https://escrin.org" target="_blank">the blog post</a>. You can also involved in our
+        mission to bring secure computing to all by joining the
+        <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord community</a>.
+      </p>
+      <h3>How to Play</h3>
+      <ol class="max-w-prose list-decimal text-left m-auto list-inside">
+        <li
+          ><span
+            >Connect your browser wallet to
+            <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> or
+            <a href="https://chainlist.org/chain/314" target="_blank">Filecoin</a> and ensure that
+            it is funded.
+          </span></li
+        >
+        <li>Clicking any two trout will trigger a breeding transaction to pop up. Sign it.</li>
+        <li
+          >Sign the tx to begin incubating the trout. You are now part of the NFTrout community!</li
+        >
+        <li
+          >The new trout will incubate for a while. Longer incubation is associated with rarity.</li
+        >
+        <li>New trout appear under "Owned Trout". Owned trout can be listed for breeding.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul class="max-w-prose list-disc text-left m-auto list-inside">
+        <li>Long-term NFTrout holders get special perks within the community.</li>
+        <li>NFTrout does not collect any of your personal data.</li>
+        <li>
+          <span
+            >This service is provided under the terms of the
+            <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
+            <a
+              href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
+              target="_blank"
+              >Here's the code.</a
+            >
+          </span>
+        </li>
+        <li>If the page is not working correctly, just refresh it. Your trout are safe.</li>
+      </ul>
+      <button @click="hideIntro" class="bg-blue-900 px-2 py-1 my-6 rounded-md text-white mx-auto">
+        Hide Introduction
+      </button>
+    </section>
+
     <section class="text-center">
       <h2>Owned Trout 🎣</h2>
       <div class="my-2">
@@ -277,5 +338,17 @@ input {
 
 h2 {
   @apply font-bold text-2xl mt-8 mb-4 text-center;
+}
+
+h3 {
+  @apply font-medium text-xl my-4 text-center;
+}
+
+p {
+  @apply m-auto text-left max-w-prose my-4;
+}
+
+a {
+  @apply underline;
 }
 </style>
