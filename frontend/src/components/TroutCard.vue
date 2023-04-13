@@ -47,6 +47,7 @@ async function zlistTrout(e: Event) {
 }
 
 async function listTrout() {
+  if (!nftrout.value) return;
   if (!fee.value) throw new Error('cannot list trout without fee');
   const tx = await nftrout.value.list(props.trout.id, feeBig.value);
   console.log('listing trout', tx.hash);
@@ -56,6 +57,7 @@ async function listTrout() {
 }
 
 async function delistTrout() {
+  if (!nftrout.value) return;
   const tx = await nftrout.value.delist(props.trout.id);
   console.log('delisting trout', tx.hash);
   const receipt = await tx.wait();

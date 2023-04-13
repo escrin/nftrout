@@ -3,6 +3,7 @@ import type { BigNumber } from 'ethers';
 import type { NFTrout } from '@escrin/nftrout-evm';
 
 export interface Trout {
+  chainId: number;
   id: BigNumber;
   key: string;
   cid: string;

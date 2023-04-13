@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BigNumber, ethers } from 'ethers';
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
 
@@ -35,9 +35,9 @@ const pendingTrout = reactive(new Set<string>());
 
 async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> {
   loadingMyTrouts.value = true;
-  await eth.connect();
   if (!eth.address) return;
   const troutIds = await nftrout.callStatic.tokensOfOwner(eth.address!, { blockTag });
+  const chainId = eth.network;
   await Promise.all(
     troutIds.map(async (id) => {
       const key = id.toHexString();
@@ -45,6 +45,7 @@ async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> 
       if (!cid) watchPendingTroutCid(key);
       if (trouts[key] === undefined) {
         trouts[key] = {
+          chainId,
           id,
           key,
           owned: true,
@@ -81,6 +82,7 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
         }
         if (trouts[key] === undefined) {
           trouts[key] = {
+            chainId: eth.network,
             id: tokenId,
             key,
             fee,
@@ -101,6 +103,7 @@ function watchPendingTroutCid(troutId: string) {
   const wait = 3 * 60 * 1000;
   pendingTrout.add(troutId);
   async function watcher() {
+    if (!nftrout.value) return;
     const cid = await troutCid(nftrout.value, BigNumber.from(troutId));
     if (cid) {
       trouts[troutId].cid = cid;
@@ -111,14 +114,6 @@ function watchPendingTroutCid(troutId: string) {
   }
   setTimeout(watcher, wait);
 }
-
-(async () => {
-  const { number: blockTag } = await eth.provider.getBlock('latest');
-  await Promise.all([
-    fetchMyTrouts(nftrout.value!, blockTag),
-    fetchBreedableTrouts(nftrout.value!, blockTag),
-  ]);
-})();
 
 const selectedTrouts = ref<string[]>([]);
 function isSelected(troutId: string): boolean {
@@ -141,6 +136,7 @@ async function troutSelected(troutId: string) {
   isBreeding.value = true;
   const [leftId, rightId] = selectedTrouts.value;
   try {
+    if (!nftrout.value) return;
     const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
     console.log('breeding', tx.hash);
@@ -157,6 +153,7 @@ async function troutSelected(troutId: string) {
     watchPendingTroutCid(key);
     trouts[key] = {
       id: newTokenId,
+      chainId: eth.network,
       key,
       cid: '',
       owned: true,
@@ -171,6 +168,7 @@ const earnings = ref(BigNumber.from(0));
 let earningsPollerId: ReturnType<typeof setInterval>;
 
 async function checkEarnings() {
+  if (!nftrout.value) return;
   const caller = await nftrout.value?.signer?.getAddress();
   if (caller) {
     earnings.value = await nftrout.value.callStatic.earnings(caller);
@@ -178,7 +176,16 @@ async function checkEarnings() {
   earningsPollerId = setTimeout(checkEarnings, caller ? 30 * 1000 : 1_000);
 }
 
-onMounted(() => (checkEarnings()));
+watch(eth, async (eth) => {
+  const { number: blockTag } = await eth.provider.getBlock('latest');
+  await Promise.all([
+    fetchBreedableTrouts(nftrout.value!, blockTag),
+    fetchMyTrouts(nftrout.value!, blockTag),
+    checkEarnings(),
+  ]);
+});
+
+onMounted(() => eth.connect());
 
 onBeforeUnmount(() => {
   clearInterval(earningsPollerId);
@@ -187,6 +194,7 @@ onBeforeUnmount(() => {
 const isWithdrawing = ref(false);
 
 async function withdrawEarnings() {
+  if (!nftrout.value) return;
   isWithdrawing.value = true;
   try {
     const tx = await nftrout.value.withdraw();
@@ -212,12 +220,10 @@ async function withdrawEarnings() {
         >
           You have <span class="text-green-800">{{ ethers.utils.formatEther(earnings) }}</span
           >&nbsp;FIL
-          <span v-if="isWithdrawing">
-            being withdrawn now.
-          </span>
+          <span v-if="isWithdrawing"> being withdrawn now. </span>
           <template v-else>
             available to
-            <button class="bg-green-500 px-2 py-1 rounded-md text-white" >withdraw</button>
+            <button class="bg-green-500 px-2 py-1 rounded-md text-white">withdraw</button>
           </template>
         </form>
       </div>
