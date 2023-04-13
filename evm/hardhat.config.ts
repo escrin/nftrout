@@ -14,14 +14,15 @@ const accounts = process.env.PRIVATE_KEY
   : [];
 
 task('accounts').setAction(async (_, hre) => {
-  const signers = await hre.ethers.getSigners();
-  const balances = await Promise.all(signers.map((s) => hre.ethers.provider.getBalance(s.address)));
+  const { ethers } = hre;
+  const signers = await ethers.getSigners();
+  const balances = await Promise.all(signers.map((s) => ethers.provider.getBalance(s.address)));
   for (let i = 0; i < signers.length; i++) {
     let num: string | number;
     try {
       num = balances[i].toNumber();
     } catch {
-      num = balances[i].toString();
+      num = ethers.utils.formatEther(balances[i]);
     }
     console.log(signers[i].address, num);
   }
@@ -114,6 +115,22 @@ task('list-breedable').setAction(async (_, hre) => {
   }
 });
 
+task('set-fees')
+  .addOptionalParam('mintFee')
+  .addOptionalParam('matchmakingBps')
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const [currentMintFee, currentMatchBps] = await Promise.all([
+      nftrout.callStatic.mintFee(),
+      nftrout.callStatic.matchmakingBps(),
+    ]);
+    const newMintFee = args.mintFee ? ethers.utils.parseEther(args.mintFee) : currentMintFee;
+    const newMatchBps = ethers.BigNumber.from(args.matchmakingBps ?? currentMatchBps);
+    const tx = await nftrout.setFees(newMintFee, newMatchBps);
+    await tx.wait();
+  });
+
 task('coverage', async (_args, hre, runSuper) => {
   hre.config.solidity.compilers.forEach((sc) => (sc.settings.viaIR = false));
   await runSuper();
@@ -152,7 +169,7 @@ const config: HardhatUserConfig = {
       url: 'https://rpc.ankr.com/filecoin',
       chainId: 314,
       accounts,
-    }
+    },
   },
   watcher: {
     compile: {
