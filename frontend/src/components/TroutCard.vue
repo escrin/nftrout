@@ -115,15 +115,15 @@ async function delistTrout() {
           (props.trout.fee && feeBig.eq(props.trout.fee)) ||
           !props.selectable
         "
-        class="enabled:bg-rose-500 disabled:bg-gray-400 px-3 py-1 rounded-md text-white enabled:cursor-pointer"
+        class="enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
         :class="{ delist: props.trout.fee && !fee }"
       >
-        <span v-if="props.trout.fee && !fee">Delist</span>
-        <span v-else-if="props.trout.fee">Relist</span>
-        <span v-else>List</span>
+        <span v-if="props.trout.fee && !fee">Recall</span>
+        <span v-else-if="props.trout.fee">Update</span>
+        <span v-else>Farm</span>
       </button>
-      <span v-else-if="!fee">Delisting</span>
-      <span v-else>Listing</span>
+      <span v-else-if="!fee">Recalling</span>
+      <span v-else>Farming</span>
     </form>
   </div>
 </template>

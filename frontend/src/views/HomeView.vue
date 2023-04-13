@@ -220,19 +220,20 @@ function hideIntro() {
   <main class="m-auto md:w-2/3 sm:w-4/5">
     <section class="text-center" v-if="!hidingIntro">
       <h2>Introduction 🏞️</h2>
-      <p>
+      <p class="padded">
         NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because trout
         genes are secret and known only to the game itself. Since nobody knows the genes, each trout
-        is unpredictable and cannot be forged, just like a real trout.
+        is unpredictable and cannot be spontaneously generated, just like a real trout.
       </p>
-      <p>
-        NFTrout is a tech demo of Escrin, which you can learn more by reading
-        <a href="https://escrin.org" target="_blank">the blog post</a>. You can also involved in our
-        mission to bring secure computing to all by joining the
-        <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord community</a>.
+      <p class="padded">
+        NFTrout is a tech demo of Escrin, which is described in more detail in
+        <a href="https://escrin.org" target="_blank">this blog post</a>. You can also connect with
+        our mission of making secure computing accessible to all on
+        <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
+        <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
       </p>
       <h3>How to Play</h3>
-      <ol class="max-w-prose list-decimal text-left m-auto list-inside">
+      <ol class="max-w-prose list-decimal text-left m-auto list-inside padded">
         <li
           ><span
             >Connect your browser wallet to
@@ -241,17 +242,16 @@ function hideIntro() {
             it is funded.
           </span></li
         >
-        <li>Clicking any two trout will trigger a breeding transaction to pop up. Sign it.</li>
+        <li>Click any two trout to initiate a breeding transaction.</li>
+        <li>Send the tx to begin incubating your trout and join the TROUT community.</li>
         <li
-          >Sign the tx to begin incubating the trout. You are now part of the NFTrout community!</li
+          >Your new trout will incubate for a while. Longer incubation is associated with
+          rarity.</li
         >
-        <li
-          >The new trout will incubate for a while. Longer incubation is associated with rarity.</li
-        >
-        <li>New trout appear under "Owned Trout". Owned trout can be listed for breeding.</li>
+        <li>The baby trout appear under "Owned Trout". Owned trout can be farmed for breeding.</li>
       </ol>
       <h3>Tips</h3>
-      <ul class="max-w-prose list-disc text-left m-auto list-inside">
+      <ul class="max-w-prose list-disc text-left m-auto list-inside padded">
         <li>Long-term NFTrout holders get special perks within the community.</li>
         <li>NFTrout does not collect any of your personal data.</li>
         <li>
@@ -261,11 +261,16 @@ function hideIntro() {
             <a
               href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
               target="_blank"
-              >Here's the code.</a
+              >Here's</a
             >
+            the
+            <a
+              href="https://github.com/escrin/escrin/blob/main/evm/contracts/enclave-identity"
+              target="_blank"
+              >code</a
+            >.
           </span>
         </li>
-        <li>If the page is not working correctly, just refresh it. Your trout are safe.</li>
       </ul>
       <button @click="hideIntro" class="bg-blue-900 px-2 py-1 my-6 rounded-md text-white mx-auto">
         Hide Introduction
@@ -316,7 +321,7 @@ function hideIntro() {
     </section>
 
     <section>
-      <h2>Trout Market 🎏</h2>
+      <h2>Trout Farm 🎏</h2>
       <ul class="flex flex-row flex-wrap">
         <li class="mx-auto m-5" v-for="trout in notMyBreedableTrouts" :key="trout.key">
           <TroutCard
@@ -350,5 +355,9 @@ p {
 
 a {
   @apply underline;
+}
+
+.padded {
+  @apply px-2 md:px-0;
 }
 </style>
