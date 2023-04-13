@@ -49,10 +49,9 @@ export class ESM {
     console.log(opts);
     this.provider = new ethers.providers.JsonRpcProvider(opts.web3GatewayUrl);
     this.gasWallet = new ethers.Wallet(gasKey).connect(this.provider);
-    this.localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(this.provider));
-    this.attok = AttestationTokenFactory.connect(opts.attokAddr, this.localWallet).connect(
-      this.gasWallet, // connect to the local wallet first to propagate sapphire wrapping
-    );
+    // this.localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(this.provider));
+    this.localWallet = sapphire.wrap(this.gasWallet);
+    this.attok = AttestationTokenFactory.connect(opts.attokAddr, this.gasWallet);
     this.lockbox = LockboxFactory.connect(opts.lockboxAddr, this.localWallet);
   }
 
@@ -68,7 +67,7 @@ export class ESM {
       tokenExpiry: oneHourFromNow,
     };
     const quote = await mockQuote(registration);
-    const tcbId = await sendAttestation(this.attok, quote, registration);
+    const tcbId = await sendAttestation(this.attok.connect(this.localWallet), quote, registration);
     return getOrCreateKey(this.lockbox, this.gasWallet, tcbId);
   });
 
@@ -117,6 +116,9 @@ async function sendAttestation(
   quote: Uint8Array,
   reg: Registration,
 ): Promise<string> {
+  const expectedTcbId = await attok.callStatic.getTcbId(quote);
+  console.log('expected tcb:', expectedTcbId);
+  if (await attok.callStatic.isAttested(reg.registrant, expectedTcbId)) return expectedTcbId;
   const tx = await attok.attest(quote, reg, { gasLimit: 10_000_000 });
   console.log('attesting:', tx.hash);
   const receipt = await tx.wait();
