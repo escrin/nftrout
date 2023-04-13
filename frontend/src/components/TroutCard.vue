@@ -4,6 +4,9 @@ import { computed, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import type { Trout } from '../trouts';
+import { Network, useEthereumStore } from '../stores/ethereum';
+
+const eth = useEthereumStore();
 
 const nftrout = useNFTrout();
 
@@ -22,8 +25,15 @@ const imageUrl = computed(
 );
 const w = computed(() => 500 * scale.value + 2);
 
+const currency = computed(() => {
+  if (eth.network === Network.Filecoin || eth.network === Network.Hyperspace) return 'FIL';
+  if (eth.network === Network.Local || eth.network === Network.Hardhat) return 'TEST';
+  if (eth.network === Network.SapphireMainnet) return 'ROSE';
+  return '三'
+})
+
 function formatFee(fee: BigNumber): string {
-  return fee.isZero() ? '0 FIL' : `${ethers.utils.formatEther(fee)} FIL`;
+  return fee.isZero() ? '0' : ethers.utils.formatEther(fee);
 }
 
 const fee = ref<number | undefined>((props.trout.fee?.div(1e15).toNumber() ?? 0) / 1e3);
@@ -78,7 +88,7 @@ async function delistTrout() {
       }"
     >
       <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
-        <span>{{ formatFee(props.trout.fee) }}</span>
+        <span>{{ formatFee(props.trout.fee) }} {{ currency }}</span>
       </p>
       <p class="fishhead float-left">
         <span class="pl-1">#{{ props.trout.id }}</span>
@@ -102,7 +112,7 @@ async function delistTrout() {
           class="w-12 border"
           @click.stop="() => {}"
         />
-        FIL
+        {{ currency }}
       </span>
       <button
         v-if="!isListing"
