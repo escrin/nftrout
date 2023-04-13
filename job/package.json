@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' 'test/**/*.ts' 'contracts/**/*.sol'",
+    "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' 'src/**/*.ts'",
     "lint": "npm-run-all lint:**",
-    "format:prettier": "prettier --write --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' 'test/**/*.ts' 'contracts/**/*.sol'",
+    "format:prettier": "prettier --write --plugin-search-dir=. --cache '*.json' 'src/**/*.ts'",
     "format": "npm-run-all format:**",
     "build:typecheck": "tsc -b",
     "build:bundle": "esbuild src/nftrout.ts --bundle --outfile=bin/nftrout --platform=node --target=node18 --minify",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@escrin/evm": "^0.1.0-alpha.1",
-    "@oasisprotocol/sapphire-paratime": "./oasisprotocol-sapphire-paratime-1.0.15.tgz",
+    "@oasisprotocol/sapphire-paratime": "^1.0.15",
     "deoxysii": "^0.0.2",
     "ethers": "^5.7.2",
     "keccak": "^3.0.3"
@@ -18,7 +18,6 @@
   "devDependencies": {
     "@types/keccak": "^3.0.1",
     "@types/node": "^18.15.11",
-    "dotenv": "^16.0.3",
     "esbuild": "^0.17.14",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.0.2"

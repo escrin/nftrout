@@ -3,7 +3,6 @@ import { randomBytes } from 'crypto';
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
 // @ts-expect-error missing declaration
 import deoxysii from 'deoxysii';
-import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import createKeccakHash from 'keccak';
 
@@ -13,55 +12,89 @@ import { decode, encode, memoizeAsync } from './utils';
 
 type Registration = AttestationToken.RegistrationStruct;
 
+type InitOpts = {
+  web3GatewayUrl: string;
+  attokAddr: string;
+  lockboxAddr: string;
+};
+
+export type Box = {
+  keyId: number;
+  nonce: string;
+  data: string; // hex
+};
+
 export const LATEST_KEY_ID = 1;
 
-dotenv.config();
-
-const { ATTOK_ADDR, WEB3_GW_URL, LOCKBOX_ADDR } = process.env;
-if (!ATTOK_ADDR) throw new Error('Attestation token addr not provided (missing ATTOK_ADDR)');
-if (!LOCKBOX_ADDR) throw new Error('Lockbox addr not provided (missing LOCKBOX_ADDR)');
-if (!WEB3_GW_URL) throw new Error('Web3 gateway URL not provided (missing WEB3_GW_URL)');
-
-const getCipher = memoizeAsync(async (keyId: number) => {
-  let key;
-  if (keyId === 0) key = Buffer.alloc(deoxysii.KeySize, 42);
-  else if (keyId === 1) key = await fetchKeySapphire();
-  else throw new Error(`unknown key: ${keyId}`);
-  return new deoxysii.AEAD(key);
-});
-
-const init = memoizeAsync(async () => {
-  let [_node, _thisfile, gasKey] = process.argv;
-  const provider = new ethers.providers.JsonRpcProvider(WEB3_GW_URL);
-  const gasWallet = new ethers.Wallet(gasKey).connect(provider);
-  const localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(provider));
-  const attok = AttestationTokenFactory.connect(ATTOK_ADDR, localWallet).connect(gasWallet);
-  const lockbox = LockboxFactory.connect(LOCKBOX_ADDR, localWallet);
-
-  return {
-    identity: localWallet.address,
-    attok,
-    lockbox,
-    gasWallet,
-    provider,
+export class ESM {
+  public static INIT_SAPPHIRE: InitOpts = {
+    web3GatewayUrl: 'https://sapphire.oasis.io',
+    attokAddr: '0x127c49aE10e3c18be057106F4d16946E3Ae43975',
+    lockboxAddr: '0x52892d19DeFDDE7C25504212B3bA8E99D8e0552e',
   };
-});
 
-async function fetchKeySapphire(): Promise<Uint8Array> {
-  const { identity: registrant, attok, lockbox, gasWallet, provider } = await init();
-  const oneHourFromNow = Math.floor(Date.now() / 1000) + 60 * 60;
-  let currentBlock = await provider.getBlock('latest');
-  const prevBlock = await provider.getBlock(currentBlock.number - 1);
-  const registration: Registration = {
-    baseBlockHash: prevBlock.hash,
-    baseBlockNumber: prevBlock.number,
-    expiry: oneHourFromNow,
-    registrant,
-    tokenExpiry: oneHourFromNow,
+  public static INIT_SAPPHIRE_TESTNET: InitOpts = {
+    web3GatewayUrl: 'https://testnet.sapphire.oasis.dev',
+    attokAddr: '0x3763c7364F3ba5DFc3DeBf428eB9ed49e5058bb5',
+    lockboxAddr: '0x20F3FEa7798deAd509ffA7B222101682E61878D8',
   };
-  const quote = await mockQuote(registration);
-  const tcbId = await sendAttestation(attok, quote, registration);
-  return getOrCreateKey(lockbox, gasWallet, tcbId);
+
+  private provider: ethers.providers.Provider;
+  private attok: AttestationToken;
+  private lockbox: Lockbox;
+  private gasWallet: ethers.Wallet;
+  private localWallet: ethers.Wallet;
+
+  constructor(public readonly opts: InitOpts, gasKey: string) {
+    console.log(opts);
+    this.provider = new ethers.providers.JsonRpcProvider(opts.web3GatewayUrl);
+    this.gasWallet = new ethers.Wallet(gasKey).connect(this.provider);
+    this.localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(this.provider));
+    this.attok = AttestationTokenFactory.connect(opts.attokAddr, this.localWallet).connect(
+      this.gasWallet, // connect to the local wallet first to propagate sapphire wrapping
+    );
+    this.lockbox = LockboxFactory.connect(opts.lockboxAddr, this.localWallet);
+  }
+
+  private fetchKeySapphire = memoizeAsync(async () => {
+    const oneHourFromNow = Math.floor(Date.now() / 1000) + 60 * 60;
+    let currentBlock = await this.provider.getBlock('latest');
+    const prevBlock = await this.provider.getBlock(currentBlock.number - 1);
+    const registration: Registration = {
+      baseBlockHash: prevBlock.hash,
+      baseBlockNumber: prevBlock.number,
+      expiry: oneHourFromNow,
+      registrant: this.localWallet.address,
+      tokenExpiry: oneHourFromNow,
+    };
+    const quote = await mockQuote(registration);
+    const tcbId = await sendAttestation(this.attok, quote, registration);
+    return getOrCreateKey(this.lockbox, this.gasWallet, tcbId);
+  });
+
+  private getCipher = memoizeAsync(async (keyId: number) => {
+    let key;
+    if (keyId === 0) key = Buffer.alloc(deoxysii.KeySize, 42);
+    else if (keyId === 1) key = await this.fetchKeySapphire();
+    else throw new Error(`unknown key: ${keyId}`);
+    return new deoxysii.AEAD(key);
+  });
+
+  public async encrypt(data: Uint8Array): Promise<Box> {
+    const keyId = LATEST_KEY_ID;
+    const cipher = await this.getCipher(keyId);
+    const nonce = randomBytes(deoxysii.NonceSize);
+    return {
+      keyId,
+      nonce: encode(nonce),
+      data: encode(cipher.encrypt(nonce, data)),
+    };
+  }
+
+  public async decrypt({ keyId, nonce, data }: Box): Promise<Uint8Array> {
+    const cipher = await this.getCipher(keyId);
+    return cipher.decrypt(decode(nonce), decode(data));
+  }
 }
 
 async function mockQuote(registration: Registration): Promise<Uint8Array> {
@@ -126,26 +159,4 @@ async function getOrCreateKey(
   await waitForConfirmation(lockbox.provider, receipt);
   key = await lockbox.callStatic.getKey(tcbId);
   return ethers.utils.arrayify(key);
-}
-
-export type Box = {
-  keyId: number;
-  nonce: string;
-  data: string; // hex
-};
-
-export async function encrypt(data: Uint8Array): Promise<Box> {
-  const keyId = LATEST_KEY_ID;
-  const cipher = await getCipher(keyId);
-  const nonce = randomBytes(deoxysii.NonceSize);
-  return {
-    keyId,
-    nonce: encode(nonce),
-    data: encode(cipher.encrypt(nonce, data)),
-  };
-}
-
-export async function decrypt({ keyId, nonce, data }: Box): Promise<Uint8Array> {
-  const cipher = await getCipher(keyId);
-  return cipher.decrypt(decode(nonce), decode(data));
 }
