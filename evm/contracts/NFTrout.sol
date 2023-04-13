@@ -17,15 +17,15 @@ type TokenId is uint256;
 /// The caller must be lilypad.
 error NotLilypad();
 /// You are not the owner of the trout;
-error NotOwner(); // 30cd7471
+error NotOwner(); // 30cd7471 MM10cQ==
 /// The token does not exist;
 error NoSuchToken(TokenId id);
 /// One of the trout you tried to breed is neither owned by you nor listed for public breeding.
-error NotListed();
+error NotListed(); // 665c1c57 ZlwcVw==
 /// Not enough value was sent.
-error PaymentRequired(uint256 amount); // 8c4fcd93
+error PaymentRequired(uint256 amount); // 8c4fcd93 jE/Nkw=b
 /// A trout cannot breed with itself.
-error CannotSelfBreed(); // 56938583
+error CannotSelfBreed(); // 56938583 VpOFgw==
 
 contract NFTrout is ERC721A, ERC721AQueryable, LilypadCallerInterface, Ownable {
     using EnumerableMap for EnumerableMap.UintToUintMap;
