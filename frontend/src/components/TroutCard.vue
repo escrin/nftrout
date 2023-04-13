@@ -25,13 +25,6 @@ const imageUrl = computed(
 );
 const w = computed(() => 500 * scale.value + 2);
 
-const currency = computed(() => {
-  if (eth.network === Network.Filecoin || eth.network === Network.Hyperspace) return 'FIL';
-  if (eth.network === Network.Local || eth.network === Network.Hardhat) return 'TEST';
-  if (eth.network === Network.SapphireMainnet) return 'ROSE';
-  return '三'
-})
-
 function formatFee(fee: BigNumber): string {
   return fee.isZero() ? '0' : ethers.utils.formatEther(fee);
 }
@@ -59,7 +52,7 @@ async function zlistTrout(e: Event) {
 async function listTrout() {
   if (!nftrout.value) return;
   if (!fee.value) throw new Error('cannot list trout without fee');
-  const tx = await nftrout.value.list(props.trout.id, feeBig.value);
+  const tx = await nftrout.value.list(props.trout.id, feeBig.value, eth.txOpts);
   console.log('listing trout', tx.hash);
   const receipt = await tx.wait();
   if (receipt.status !== 1) throw new Error('tx failed');
@@ -68,7 +61,7 @@ async function listTrout() {
 
 async function delistTrout() {
   if (!nftrout.value) return;
-  const tx = await nftrout.value.delist(props.trout.id);
+  const tx = await nftrout.value.delist(props.trout.id, eth.txOpts);
   console.log('delisting trout', tx.hash);
   const receipt = await tx.wait();
   if (receipt.status !== 1) throw new Error('tx failed');
@@ -88,7 +81,7 @@ async function delistTrout() {
       }"
     >
       <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
-        <span>{{ formatFee(props.trout.fee) }} {{ currency }}</span>
+        <span>{{ formatFee(props.trout.fee) }} {{ eth.currency }}</span>
       </p>
       <p class="fishhead float-left">
         <span class="pl-1">#{{ props.trout.id }}</span>
@@ -112,7 +105,7 @@ async function delistTrout() {
           class="w-12 border"
           @click.stop="() => {}"
         />
-        {{ currency }}
+        {{ eth.currency }}
       </span>
       <button
         v-if="!isListing"

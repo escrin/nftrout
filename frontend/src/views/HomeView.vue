@@ -6,7 +6,7 @@ import type { NFTrout } from '@escrin/nftrout-evm';
 
 import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
-import { useEthereumStore } from '../stores/ethereum';
+import { Network, useEthereumStore } from '../stores/ethereum';
 import type { Trout } from '../trouts';
 import { troutCid } from '../trouts';
 
@@ -138,7 +138,7 @@ async function troutSelected(troutId: string) {
   try {
     if (!nftrout.value) return;
     const fee = await nftrout.value.callStatic.getBreedingFee(leftId, rightId);
-    const tx = await nftrout.value.breed(leftId, rightId, { value: fee });
+    const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
     console.log('breeding', tx.hash);
     const receipt = await tx.wait();
     console.log('breeding completed');
@@ -177,7 +177,8 @@ async function checkEarnings() {
 }
 
 watch(eth, async (eth) => {
-  const { number: blockTag } = await eth.provider.getBlock('latest');
+  const { number: latestBlock } = await eth.provider.getBlock('latest');
+  const blockTag = latestBlock - (eth.network === Network.SapphireMainnet ? 2 : 0);
   await Promise.all([
     fetchBreedableTrouts(nftrout.value!, blockTag),
     fetchMyTrouts(nftrout.value!, blockTag),
@@ -197,7 +198,7 @@ async function withdrawEarnings() {
   if (!nftrout.value) return;
   isWithdrawing.value = true;
   try {
-    const tx = await nftrout.value.withdraw();
+    const tx = await nftrout.value.withdraw(eth.txOpts);
     console.log('withdrawing', tx);
     const receipt = await tx.wait();
     if (receipt.status !== 1) throw new Error('withdraw failed');
@@ -219,7 +220,7 @@ async function withdrawEarnings() {
           class="text-center px-3 py-2 font-medium border-2 border-yellow-400 inline-block mx-auto rounded-md text-black-600 bg-yellow-100"
         >
           You have <span class="text-green-800">{{ ethers.utils.formatEther(earnings) }}</span
-          >&nbsp;FIL
+          >&nbsp;{{ eth.currency }}
           <span v-if="isWithdrawing"> being withdrawn now. </span>
           <template v-else>
             available to

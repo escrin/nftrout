@@ -1,7 +1,7 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import { ethers } from 'ethers';
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
 type Provider = ethers.providers.Provider;
 const JsonRpcProvider = ethers.providers.JsonRpcProvider;
@@ -45,6 +45,17 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const network = ref<number>(import.meta.env.VITE_CHAIN_ID);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
+
+  const txOpts = computed(() =>
+    network.value === Network.SapphireMainnet ? { gasLimit: 1_000_000 } : undefined,
+  );
+
+  const currency = computed(() => {
+    if (network.value === Network.Filecoin || network.value === Network.Hyperspace) return 'FIL';
+    if (network.value === Network.Local || network.value === Network.Hardhat) return 'TEST';
+    if (network.value === Network.SapphireMainnet) return 'ROSE';
+    return '三';
+  });
 
   async function connect() {
     const eth = await detectEthereumProvider();
@@ -90,7 +101,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     window.location.reload();
   }
 
-  return { signer, provider, address, network, connect, switchNetwork };
+  return { signer, provider, address, network, connect, switchNetwork, txOpts, currency };
 });
 
 function toBeHex(num: number): string {
