@@ -227,8 +227,8 @@ function hideIntro() {
       </p>
       <p class="padded">
         NFTrout is a tech demo of Escrin, which is described in more detail in
-        <a href="https://escrin.org" target="_blank">this blog post</a>. You can also connect with
-        our mission of making secure computing accessible to all on
+        <a href="https://escrin.org" target="_blank">this blog post</a>. You can connect with our
+        mission of making secure computing accessible to all on
         <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
         <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
       </p>

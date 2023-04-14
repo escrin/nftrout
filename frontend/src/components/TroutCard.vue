@@ -73,11 +73,12 @@ async function delistTrout() {
   <div class="bg-white border-gray-600 border-4 rounded-md" :class="{ selected: props.selected }">
     <div
       @click="$emit('selected')"
-      class="bg-contain bg-no-repeat bg-cover enabled:cursor-pointer rounded-sm"
+      class="bg-contain bg-no-repeat bg-cover rounded-sm"
       :style="{
         'background-image': `url('${imageUrl}')`,
         width: `${w}px`,
         height: `${300 * scale + 4}px`,
+        cursor: selectable ? 'pointer' : 'default',
       }"
     >
       <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
