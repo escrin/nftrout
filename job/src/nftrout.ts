@@ -14,7 +14,6 @@ type TroutId = {
 
 type TroutAttributes = Partial<{
   genesis: boolean;
-  respawnCount: number;
 }>;
 
 type TroutDescriptor = {
@@ -39,8 +38,8 @@ async function main(): Promise<void> {
 
   const troutId = { chainId, tokenId };
 
-  const leftPath = `${inputsDir}/left/trout.json`;
-  const rightPath = `${inputsDir}/right/trout.json`;
+  const leftPath = `${inputsDir}/left/outputs/trout.json`;
+  const rightPath = `${inputsDir}/right/outputs/trout.json`;
   try {
     await Promise.all([fs.access(leftPath), fs.access(rightPath)]);
   } catch {
@@ -84,21 +83,17 @@ async function generate<T extends TroutId | null>(
   self: TroutId,
   seed: number,
 ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
-  // These were the trout that incubated within a normal amount of time before the encubation retrier started to exist.
-  const FAST_INCUBATORS = new Set([151, 152, 158, 159, 171, 176, 177, 180]);
-  const ALPHA_CUTOFF = 181;
-
   const tokenId = BigNumber.from(self.tokenId).toNumber();
-  const attrs: TroutAttributes = {
+  const attributes: TroutAttributes = {
     genesis: tokenId <= 150,
-    respawnCount: tokenId > 152 && tokenId <= ALPHA_CUTOFF ? 1 : 0,
   };
-  const fishSvg = toSvg(fishdraw(seed), attrs.genesis ? 'rainbow' : 'normal');
+  const fishSvg = toSvg(fishdraw(seed), attributes.genesis ? 'rainbow' : 'normal');
 
   const troutDescriptor: TroutDescriptor = {
     left,
     right,
     self,
+    attributes,
     seed: await esm.encrypt(new TextEncoder().encode(JSON.stringify({ seed }))),
   };
 

@@ -68,7 +68,7 @@ task('uri')
     console.log(await nftrout.callStatic.tokenURI(args.id));
   });
 
-task('list')
+task('make-breedable')
   .addParam('id')
   .addParam('fee')
   .setAction(async (args, hre) => {
@@ -112,6 +112,20 @@ task('list-breedable').setAction(async (_, hre) => {
       }),
     );
     if (studs.length < batchSize) break;
+  }
+});
+
+task('get-owners').setAction(async (_, hre) => {
+  const { ethers } = hre;
+  const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+  const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
+  const ownerPs = []
+  for (let i = 1; i <= totalSupply; i++) {
+    ownerPs.push(nftrout.callStatic.ownerOf(i));
+  }
+  const owners = await Promise.all(ownerPs);
+  for (const owner of owners) {
+    console.log(owner)
   }
 });
 
