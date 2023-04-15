@@ -779,9 +779,17 @@ function poissondisk(W, H, r, samples) {
 }
 
 
-function draw_svg(polylines,fillcolor='floralwhite'){
+function draw_svg(polylines, variant='normal'){
+  let fillcolor = variant === 'normal' ? 'floralwhite' : 'snow';
+  let gradient = '';
+  if (variant === 'rainbow') {
+    gradient = `<linearGradient xmlns="http://www.w3.org/2000/svg" id="trout-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F0E23"/><stop offset="15%" stop-color="#63343E"/><stop offset="30%" stop-color="#3F7067"/><stop offset="50%" stop-color="#E38A26"/><stop offset="70%" stop-color="#A1161D"/><stop offset="85%" stop-color="#581414"/></linearGradient>`
+  }
+  const stroke = gradient ? 'url(#trout-gradient)' : 'black';
+
   let o = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320">`
-  o += `<rect x="0" y="0" width="520" height="320" fill="${fillcolor}"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/><path stroke="black" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="`
+  o += gradient;
+  o += `<rect x="0" y="0" width="520" height="320" fill="${fillcolor}"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/><path stroke="${stroke}" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="`
   for (let i = 0; i < polylines.length; i++){
     o += '\nM ';
     for (let j = 0; j < polylines[i].length; j++){

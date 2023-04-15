@@ -12,11 +12,17 @@ type TroutId = {
   tokenId: string;
 };
 
+type TroutAttributes = Partial<{
+  genesis: boolean;
+  incubation: 'fast' | 'slow' | 'normal';
+}>;
+
 type TroutDescriptor = {
   left: TroutId | null;
   right: TroutId | null;
   self: TroutId;
   seed: Box;
+  attributes?: TroutAttributes;
 };
 
 const MAX_SEED = 4294967295; // 2^32-1
@@ -78,11 +84,23 @@ async function generate<T extends TroutId | null>(
   self: TroutId,
   seed: number,
 ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
-  const isGenesisTrout = BigNumber.from(self.tokenId).lte(150);
-  const fishSvg = toSvg(fishdraw(seed), isGenesisTrout ? 'snow' : undefined);
-  // TODO: rainbow
+  // These were the trout that incubated within a normal amount of time before the encubation retrier started to exist.
+  const FAST_INCUBATORS = new Set([151, 152, 158, 159, 171, 176, 177, 180]);
+  const INCUBATION_SPEED_CUTOFF = 181;
 
-  const troutDescriptor = {
+  const tokenId = BigNumber.from(self.tokenId).toNumber();
+  const attrs: TroutAttributes = {
+    genesis: tokenId <= 150,
+    incubation:
+      tokenId <= INCUBATION_SPEED_CUTOFF
+        ? FAST_INCUBATORS.has(tokenId)
+          ? 'fast'
+          : 'slow'
+        : 'normal',
+  };
+  const fishSvg = toSvg(fishdraw(seed), attrs.genesis ? 'rainbow' : 'normal');
+
+  const troutDescriptor: TroutDescriptor = {
     left,
     right,
     self,
