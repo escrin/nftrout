@@ -14,7 +14,7 @@ type TroutId = {
 
 type TroutAttributes = Partial<{
   genesis: boolean;
-  incubation: 'fast' | 'slow' | 'normal';
+  respawnCount: number;
 }>;
 
 type TroutDescriptor = {
@@ -86,17 +86,12 @@ async function generate<T extends TroutId | null>(
 ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
   // These were the trout that incubated within a normal amount of time before the encubation retrier started to exist.
   const FAST_INCUBATORS = new Set([151, 152, 158, 159, 171, 176, 177, 180]);
-  const INCUBATION_SPEED_CUTOFF = 181;
+  const ALPHA_CUTOFF = 181;
 
   const tokenId = BigNumber.from(self.tokenId).toNumber();
   const attrs: TroutAttributes = {
     genesis: tokenId <= 150,
-    incubation:
-      tokenId <= INCUBATION_SPEED_CUTOFF
-        ? FAST_INCUBATORS.has(tokenId)
-          ? 'fast'
-          : 'slow'
-        : 'normal',
+    respawnCount: tokenId > 152 && tokenId <= ALPHA_CUTOFF ? 1 : 0,
   };
   const fishSvg = toSvg(fishdraw(seed), attrs.genesis ? 'rainbow' : 'normal');
 
