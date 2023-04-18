@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {TaskHubHaver} from "@escrin/evm/contracts/tasks/TaskHubHaver.sol";
-import {BaseTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/Base.sol";
-import {TaskIdSelector, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/TaskIdSelector.sol";
-import {DelegatedTaskAcceptor, TaskIdSelector} from "@escrin/evm/contracts/tasks/acceptor/Delegated.sol";
+import {TaskHubNotifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
+import {BaseTaskAcceptorV1, DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
+import {TaskIdSelector, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskIdSelector.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
@@ -30,8 +29,8 @@ contract NFTrout is
     ERC721AQueryable,
     Ownable,
     Pausable,
-    TaskHubHaver,
-    DelegatedTaskAcceptor
+    TaskHubNotifier,
+    DelegatedTaskAcceptorV1
 {
     using EnumerableMap for EnumerableMap.UintToUintMap;
     using TaskIdSelectorOps for TaskIdSelector;
@@ -71,7 +70,7 @@ contract NFTrout is
         uint256 _mintReward,
         uint256 _matchmakingBps,
         bool _genesisMint
-    ) ERC721A("NFTrout", "TROUT") TaskHubHaver(_taskHub) DelegatedTaskAcceptor(_taskAcceptor) {
+    ) ERC721A("NFTrout", "TROUT") TaskHubNotifier(_taskHub) DelegatedTaskAcceptorV1(_taskAcceptor) {
         mintReward = _mintReward;
         matchmakingBps = _matchmakingBps;
 
@@ -88,6 +87,7 @@ contract NFTrout is
             _safeMint(0x2772c7DF084Cbe204576731d711B622234BdD9A7, 3);
             _safeMint(0xa9ad6C62611884672DfEf7e20a115778C4b0bAb1, 3);
             _safeMint(0x1441bbbE1564d0b3e489f7C5bCC4f0c5EC4C4cd8, 2);
+            _safeMint(0xd634351C0e586ebC0B192D8573c0524AA1bC459F, 1);
             _safeMint(0x74BDF046024CDF112F1d881526e6F05d278D35a0, 1);
             _safeMint(0x739A5776F98E50bc2a453C0142cff8597b50DEA7, 1);
             _safeMint(0x74BDF046024CDF112F1d881526e6F05d278D35a0, 1);
@@ -96,10 +96,9 @@ contract NFTrout is
     }
 
     /// Transmutes money into trout.
-    function mint() external payable whenNotPaused {
+    function mint() external payable whenNotPaused notify {
         if (_pay(address(this), mintReward, 0) != msg.value) revert PaymentRequired(mintReward);
         _safeMint(msg.sender, 1);
-        taskHub().notify();
     }
 
     /// Makes a trout breedable.
@@ -116,7 +115,7 @@ contract NFTrout is
 
     /// Breeds any two trout to produce a third trout that will be owned by the caller.
     /// This method must be called with enough value to pay for the two trouts' fees and the minting fee.
-    function breed(TokenId _left, TokenId _right) external payable whenNotPaused {
+    function breed(TokenId _left, TokenId _right) external payable whenNotPaused notify {
         if (!_exists(_left)) revert NoSuchToken(_left);
         if (!_exists(_right)) revert NoSuchToken(_right);
         if (TokenId.unwrap(_left) == TokenId.unwrap(_right)) revert CannotSelfBreed();
@@ -127,22 +126,6 @@ contract NFTrout is
         subtotal += _pay(_ownerOf(_right), _getBreedingFee(msg.sender, _right), matchmakingBps);
         if (subtotal != msg.value) revert PaymentRequired(subtotal);
         _safeMint(msg.sender, 1);
-        taskHub().notify();
-    }
-
-    function _afterTaskResultsAccepted(
-        uint256[] calldata _taskIds,
-        bytes calldata _report,
-        address _submitter,
-        TaskIdSelector memory _selected
-    ) internal override {
-        string[] memory cids = abi.decode(_report, (string[]));
-        for (uint256 i; i < cids.length; ++i) {
-            TokenId tokenId = TokenId.wrap(_taskIds[i]);
-            tokenCids[tokenId] = cids[i];
-        }
-        uint256 payout = _selected.countSelected(_taskIds.length) * mintReward;
-        if (payout > 0) payable(_submitter).transfer(payout);
     }
 
     function withdraw() external {
@@ -159,6 +142,14 @@ contract NFTrout is
     function setMatchmakingFee(uint256 _matchBps) external onlyOwner {
         matchmakingBps = _matchBps;
         emit MatchmakingFeeChanged(_matchBps);
+    }
+
+    function setTaskHub(address _newTaskHub) external onlyOwner {
+        _setTaskHub(_newTaskHub);
+    }
+
+    function setTaskAcceptor(address _newTaskAcceptor) external onlyOwner {
+        _setTaskAcceptor(_newTaskAcceptor);
     }
 
     function pause() external onlyOwner {
@@ -238,5 +229,20 @@ contract NFTrout is
             BaseTaskAcceptorV1.supportsInterface(_interfaceId) ||
             ERC721A.supportsInterface(_interfaceId) ||
             super.supportsInterface(_interfaceId);
+    }
+
+    function _afterTaskResultsAccepted(
+        uint256[] calldata _taskIds,
+        bytes calldata _report,
+        address _submitter,
+        TaskIdSelector memory _selected
+    ) internal override {
+        string[] memory cids = abi.decode(_report, (string[]));
+        for (uint256 i; i < cids.length; ++i) {
+            TokenId tokenId = TokenId.wrap(_taskIds[i]);
+            tokenCids[tokenId] = cids[i];
+        }
+        uint256 payout = _selected.countSelected(_taskIds.length) * mintReward;
+        if (payout > 0) payable(_submitter).transfer(payout);
     }
 }
