@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import {TaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
 import {TaskHubNotifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
-import {BaseTaskAcceptorV1, DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
-import {TaskIdSelector, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskIdSelector.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
@@ -24,14 +24,7 @@ error PaymentRequired(uint256 amount); // 8c4fcd93 jE/Nkw=b
 /// A trout cannot breed with itself.
 error CannotSelfBreed(); // 56938583 VpOFgw==
 
-contract NFTrout is
-    ERC721A,
-    ERC721AQueryable,
-    Ownable,
-    Pausable,
-    TaskHubNotifier,
-    DelegatedTaskAcceptorV1
-{
+contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, DelegatedTaskAcceptorV1 {
     using EnumerableMap for EnumerableMap.UintToUintMap;
     using TaskIdSelectorOps for TaskIdSelector;
 
@@ -180,7 +173,6 @@ contract NFTrout is
     }
 
     /// Returns the number of tokens that must be paid to breed the two trout.
-    /// This is also the minting fee when the parents are unset.
     function getBreedingFee(
         address breeder,
         TokenId _left,
@@ -220,15 +212,6 @@ contract NFTrout is
 
     function _startTokenId() internal pure override returns (uint256) {
         return 1;
-    }
-
-    function supportsInterface(
-        bytes4 _interfaceId
-    ) public view override(BaseTaskAcceptorV1, ERC721A, IERC721A) returns (bool) {
-        return
-            BaseTaskAcceptorV1.supportsInterface(_interfaceId) ||
-            ERC721A.supportsInterface(_interfaceId) ||
-            super.supportsInterface(_interfaceId);
     }
 
     function _afterTaskResultsAccepted(
