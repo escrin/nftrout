@@ -134,30 +134,35 @@ async function troutSelected(troutId: string) {
   selectedTrouts.value.push(troutId);
   if (selectedTrouts.value.length < 2) return;
   isBreeding.value = true;
-  const [leftId, rightId] = selectedTrouts.value;
+  // const [leftId, rightId] = selectedTrouts.value;
   try {
-    if (!nftrout.value) return;
-    const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(leftId, rightId);
-    const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
-    console.log('breeding', tx.hash);
-    const receipt = await tx.wait();
-    console.log('breeding completed');
-    let newTokenId = BigNumber.from(0);
-    for (const event of receipt.events ?? []) {
-      if (event.event !== 'Transfer') continue;
-      newTokenId = BigNumber.from(receipt.events![0].topics[3]);
-      break;
-    }
-    if (!newTokenId) throw new Error('breeding did not create new token');
-    const key = newTokenId.toHexString();
-    watchPendingTroutCid(key);
-    trouts[key] = {
-      id: newTokenId,
-      chainId: eth.network,
-      key,
-      cid: '',
-      owned: true,
-    };
+    // if (!nftrout.value) return;
+    // const myAddr = await nftrout.value.signer.getAddress();
+    // const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(
+    //   myAddr,
+    //   leftId,
+    //   rightId,
+    // );
+    // const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
+    // console.log('breeding', tx.hash);
+    // const receipt = await tx.wait();
+    // console.log('breeding completed');
+    // let newTokenId = BigNumber.from(0);
+    // for (const event of receipt.events ?? []) {
+    //   if (event.event !== 'Transfer') continue;
+    //   newTokenId = BigNumber.from(receipt.events![0].topics[3]);
+    //   break;
+    // }
+    // if (!newTokenId) throw new Error('breeding did not create new token');
+    // const key = newTokenId.toHexString();
+    // watchPendingTroutCid(key);
+    // trouts[key] = {
+    //   id: newTokenId,
+    //   chainId: eth.network,
+    //   key,
+    //   cid: '',
+    //   owned: true,
+    // };
   } finally {
     selectedTrouts.value.splice(0, selectedTrouts.value.length);
     isBreeding.value = false;
