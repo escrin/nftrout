@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 import {TaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
 import {DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
-import {TaskHubNotifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
+import {TaskHubV1Notifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
@@ -24,7 +24,13 @@ error PaymentRequired(uint256 amount); // 8c4fcd93 jE/Nkw=b
 /// A trout cannot breed with itself.
 error CannotSelfBreed(); // 56938583 VpOFgw==
 
-contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, DelegatedTaskAcceptorV1 {
+contract NFTrout is
+    ERC721AQueryable,
+    Ownable,
+    Pausable,
+    TaskHubV1Notifier,
+    DelegatedTaskAcceptorV1
+{
     using EnumerableMap for EnumerableMap.UintToUintMap;
     using TaskIdSelectorOps for TaskIdSelector;
 
@@ -44,10 +50,16 @@ contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, Delega
         uint256 fee;
     }
 
+    struct Parents {
+        TokenId left;
+        TokenId right;
+    }
+
     uint256 public mintReward;
     uint256 public matchmakingBps;
     mapping(address => uint256) public earnings;
 
+    mapping(TokenId => Parents) public parents;
     /// token id -> fee
     EnumerableMap.UintToUintMap private studs;
     mapping(TokenId => string) private tokenCids;
@@ -58,12 +70,11 @@ contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, Delega
     }
 
     constructor(
-        address _taskHub,
         address _taskAcceptor,
         uint256 _mintReward,
         uint256 _matchmakingBps,
         bool _genesisMint
-    ) ERC721A("NFTrout", "TROUT") TaskHubNotifier(_taskHub) DelegatedTaskAcceptorV1(_taskAcceptor) {
+    ) ERC721A("NFTrout", "TROUT") TaskHubV1Notifier() DelegatedTaskAcceptorV1(_taskAcceptor) {
         mintReward = _mintReward;
         matchmakingBps = _matchmakingBps;
 
@@ -118,6 +129,8 @@ contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, Delega
         subtotal += _pay(_ownerOf(_left), _getBreedingFee(msg.sender, _left), matchmakingBps);
         subtotal += _pay(_ownerOf(_right), _getBreedingFee(msg.sender, _right), matchmakingBps);
         if (subtotal != msg.value) revert PaymentRequired(subtotal);
+        TokenId tokenId = TokenId.wrap(_nextTokenId());
+        parents[tokenId] = Parents({left: _left, right: _right});
         _safeMint(msg.sender, 1);
     }
 
@@ -218,14 +231,16 @@ contract NFTrout is ERC721AQueryable, Ownable, Pausable, TaskHubNotifier, Delega
         uint256[] calldata _taskIds,
         bytes calldata _report,
         address _submitter,
-        TaskIdSelector memory _selected
+        TaskIdSelector memory _sel
     ) internal override {
         string[] memory cids = abi.decode(_report, (string[]));
-        for (uint256 i; i < cids.length; ++i) {
-            TokenId tokenId = TokenId.wrap(_taskIds[i]);
-            tokenCids[tokenId] = cids[i];
+        uint256[] memory acceptedIxs = _sel.indices(_taskIds);
+        string[] memory acceptedCids = new string[](acceptedIxs.length);
+        for (uint256 i; i < acceptedIxs.length; ++i) {
+            TokenId tokenId = TokenId.wrap(_taskIds[acceptedIxs[i]]);
+            tokenCids[tokenId] = cids[acceptedIxs[i]];
         }
-        uint256 payout = _selected.countSelected(_taskIds.length) * mintReward;
+        uint256 payout = mintReward * acceptedCids.length;
         if (payout > 0) payable(_submitter).transfer(payout);
     }
 }

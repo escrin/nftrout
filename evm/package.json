@@ -22,10 +22,10 @@
     }
   },
   "scripts": {
-    "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' 'test/**/*.ts' 'contracts/**/*.sol'",
+    "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
     "lint:solhint": "solhint 'contracts/**/*.sol'",
     "lint": "npm-run-all lint:**",
-    "format:prettier": "prettier --write --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' 'test/**/*.ts' 'contracts/**/*.sol'",
+    "format:prettier": "prettier --write --plugin-search-dir=. --cache '*.json' 'tsconfig/*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
     "format:solhint": "solhint --fix 'contracts/**/*.sol'",
     "format": "npm-run-all format:**",
     "build:compile": "hardhat compile",
@@ -68,7 +68,7 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
-    "@escrin/evm": "^1.0.0-beta.1",
+    "@escrin/evm": "link:/home/nhynes/escrin/escrin/evm",
     "@oasisprotocol/sapphire-contracts": "^0.2.1",
     "@openzeppelin/contracts": "^4.8.2",
     "erc721a": "^4.2.3"
