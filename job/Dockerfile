@@ -6,7 +6,7 @@ ENV WEB3_GW_URL=https://testnet.sapphire.oasis.dev
 
 WORKDIR /build
 
-COPY package.json oasisprotocol-sapphire-paratime-*.tgz .
+COPY package.json ./
 RUN npm install
 
 COPY ./src ./src
