@@ -5,8 +5,8 @@ importers:
   evm:
     dependencies:
       '@escrin/evm':
-        specifier: link:/home/nhynes/escrin/escrin/evm
-        version: link:../../escrin/evm
+        specifier: 1.0.0-beta.2
+        version: 1.0.0-beta.2
       '@oasisprotocol/sapphire-contracts':
         specifier: ^0.2.1
         version: 0.2.1

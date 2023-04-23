@@ -1,7 +1,8 @@
 import { exec } from 'child_process';
+import { promises as fs } from 'fs';
 import { inspect } from 'util';
 
-import { HardhatUserConfig, task } from 'hardhat/config';
+import { HardhatUserConfig, task, types } from 'hardhat/config';
 // import '@oasisprotocol/sapphire-hardhat';
 import '@nomicfoundation/hardhat-toolbox';
 import 'hardhat-watcher';
@@ -70,69 +71,105 @@ type Config = {
   nftStorageKey: string;
 };
 
-task('invoke-spawner').setAction(async (_, hre) => {
-  const { ethers } = hre;
+type CidCache = Map<number, { cid: string; posted: boolean }>;
 
-  const gasKey = process.env.GAS_KEY;
-  if (!gasKey) throw new Error('missing GAS_KEY');
-  const nftStorageKey = process.env.NFT_STORAGE_KEY;
-  if (!nftStorageKey) throw new Error('missing NFT_STORAGE_KEY');
-  const chainId = hre.network.config.chainId!;
+task('invoke-spawner')
+  .addOptionalParam('batchSize', 'How many trout to spawn in one transaction', 50, types.int)
+  .addOptionalParam('local', '', false, types.boolean)
+  .setAction(async (args, hre) => {
+    const { ethers } = hre;
 
-  const config = { gasKey, chainId, nftStorageKey };
+    const gasKey = process.env.GAS_KEY;
+    if (!gasKey) throw new Error('missing GAS_KEY');
+    const nftStorageKey = process.env.NFT_STORAGE_KEY;
+    if (!nftStorageKey) throw new Error('missing NFT_STORAGE_KEY');
+    const chainId = hre.network.config.chainId!;
 
-  const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const config = { gasKey, chainId, nftStorageKey };
 
-  const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
 
-  const cidCache = new Map();
+    const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
 
-  const needsSpawning = [];
-  for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
-    needsSpawning.push(
-      (async () => {
-        const existingCid = await getTroutCid(cidCache, nftrout, tokenId);
-        return existingCid ? undefined : tokenId;
-      })(),
-    );
-  }
-
-  const taskIds: number[] = [];
-  const cids: string[] = [];
-
-  for (const tokenId of await Promise.all(needsSpawning)) {
-    if (tokenId === undefined) continue;
-    let cid = '';
+    const cidCache: CidCache = new Map();
     try {
-      cid = await spawnTrout(nftrout, tokenId, config, cidCache);
-    } catch (e: any) {
-      console.error(inspect(e, undefined, 10, true));
-      break; // Post the completed ones.
+      const cacheJson = await fs.readFile('cid-cache.json', 'utf8');
+      const cacheEntries = JSON.parse(cacheJson);
+      for (const [k, v] of cacheEntries) {
+        cidCache.set(k, v);
+      }
+    } catch (e) {
+      console.warn('could not read cache file:', e);
     }
-    taskIds.push(tokenId);
-    cids.push(cid);
-  }
 
-  const encodedCids = ethers.utils.defaultAbiCoder.encode(['string[]'], [cids]);
-  const tx = await nftrout.acceptTaskResults(taskIds, [], encodedCids);
-  const receipt = await tx.wait();
-  if (receipt.status !== 1) throw new Error('failed to accept tasks');
-});
+    const taskIds: number[] = [];
+    const cids: string[] = [];
+
+    for (const [tokenId, { cid, posted }] of cidCache.entries()) {
+      if (posted) continue;
+      taskIds.push(tokenId);
+      cids.push(cid);
+    }
+
+    const needsSpawning = [];
+    for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
+      needsSpawning.push(
+        (async () => {
+          const existingCid = await getTroutCid(cidCache, nftrout, tokenId);
+          return existingCid ? undefined : tokenId;
+        })(),
+      );
+    }
+
+    for (const tokenId of await Promise.all(needsSpawning)) {
+      if (tokenId === undefined) continue;
+      let cid = '';
+      try {
+        console.info('spawning', tokenId);
+        cid = await spawnTrout(nftrout, tokenId, config, cidCache, !args.local);
+      } catch (e: any) {
+        console.error(inspect(e, undefined, 10, true));
+        break; // Post the completed ones.
+      }
+      taskIds.push(tokenId);
+      cids.push(cid);
+      if (taskIds.length >= args.batchSize) break;
+    }
+
+    try {
+      if (!taskIds.length) return;
+      const encodedCids = ethers.utils.defaultAbiCoder.encode(['string[]'], [cids]);
+      const tx = await nftrout.acceptTaskResults(taskIds, [], encodedCids, {
+        gasLimit: 10_000_000,
+      });
+      const receipt = await tx.wait();
+      if (receipt.status !== 1) throw new Error('failed to accept tasks');
+      for (const v of cidCache.values()) {
+        v.posted = true;
+      }
+    } finally {
+      try {
+        await fs.writeFile('cid-cache.json', JSON.stringify([...cidCache.entries()]));
+      } catch (e) {
+        console.warn('could not write cache file:', e);
+      }
+    }
+  });
 
 /// Returns the trout CID.
 async function spawnTrout(
   nftrout: NFTrout,
   tokenId: number,
   config: Config,
-  cidCache: Map<number, string> = new Map(),
+  cidCache: CidCache = new Map(),
+  useBacalhau = true,
 ): Promise<string> {
   const { left, right } = await nftrout.callStatic.parents(tokenId);
 
   let leftCid = '';
-  let leftTokenId = '';
+  let leftTokenId = 0;
   let rightCid = '';
-  let rightTokenId = '';
-  let inputs = '';
+  let rightTokenId = 0;
   if (!left.isZero() && !right.isZero()) {
     leftTokenId = left.toNumber();
     rightTokenId = right.toNumber();
@@ -142,59 +179,70 @@ async function spawnTrout(
     ]);
   }
 
-  const bacalhau = `bacalhau --api-host 127.0.0.1 --api-port 20000`;
+  let cid;
+  if (useBacalhau) {
+    const bacalhau = `bacalhau --api-host 127.0.0.1 --api-port 20000`;
+    const envs = [
+      `-e ATTOK_ADDR='${process.env.ATTOK_ADDR ?? ''}'`,
+      `-e LOCKBOX_ADDR='${process.env.LOCKBOX_ADDR ?? ''}'`,
+    ].join(' ');
+    const bacalhauRun = `${bacalhau} docker run --id-only --network=full ${envs} ghcr.io/escrin/nftrout/nftrout -- /usr/bin/env node --enable-source-maps /opt/nftrout/nftrout '${config.gasKey}' '${config.nftStorageKey}' '${config.chainId}' '${tokenId}' '${leftTokenId}' '${leftCid}' '${rightTokenId}' '${rightCid}'`;
+    const jobId = await runCmd(bacalhauRun);
 
-  const envs = [
-    `-e ATTOK_ADDR='${process.env.ATTOK_ADDR ?? ''}'`,
-    `-e LOCKBOX_ADDR='${process.env.LOCKBOX_ADDR ?? ''}'`,
-  ].join(' ');
-  const bacalhauRun = `${bacalhau} docker run ${envs} --id-only --network=full ${inputs} ghcr.io/escrin/nftrout/nftrout -- /usr/bin/env node --enable-source-maps /opt/nftrout/nftrout '${config.gasKey}' '${config.nftStorageKey}' '${config.chainId}' '${tokenId}' '${leftTokenId}' '${leftCid}' '${rightTokenId}' '${rightCid}'`;
-  const jobId = await runCmd(bacalhauRun);
+    const bacalhauDescribe = `${bacalhau} describe --json ${jobId}`;
 
-  const bacalhauDescribe = `${bacalhau} describe --json ${jobId}`;
-  const jobOutput = JSON.parse(await runCmd(bacalhauDescribe));
-  const { State: jobState } = jobOutput;
-  const {
-    State: jobStateName,
-    Executions: [{ RunOutput: runOutput }],
-  } = jobState;
-  const { exitCode, stdout: stdoutCid, stderr } = runOutput ?? {};
-  if (jobStateName !== 'Completed' || stderr || exitCode !== 0) {
-    const error = new Error('job did not complete successfully');
-    (error as any).details = jobState;
-    throw error;
+    const { stdout: jobOutput } = await runCmd(bacalhauDescribe);
+    const { State: jobState } = JSON.parse(jobOutput);
+    const {
+      State: jobStateName,
+      Executions: [{ RunOutput: runOutput }],
+    } = jobState;
+    const { exitCode, stdout: stdoutCid, stderr } = runOutput ?? {};
+    if (jobStateName !== 'Completed' || stderr || exitCode !== 0) {
+      const error = new Error('job did not complete successfully');
+      (error as any).details = jobState;
+      throw error;
+    }
+    cid = stdoutCid.trim();
+  } else {
+    cid = (
+      await runCmd(
+        `node --enable-source-maps ../job/bin/nftrout '${config.gasKey}' '${config.nftStorageKey}' '${config.chainId}' '${tokenId}' '${leftTokenId}' '${leftCid}' '${rightTokenId}' '${rightCid}'`,
+      )
+    ).stdout;
   }
-  const cid = stdoutCid.trim();
-  cidCache.set(tokenId, cid);
+
+  cidCache.set(tokenId, {
+    cid,
+    posted: false,
+  });
   return cid;
 }
 
-function runCmd(cmd: string): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
+function runCmd(cmd: string): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
     exec(cmd, (error, stdout, stderr) => {
-      if (error) reject({ error, stderr });
-      else resolve(stdout.trim());
+      stdout = stdout.trim();
+      stderr = stderr.trim();
+      const out = { stdout: stdout.trim(), stderr: stderr.trim() };
+      error ? reject({ error, ...out }) : resolve(out);
     }).on('error', reject);
   });
 }
 
-async function getTroutCid(
-  cidCache: Map<number, string>,
-  nftrout: NFTrout,
-  tokenId: number,
-): Promise<string> {
-  const cacheValue = cidCache.get(tokenId);
-  if (cacheValue) return cacheValue;
+async function getTroutCid(cidCache: CidCache, nftrout: NFTrout, tokenId: number): Promise<string> {
+  let { cid } = cidCache.get(tokenId) ?? {};
+  if (cid) return cid!;
 
   const uri = await nftrout.callStatic.tokenURI(tokenId);
   if (uri === 'ipfs://') return '';
-  const cid = uri.replace('ipfs://', '');
+  cid = uri.replace('ipfs://', '');
   const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
   const resBody = await res.text();
   try {
     const descriptor = JSON.parse(resBody);
     if (!descriptor.image.startsWith('ipfs://')) return '';
-    cidCache.set(tokenId, cid);
+    cidCache.set(tokenId, { cid, posted: false });
     return cid;
   } catch {}
   return '';
