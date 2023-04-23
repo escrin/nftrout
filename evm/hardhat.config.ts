@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
+import { inspect } from 'util';
 
-import { ethers } from 'ethers';
 import { HardhatUserConfig, task } from 'hardhat/config';
 // import '@oasisprotocol/sapphire-hardhat';
 import '@nomicfoundation/hardhat-toolbox';
@@ -33,11 +33,11 @@ task('accounts').setAction(async (_, hre) => {
 
 task('mint').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = await ethers.getContract('NFTrout');
-  const tx = await nftrout.mint({ value: await nftrout.callStatic.getBreedingFee(0, 0) });
-  console.log(tx.hash);
+  const [{ address: minter }] = await ethers.getSigners();
+  const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+  const tx = await nftrout.mint({ value: await nftrout.callStatic.getBreedingFee(minter, 0, 0) });
   const receipt = await tx.wait();
-  for (const event of receipt.events) {
+  for (const event of receipt.events!) {
     if (event.event !== 'Transfer') continue;
     console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
     break;
@@ -49,14 +49,15 @@ task('breed')
   .addPositionalParam('right')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = await ethers.getContract('NFTrout');
-    const breedingFee = await nftrout.callStatic.getBreedingFee(args.left, args.right);
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const [{ address: breeder }] = await ethers.getSigners();
+    const breedingFee = await nftrout.callStatic.getBreedingFee(breeder, args.left, args.right);
     const tx = await nftrout.breed(args.left, args.right, {
       value: breedingFee,
     });
     console.log(tx.hash);
     const receipt = await tx.wait();
-    for (const event of receipt.events) {
+    for (const event of receipt.events!) {
       if (event.event !== 'Transfer') continue;
       console.log(ethers.BigNumber.from(receipt.events![0].topics[3]).toNumber());
       break;
@@ -66,6 +67,7 @@ task('breed')
 type Config = {
   gasKey: string;
   chainId: number;
+  nftStorageKey: string;
 };
 
 task('invoke-spawner').setAction(async (_, hre) => {
@@ -73,29 +75,24 @@ task('invoke-spawner').setAction(async (_, hre) => {
 
   const gasKey = process.env.GAS_KEY;
   if (!gasKey) throw new Error('missing GAS_KEY');
+  const nftStorageKey = process.env.NFT_STORAGE_KEY;
+  if (!nftStorageKey) throw new Error('missing NFT_STORAGE_KEY');
   const chainId = hre.network.config.chainId!;
 
-  const config = { gasKey, chainId };
+  const config = { gasKey, chainId, nftStorageKey };
 
   const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
 
   const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
 
+  const cidCache = new Map();
+
   const needsSpawning = [];
   for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
     needsSpawning.push(
       (async () => {
-        let numRetries = 3;
-        for (let i = 0; i < numRetries; i++) {
-          try {
-            const existingCid = await getTroutCid(nftrout, tokenId);
-            if (existingCid) return undefined;
-            return tokenId;
-          } catch (e: any) {
-            if (i === numRetries - 1) throw e;
-          }
-        }
-        throw new Error('unable to fetch trout cid');
+        const existingCid = await getTroutCid(cidCache, nftrout, tokenId);
+        return existingCid ? undefined : tokenId;
       })(),
     );
   }
@@ -105,7 +102,13 @@ task('invoke-spawner').setAction(async (_, hre) => {
 
   for (const tokenId of await Promise.all(needsSpawning)) {
     if (tokenId === undefined) continue;
-    const cid = await spawnTrout(nftrout, tokenId, config); // TODO: cache these
+    let cid = '';
+    try {
+      cid = await spawnTrout(nftrout, tokenId, config, cidCache);
+    } catch (e: any) {
+      console.error(inspect(e, undefined, 10, true));
+      break; // Post the completed ones.
+    }
     taskIds.push(tokenId);
     cids.push(cid);
   }
@@ -117,47 +120,52 @@ task('invoke-spawner').setAction(async (_, hre) => {
 });
 
 /// Returns the trout CID.
-async function spawnTrout(nftrout: NFTrout, tokenId: number, config: Config): Promise<string> {
+async function spawnTrout(
+  nftrout: NFTrout,
+  tokenId: number,
+  config: Config,
+  cidCache: Map<number, string> = new Map(),
+): Promise<string> {
   const { left, right } = await nftrout.callStatic.parents(tokenId);
 
+  let leftCid = '';
+  let leftTokenId = '';
+  let rightCid = '';
+  let rightTokenId = '';
   let inputs = '';
   if (!left.isZero() && !right.isZero()) {
-    const [leftCid, rightCid] = await Promise.all([
-      getTroutCid(nftrout, left.toNumber()),
-      getTroutCid(nftrout, right.toNumber()),
+    leftTokenId = left.toNumber();
+    rightTokenId = right.toNumber();
+    [leftCid, rightCid] = await Promise.all([
+      getTroutCid(cidCache, nftrout, leftTokenId),
+      getTroutCid(cidCache, nftrout, rightTokenId),
     ]);
-    console.log(leftCid, rightCid);
-    inputs += `--inputs src=ipfs://${leftCid},dst=/inputs/left.json`;
-    inputs += `--inputs src=ipfs://${rightCid},dst=/inputs/right.json`;
   }
 
   const bacalhau = `bacalhau --api-host 127.0.0.1 --api-port 20000`;
 
-  const bacalhauRun = `${bacalhau} docker run --id-only --network=full ${inputs} --tee --publisher ipfs ghcr.io/escrin/nftrout/nftrout -- /usr/bin/env node /opt/nftrout/nftrout ${config.gasKey} ${config.chainId} ${tokenId}`;
-  console.log(bacalhauRun);
+  const envs = [
+    `-e ATTOK_ADDR='${process.env.ATTOK_ADDR ?? ''}'`,
+    `-e LOCKBOX_ADDR='${process.env.LOCKBOX_ADDR ?? ''}'`,
+  ].join(' ');
+  const bacalhauRun = `${bacalhau} docker run ${envs} --id-only --network=full ${inputs} ghcr.io/escrin/nftrout/nftrout -- /usr/bin/env node --enable-source-maps /opt/nftrout/nftrout '${config.gasKey}' '${config.nftStorageKey}' '${config.chainId}' '${tokenId}' '${leftTokenId}' '${leftCid}' '${rightTokenId}' '${rightCid}'`;
   const jobId = await runCmd(bacalhauRun);
 
   const bacalhauDescribe = `${bacalhau} describe --json ${jobId}`;
+  const jobOutput = JSON.parse(await runCmd(bacalhauDescribe));
+  const { State: jobState } = jobOutput;
   const {
-    State: {
-      State: jobState,
-      Executions: [
-        {
-          PublishedResults: { CID: cid },
-          RunOutput: { exitCode, stderr },
-        },
-      ],
-    },
-  } = JSON.parse(await runCmd(bacalhauDescribe));
-  if (jobState !== 'Completed' || !cid || stderr || exitCode !== 0) {
-    console.error('job did not complete successfully', {
-      jobState,
-      cid,
-      stderr,
-      exitCode,
-    });
-    return '';
+    State: jobStateName,
+    Executions: [{ RunOutput: runOutput }],
+  } = jobState;
+  const { exitCode, stdout: stdoutCid, stderr } = runOutput ?? {};
+  if (jobStateName !== 'Completed' || stderr || exitCode !== 0) {
+    const error = new Error('job did not complete successfully');
+    (error as any).details = jobState;
+    throw error;
   }
+  const cid = stdoutCid.trim();
+  cidCache.set(tokenId, cid);
   return cid;
 }
 
@@ -170,15 +178,24 @@ function runCmd(cmd: string): Promise<string> {
   });
 }
 
-async function getTroutCid(nftrout: NFTrout, tokenId: number): Promise<string> {
+async function getTroutCid(
+  cidCache: Map<number, string>,
+  nftrout: NFTrout,
+  tokenId: number,
+): Promise<string> {
+  const cacheValue = cidCache.get(tokenId);
+  if (cacheValue) return cacheValue;
+
   const uri = await nftrout.callStatic.tokenURI(tokenId);
   if (uri === 'ipfs://') return '';
   const cid = uri.replace('ipfs://', '');
-  const res = await fetch(`https://ipfs.escrin.org/ipfs/${cid}/outputs/trout.json`);
+  const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
   const resBody = await res.text();
   try {
     const descriptor = JSON.parse(resBody);
-    if (descriptor.seed) return cid;
+    if (!descriptor.image.startsWith('ipfs://')) return '';
+    cidCache.set(tokenId, cid);
+    return cid;
   } catch {}
   return '';
 }
