@@ -21,7 +21,7 @@ const props = defineProps<{
 }>();
 const scale = computed(() => props.scale ?? 0.45);
 const imageUrl = computed(
-  () => `https://ipfs.escrin.org/ipfs/${props.trout.cid}/outputs/trout.svg`,
+  () => `https://nftstorage.link/ipfs/${props.trout.cid}/image/trout.svg`,
 );
 const w = computed(() => 500 * scale.value + 2);
 

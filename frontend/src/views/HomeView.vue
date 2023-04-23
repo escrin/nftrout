@@ -136,8 +136,12 @@ async function troutSelected(troutId: string) {
   isBreeding.value = true;
   const [leftId, rightId] = selectedTrouts.value;
   try {
-    if (!nftrout.value) return;
-    const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(leftId, rightId);
+    if (!nftrout.value || !eth.address) return;
+    const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(
+      eth.address,
+      leftId,
+      rightId,
+    );
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
     console.log('breeding', tx.hash);
     const receipt = await tx.wait();

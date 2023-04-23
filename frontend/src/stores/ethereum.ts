@@ -9,7 +9,7 @@ const BrowserProvider = ethers.providers.Web3Provider;
 
 export enum Network {
   Unknown = 0,
-  // SapphireTestnet = 0x5aff,
+  SapphireTestnet = 0x5aff,
   SapphireMainnet = 0x5afe,
   Hyperspace = 3141,
   Filecoin = 314,
@@ -32,7 +32,7 @@ function networkFromChainId(chainId: number | string): Network {
 export function networkName(network?: Network): string {
   if (network === Network.Local) return 'Local Network';
   if (network === Network.Hardhat) return 'Hardhat Network';
-  // if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
+  if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
   if (network === Network.SapphireMainnet) return 'Sapphire Mainnet';
   if (network === Network.Hyperspace) return 'FIL Hyperspace';
   if (network === Network.Filecoin) return 'FIL Mainnet';
@@ -47,13 +47,16 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const status = ref(ConnectionStatus.Unknown);
 
   const txOpts = computed(() =>
-    network.value === Network.SapphireMainnet ? { gasLimit: 1_000_000 } : undefined,
+    network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet
+      ? { gasLimit: 1_000_000 }
+      : undefined,
   );
 
   const currency = computed(() => {
     if (network.value === Network.Filecoin || network.value === Network.Hyperspace) return 'FIL';
     if (network.value === Network.Local || network.value === Network.Hardhat) return 'TEST';
-    if (network.value === Network.SapphireMainnet) return 'ROSE';
+    if (network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet)
+      return 'ROSE';
     return '三';
   });
 
@@ -85,6 +88,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
       setSigner(accounts[0], network.value);
     });
     eth.on('chainChanged', (chainId) => {
+      window.location.reload();
       setSigner(address.value, networkFromChainId(chainId));
     });
     eth.on('connect', () => (status.value = ConnectionStatus.Connected));
