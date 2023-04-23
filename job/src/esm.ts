@@ -76,26 +76,41 @@ export class ESM {
   private getCipher = memoizeAsync(async (keyId: number) => {
     let key;
     if (keyId === 0) key = Buffer.alloc(deoxysii.KeySize, 42);
-    else if (keyId === 1) key = await this.fetchKeySapphire();
+    else if (keyId === 1) key = await this.deriveKey('nftrout/encryption/nfts');
     else throw new Error(`unknown key: ${keyId}`);
     return new deoxysii.AEAD(key);
   });
 
-  public async encrypt(data: Uint8Array): Promise<Box> {
+  public async encrypt(data: Uint8Array, binding?: unknown): Promise<Box> {
     const keyId = LATEST_KEY_ID;
     const cipher = await this.getCipher(keyId);
     const nonce = randomBytes(deoxysii.NonceSize);
     return {
       keyId,
       nonce: encode(nonce),
-      data: encode(cipher.encrypt(nonce, data)),
+      data: encode(cipher.encrypt(nonce, data, bind(binding))),
     };
   }
 
-  public async decrypt({ keyId, nonce, data }: Box): Promise<Uint8Array> {
+  public async decrypt({ keyId, nonce, data }: Box, binding?: unknown): Promise<Uint8Array> {
     const cipher = await this.getCipher(keyId);
-    return cipher.decrypt(decode(nonce), decode(data));
+    return cipher.decrypt(decode(nonce), decode(data), bind(binding));
   }
+
+  public async deriveKey(keyId: string, length = 32): Promise<Uint8Array> {
+    return new Promise(async (resolve, reject) => {
+      const ikm = await this.fetchKeySapphire();
+      hkdf('sha512-256', ikm, '', keyId, length, (err, key) => {
+        if (err) reject(err);
+        else resolve(Buffer.from(key));
+      });
+    });
+  }
+}
+
+function bind(prop: unknown): Uint8Array | undefined {
+  if (prop === undefined) return undefined;
+  return Buffer.from(JSON.stringify(prop));
 }
 
 async function mockQuote(registration: Registration): Promise<Uint8Array> {
