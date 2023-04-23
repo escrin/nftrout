@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   const randomInt = async (low: number, high: number) => {
     const range = high - low + 1;
     // This is not ideal. Node.js does not have a VRF and sealing doesn't exist yet.
-    const seedMaterial = await esm.deriveKey(`nftrout/entropy/${tokenId}`);
+    const seedMaterial = await esm.deriveKey(`nftrout/entropy/${chainId}/${tokenId}`);
     const randomNumber = BigNumber.from(`0x${Buffer.from(seedMaterial).toString('hex')}`);
     return randomNumber.mod(range).toNumber() + low; // This is also not ideal, but the input range is very big, so the probability of bias is low.
   };
@@ -91,6 +91,7 @@ async function main(): Promise<void> {
 
 async function fetchMetadata(esm: ESM, tokenId: number, cid: string) {
   const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
+  // TODO: verify CID
   const troutMeta = await res.json();
   if (typeof troutMeta.seed === 'number') return troutMeta;
   const { seed } = JSON.parse(

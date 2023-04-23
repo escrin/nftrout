@@ -2,6 +2,7 @@ import { hkdf, randomBytes } from 'crypto';
 
 import deoxysii from '@oasisprotocol/deoxysii';
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
+import canonicalize from 'canonicalize';
 import { ethers } from 'ethers';
 import createKeccakHash from 'keccak';
 
@@ -110,7 +111,9 @@ export class ESM {
 
 function bind(prop: unknown): Uint8Array | undefined {
   if (prop === undefined) return undefined;
-  return Buffer.from(JSON.stringify(prop));
+  const c = canonicalize(prop);
+  if (c === undefined) return c;
+  return Buffer.from(c);
 }
 
 async function mockQuote(registration: Registration): Promise<Uint8Array> {
