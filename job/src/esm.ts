@@ -1,8 +1,7 @@
-import { randomBytes } from 'crypto';
+import { hkdf, randomBytes } from 'crypto';
 
+import deoxysii from '@oasisprotocol/deoxysii';
 import * as sapphire from '@oasisprotocol/sapphire-paratime';
-// @ts-expect-error missing declaration
-import deoxysii from 'deoxysii';
 import { ethers } from 'ethers';
 import createKeccakHash from 'keccak';
 
@@ -16,6 +15,9 @@ type InitOpts = {
   web3GatewayUrl: string;
   attokAddr: string;
   lockboxAddr: string;
+  debug?: Partial<{
+    nowrap: boolean;
+  }>;
 };
 
 export type Box = {
@@ -46,11 +48,11 @@ export class ESM {
   private localWallet: ethers.Wallet;
 
   constructor(public readonly opts: InitOpts, gasKey: string) {
-    console.log(opts);
     this.provider = new ethers.providers.JsonRpcProvider(opts.web3GatewayUrl);
     this.gasWallet = new ethers.Wallet(gasKey).connect(this.provider);
-    // this.localWallet = sapphire.wrap(ethers.Wallet.createRandom().connect(this.provider));
-    this.localWallet = sapphire.wrap(this.gasWallet);
+    const localWallet = this.gasWallet;
+    // const localWallet = ethers.Wallet.createRandom().connect(this.provider);
+    this.localWallet = opts.debug?.nowrap ? localWallet : sapphire.wrap(localWallet);
     this.attok = AttestationTokenFactory.connect(opts.attokAddr, this.gasWallet);
     this.lockbox = LockboxFactory.connect(opts.lockboxAddr, this.localWallet);
   }
@@ -117,10 +119,8 @@ async function sendAttestation(
   reg: Registration,
 ): Promise<string> {
   const expectedTcbId = await attok.callStatic.getTcbId(quote);
-  console.log('expected tcb:', expectedTcbId);
   if (await attok.callStatic.isAttested(reg.registrant, expectedTcbId)) return expectedTcbId;
   const tx = await attok.attest(quote, reg, { gasLimit: 10_000_000 });
-  console.log('attesting:', tx.hash);
   const receipt = await tx.wait();
   if (receipt.status !== 1) throw new Error('attestation tx failed');
   let tcbId = '';
@@ -129,7 +129,6 @@ async function sendAttestation(
     tcbId = event.args!.tcbId;
   }
   if (!tcbId) throw new Error('could not retrieve attestation id');
-  console.log('received tcb:', tcbId);
   await waitForConfirmation(attok.provider, receipt);
   return tcbId;
 }
@@ -138,6 +137,7 @@ async function waitForConfirmation(
   provider: ethers.providers.Provider,
   receipt: ethers.ContractReceipt,
 ): Promise<void> {
+  if (!('sapphire' in provider)) return;
   const getCurrentBlock = () => provider.getBlock('latest');
   let currentBlock = await getCurrentBlock();
   while (currentBlock.number === receipt.blockNumber) {
@@ -156,7 +156,6 @@ async function getOrCreateKey(
   const tx = await lockbox
     .connect(gasWallet)
     .createKey(tcbId, randomBytes(32), { gasLimit: 10_000_000 });
-  console.log('creating key:', tx.hash);
   const receipt = await tx.wait();
   await waitForConfirmation(lockbox.provider, receipt);
   key = await lockbox.callStatic.getKey(tcbId);
