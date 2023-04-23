@@ -199,8 +199,8 @@ importers:
   job:
     dependencies:
       '@escrin/evm':
-        specifier: ^0.1.0-alpha.1
-        version: 0.1.0-alpha.1
+        specifier: 1.0.0-beta.2
+        version: 1.0.0-beta.2
       '@oasisprotocol/deoxysii':
         specifier: ^0.0.5
         version: 0.0.5
@@ -481,8 +481,8 @@ packages:
     dev: true
     optional: true
 
-  /@escrin/evm@0.1.0-alpha.1:
-    resolution: {integrity: sha512-jM+dIPEbZoRH0xUCiFQuqh967xJutaATR0ZtCHtZKxIqnkPzB1tp7HpxyOVzuFtsgGVC1WDxqcXj7Q6mim1FEQ==}
+  /@escrin/evm@1.0.0-beta.2:
+    resolution: {integrity: sha512-8Wvi38E55VRidJ+SMkF/+ebL+0TTsR5bEtXf6reewf331/xpj2DePTteJA2/1ajfaNT+RrSKILV3jtnGHKQVaA==}
     engines: {node: '>=16', pnpm: '>=7'}
     dependencies:
       '@oasisprotocol/sapphire-contracts': 0.2.1

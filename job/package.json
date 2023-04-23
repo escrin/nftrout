@@ -9,7 +9,7 @@
     "build": "npm-run-all --parallel build:**"
   },
   "dependencies": {
-    "@escrin/evm": "^0.1.0-alpha.1",
+    "@escrin/evm": "1.0.0-beta.2",
     "@oasisprotocol/deoxysii": "^0.0.5",
     "@oasisprotocol/sapphire-paratime": "^1.0.15",
     "ethers": "^5.7.2",

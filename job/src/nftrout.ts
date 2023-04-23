@@ -3,7 +3,7 @@ import { NFTStorage, File } from 'nft.storage';
 
 // @ts-expect-error missing declaration
 import { main as fishdraw, draw_svg as toSvg } from './fishdraw';
-import { Box, ESM } from './esm';
+import { Box, ESM, InitOpts } from './esm';
 
 type TroutId = {
   chainId: number;
@@ -40,8 +40,10 @@ async function main(): Promise<void> {
   if (!tokenId) throw new Error('missing tokenId');
 
   const chainId = Number.parseInt(chainIdStr, 10);
-  let init = ESM.INIT_SAPPHIRE;
+  let init: InitOpts;
   if (chainId === 0x5afe) {
+    init = ESM.INIT_SAPPHIRE;
+  } else if (chainId === 0x5aff) {
     init = ESM.INIT_SAPPHIRE_TESTNET;
   } else if (chainId === 1337 || chainId == 31337) {
     const { ATTOK_ADDR: attokAddr, LOCKBOX_ADDR: lockboxAddr } = process.env;
@@ -55,8 +57,9 @@ async function main(): Promise<void> {
         nowrap: true,
       },
     };
+  } else {
+    throw new Error(`unable to config ESM for unknown chain ${chainId}`);
   }
-
   const esm = new ESM(init, gasKey);
 
   const nftStorageClient = new NFTStorage({ token: nftStorageKey }); // TODO: use sealing
@@ -146,7 +149,7 @@ async function generate<T extends TroutId | null>(
 ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
   const tokenId = BigNumber.from(self.tokenId).toNumber();
   const attributes: TroutAttributes = {
-    genesis: tokenId <= 150,
+    genesis: tokenId <= 137,
   };
   const fishSvg = toSvg(fishdraw(seed), attributes.genesis ? 'rainbow' : 'normal');
 

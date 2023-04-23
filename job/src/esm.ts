@@ -11,7 +11,7 @@ import { decode, encode, memoizeAsync } from './utils';
 
 type Registration = AttestationToken.RegistrationStruct;
 
-type InitOpts = {
+export type InitOpts = {
   web3GatewayUrl: string;
   attokAddr: string;
   lockboxAddr: string;
@@ -31,14 +31,14 @@ export const LATEST_KEY_ID = 1;
 export class ESM {
   public static INIT_SAPPHIRE: InitOpts = {
     web3GatewayUrl: 'https://sapphire.oasis.io',
-    attokAddr: '0x127c49aE10e3c18be057106F4d16946E3Ae43975',
-    lockboxAddr: '0x52892d19DeFDDE7C25504212B3bA8E99D8e0552e',
+    attokAddr: '',
+    lockboxAddr: '',
   };
 
   public static INIT_SAPPHIRE_TESTNET: InitOpts = {
     web3GatewayUrl: 'https://testnet.sapphire.oasis.dev',
-    attokAddr: '0x3763c7364F3ba5DFc3DeBf428eB9ed49e5058bb5',
-    lockboxAddr: '0x20F3FEa7798deAd509ffA7B222101682E61878D8',
+    attokAddr: '0x960bEAcD9eFfE69e692f727F52Da7DF3601dc80f',
+    lockboxAddr: '0x68D4f98E5cd2D8d2C6f03c095761663Bf1aA8442',
   };
 
   private provider: ethers.providers.Provider;
@@ -50,7 +50,7 @@ export class ESM {
   constructor(public readonly opts: InitOpts, gasKey: string) {
     this.provider = new ethers.providers.JsonRpcProvider(opts.web3GatewayUrl);
     this.gasWallet = new ethers.Wallet(gasKey).connect(this.provider);
-    const localWallet = this.gasWallet;
+    const localWallet = new ethers.Wallet(gasKey).connect(this.provider);
     // const localWallet = ethers.Wallet.createRandom().connect(this.provider);
     this.localWallet = opts.debug?.nowrap ? localWallet : sapphire.wrap(localWallet);
     this.attok = AttestationTokenFactory.connect(opts.attokAddr, this.gasWallet);
