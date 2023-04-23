@@ -70,12 +70,7 @@ async function delistTrout() {
 </script>
 
 <template>
-  <div class="bg-white border-gray-600 mx-2 border-4 rounded-md" :class="{ selected: props.selected }">
-    <video autoplay loop class="w-[150px]">
-      <source src="/chinese-fish.mp4" type="video/mp4">
-      Your browser does not support the video tag.
-    </video>
-    <!--
+  <div class="bg-white border-gray-600 border-4 rounded-md" :class="{ selected: props.selected }">
     <div
       @click="$emit('selected')"
       class="bg-contain bg-no-repeat bg-cover rounded-sm"
@@ -93,7 +88,6 @@ async function delistTrout() {
         <span class="pl-1">#{{ props.trout.id }}</span>
       </p>
     </div>
-    -->
     <form
       v-if="props.editable && selected"
       class="absolute -translate-y-full text-center py-1 backdrop-blur-sm flex justify-around items-center text-gray-700 rounded-b-sm text-sm"

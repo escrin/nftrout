@@ -16,17 +16,16 @@ export async function troutCid(
   troutId: BigNumber,
   blockTag: string | number = 'latest',
 ): Promise<string> {
-  return 'chinese-fish.mp4';
-  // try {
-  //   const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
-  //   const cid = uri.replace('ipfs://', '');
-  //   if (!cid) throw new Error('no uri');
-  //   const res = await fetch(`https://ipfs.escrin.org/ipfs/${cid}/outputs/trout.svg`, {
-  //     mode: 'cors',
-  //   });
-  //   if (!res.ok) throw new Error('request failed');
-  //   return cid;
-  // } catch {
-  //   return '';
-  // }
+  try {
+    const uri = await nftrout.callStatic.tokenURI(troutId, { blockTag });
+    const cid = uri.replace('ipfs://', '');
+    if (!cid) throw new Error('no uri');
+    const res = await fetch(`https://ipfs.escrin.org/ipfs/${cid}/outputs/trout.svg`, {
+      mode: 'cors',
+    });
+    if (!res.ok) throw new Error('request failed');
+    return cid;
+  } catch {
+    return '';
+  }
 }
