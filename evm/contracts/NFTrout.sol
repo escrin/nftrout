@@ -16,11 +16,11 @@ type TokenId is uint256;
 /// You are not the owner of the trout;
 error NotOwner(); // 30cd7471 MM10cQ==
 /// The token does not exist;
-error NoSuchToken(TokenId id);
+error NoSuchToken(TokenId id); // 08ff8e94 CP+OlA==
 /// One of the trout you tried to breed is neither owned by you nor listed for public breeding.
 error NotListed(); // 665c1c57 ZlwcVw==
 /// Not enough value was sent.
-error PaymentRequired(uint256 amount); // 8c4fcd93 jE/Nkw=b
+error PaymentRequired(uint256 amount); // ffc1f873 /8H4cw==
 /// A trout cannot breed with itself.
 error CannotSelfBreed(); // 56938583 VpOFgw==
 

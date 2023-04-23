@@ -74,7 +74,7 @@ type Config = {
 type CidCache = Map<number, { cid: string; posted: boolean }>;
 
 task('invoke-spawner')
-  .addOptionalParam('batchSize', 'How many trout to spawn in one transaction', 50, types.int)
+  .addOptionalParam('batchSize', 'How many trout to spawn in one transaction', 20, types.int)
   .addOptionalParam('local', '', false, types.boolean)
   .setAction(async (args, hre) => {
     const { ethers } = hre;
@@ -102,13 +102,12 @@ task('invoke-spawner')
       console.warn('could not read cache file:', e);
     }
 
-    const taskIds: number[] = [];
-    const cids: string[] = [];
+    const tasks = new Map<number, string>();
 
     for (const [tokenId, { cid, posted }] of cidCache.entries()) {
       if (posted) continue;
-      taskIds.push(tokenId);
-      cids.push(cid);
+      tasks.set(tokenId, cid);
+      if (tasks.size === args.batchSize) break;
     }
 
     const needsSpawning = [];
@@ -122,6 +121,7 @@ task('invoke-spawner')
     }
 
     for (const tokenId of await Promise.all(needsSpawning)) {
+      if (tasks.size >= args.batchSize) break;
       if (tokenId === undefined) continue;
       let cid = '';
       try {
@@ -131,21 +131,24 @@ task('invoke-spawner')
         console.error(inspect(e, undefined, 10, true));
         break; // Post the completed ones.
       }
-      taskIds.push(tokenId);
-      cids.push(cid);
-      if (taskIds.length >= args.batchSize) break;
+      tasks.set(tokenId, cid);
     }
 
     try {
-      if (!taskIds.length) return;
+      if (tasks.size === 0) return;
+      const sortedTasks = new Map([...tasks.entries()].sort(([a], [b]) => a - b));
+      const taskIds = [...sortedTasks.keys()];
+      const cids = [...sortedTasks.values()];
       const encodedCids = ethers.utils.defaultAbiCoder.encode(['string[]'], [cids]);
-      const tx = await nftrout.acceptTaskResults(taskIds, [], encodedCids, {
+      const tx = await nftrout.acceptTaskResults([...sortedTasks.keys()], [], encodedCids, {
         gasLimit: 10_000_000,
       });
+      console.log(tx.hash);
       const receipt = await tx.wait();
       if (receipt.status !== 1) throw new Error('failed to accept tasks');
-      for (const v of cidCache.values()) {
-        v.posted = true;
+      for (const taskId of taskIds) {
+        const cid = await getTroutCid(cidCache, nftrout, taskId);
+        cidCache.get(taskId)!.posted = !!cid;
       }
     } finally {
       try {
