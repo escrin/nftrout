@@ -11,6 +11,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (chainId === 0x5afe) mintReward = 80;
   else if (chainId === 314) mintReward = 1;
 
+  if (chainId !== 31337 && (await hre.deployments.getOrNull(NAME))) return true;
+
   const { address: taskAcceptorAddr } = await hre.deployments.get(INIT_TASK_ACCEPTOR);
   const { deployer } = await hre.getNamedAccounts();
   await hre.deployments.deploy(NAME, {
@@ -19,8 +21,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
     autoMine: true,
   });
+
+  return true;
 };
 
+func.id = NAME;
 func.tags = [NAME];
 func.dependencies = [INIT_TASK_ACCEPTOR];
 

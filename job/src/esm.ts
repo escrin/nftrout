@@ -32,8 +32,8 @@ export const LATEST_KEY_ID = 1;
 export class ESM {
   public static INIT_SAPPHIRE: InitOpts = {
     web3GatewayUrl: 'https://sapphire.oasis.io',
-    attokAddr: '',
-    lockboxAddr: '',
+    attokAddr: '0x96c1D1913310ACD921Fc4baE081CcDdD42374C36',
+    lockboxAddr: '0x53FE9042cbB6B9773c01F678F7c0439B09EdCeB3',
   };
 
   public static INIT_SAPPHIRE_TESTNET: InitOpts = {
@@ -155,10 +155,11 @@ async function waitForConfirmation(
   provider: ethers.providers.Provider,
   receipt: ethers.ContractReceipt,
 ): Promise<void> {
-  if (!('sapphire' in provider)) return;
+  const  {chainId } = await provider.getNetwork();
+  if (chainId !== 0x5afe && chainId !== 0x5aff) return;
   const getCurrentBlock = () => provider.getBlock('latest');
   let currentBlock = await getCurrentBlock();
-  while (currentBlock.number === receipt.blockNumber) {
+  while (currentBlock.number <= receipt.blockNumber + 1) {
     await new Promise((resolve) => setTimeout(resolve, 3_000));
     currentBlock = await getCurrentBlock();
   }

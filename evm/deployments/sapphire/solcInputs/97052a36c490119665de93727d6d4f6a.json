@@ -1,0 +1,39 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "@escrin/evm/contracts/tasks/acceptor/ITaskAcceptor.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nerror UnknownQuantifier(); // yrtLPA== cabb4b3c\n\ninterface ITaskAcceptorV1 {\n    struct TaskIdSelector {\n        Quantifier quantifier;\n        /// A sorted list identifying subset of submitted tasks that will interpereted per the quantifier.\n        uint256[] taskIds;\n    }\n\n    enum Quantifier {\n        Unknown,\n        All,\n        None,\n        Some,\n        Excluding\n    }\n\n    /// Accepts one or more elements of a task runner's task results submission, returning the seto tasks that were accepted.\n    /// @param _taskIds a sorted set of taskIds completed in this submission\n    /// @param _proof some proof of having completed the identiied tasks that the acceptor can verify.\n    /// @param _report some data provided by the submitter that the requester may or may not trust\n    function acceptTaskResults(\n        uint256[] calldata _taskIds,\n        bytes calldata _proof,\n        bytes calldata _report\n    ) external returns (TaskIdSelector memory);\n}\n\n/// An extension to `ITaskAcceptorV1` that helps task runners know where to find details about how to complete the task.\ninterface ITaskAcceptanceCriteriaV1 is ITaskAcceptorV1 {\n    /// @return a string that could be a URI or some abi-encoded data\n    function taskAcceptanceCriteria(uint256 _taskId) external view returns (string calldata);\n}\n\nlibrary TaskIdSelectorOps {\n    function countSelected(\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\n        uint256 _totalCount\n    ) internal pure returns (uint256 count) {\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) return _totalCount;\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return 0;\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) return _sel.taskIds.length;\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding)\n            return _totalCount - _sel.taskIds.length;\n        revert UnknownQuantifier();\n    }\n\n    /// @param _set a sorted set of task ids\n    function selected(\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\n        uint256[] memory _set\n    ) internal pure returns (uint256[] memory) {\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) return _set;\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return new uint256[](0);\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) return _sel.taskIds;\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding) {\n            uint256[] memory out = new uint256[](countSelected(_sel, _set.length));\n            uint256 selPtr;\n            uint256 outPtr;\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\n                if (_set[setPtr] == _sel.taskIds[selPtr]) continue;\n                out[outPtr] = _set[setPtr];\n                selPtr++;\n                outPtr++;\n            }\n            return out;\n        }\n        revert UnknownQuantifier();\n    }\n\n    function indices(\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\n        uint256[] memory _set\n    ) internal pure returns (uint256[] memory) {\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) {\n            uint256[] memory ixs = new uint256[](_set.length);\n            for (uint256 i; i < ixs.length; ++i) ixs[i] = i;\n            return ixs;\n        }\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return new uint256[](0);\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) {\n            uint256[] memory ixs = new uint256[](_sel.taskIds.length);\n            uint256 selPtr;\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\n                if (_set[setPtr] != _sel.taskIds[selPtr]) continue;\n                ixs[selPtr] = setPtr;\n                selPtr++;\n            }\n            return ixs;\n        }\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding) {\n            uint256[] memory ixs = new uint256[](countSelected(_sel, _set.length));\n            uint256 selPtr;\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\n                if (_set[setPtr] == _sel.taskIds[selPtr]) continue;\n                ixs[selPtr] = setPtr;\n                selPtr++;\n            }\n            return ixs;\n        }\n        revert UnknownQuantifier();\n    }\n\n    function pick(\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\n        uint256[] memory _set,\n        uint256[] memory _target\n    ) internal pure returns (uint256[] memory) {\n        uint256[] memory ixs = indices(_sel, _set);\n        uint256[] memory placed = new uint256[](ixs.length);\n        for (uint256 i; i < ixs.length; ++i) {\n            placed[i] = _target[ixs[i]];\n        }\n        return placed;\n    }\n\n    function all() internal pure returns (ITaskAcceptorV1.TaskIdSelector memory sel) {\n        sel.quantifier = ITaskAcceptorV1.Quantifier.All;\n    }\n\n    function none() internal pure returns (ITaskAcceptorV1.TaskIdSelector memory sel) {\n        sel.quantifier = ITaskAcceptorV1.Quantifier.None;\n    }\n}\n"
+    },
+    "contracts/acceptor/TrustMeBroTaskAcceptor.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nimport {ITaskAcceptorV1} from \"@escrin/evm/contracts/tasks/acceptor/ITaskAcceptor.sol\";\n\n/// The `TrustMeBroTaskAcceptor` is the first step in fully autonomizing NFTrout.\n/// The `setTaskAcceptor` method in NFTrout allows this one to be replaced with something that checks the validity of the TEE that spawned the trout.\n/// Along with `setOwner`, these methods allow NFTrout to be owned autonomously in cooperation with TROUTDAO.\ncontract TrustMeBroTaskAcceptor is ITaskAcceptorV1 {\n    address public immutable trustedSender;\n\n    constructor(address _trustedSender) {\n        trustedSender = _trustedSender;\n    }\n\n    function acceptTaskResults(\n        uint256[] calldata,\n        bytes calldata,\n        bytes calldata\n    ) external virtual returns (TaskIdSelector memory) {\n        require(msg.sender == trustedSender, \"not trusted sender\");\n        return TaskIdSelector({\n            quantifier: Quantifier.All,\n            taskIds: new uint256[](0)\n        });\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 4294967295
+    },
+    "viaIR": true,
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

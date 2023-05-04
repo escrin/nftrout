@@ -74,7 +74,7 @@ type Config = {
 type CidCache = Map<number, { cid: string; posted: boolean }>;
 
 task('invoke-spawner')
-  .addOptionalParam('batchSize', 'How many trout to spawn in one transaction', 20, types.int)
+  .addOptionalParam('batchSize', 'How many trout to spawn in one transaction', 30, types.int)
   .addOptionalParam('local', '', false, types.boolean)
   .setAction(async (args, hre) => {
     const { ethers } = hre;
@@ -91,9 +91,10 @@ task('invoke-spawner')
 
     const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
 
+    const cachePath = `cid-cache-${chainId}.json`;
     const cidCache: CidCache = new Map();
     try {
-      const cacheJson = await fs.readFile('cid-cache.json', 'utf8');
+      const cacheJson = await fs.readFile(cachePath, 'utf8');
       const cacheEntries = JSON.parse(cacheJson);
       for (const [k, v] of cacheEntries) {
         cidCache.set(k, v);
@@ -141,7 +142,7 @@ task('invoke-spawner')
       const cids = [...sortedTasks.values()];
       const encodedCids = ethers.utils.defaultAbiCoder.encode(['string[]'], [cids]);
       const tx = await nftrout.acceptTaskResults([...sortedTasks.keys()], [], encodedCids, {
-        gasLimit: 10_000_000,
+        gasLimit: 15_000_000,
       });
       console.log(tx.hash);
       const receipt = await tx.wait();
@@ -152,7 +153,7 @@ task('invoke-spawner')
       }
     } finally {
       try {
-        await fs.writeFile('cid-cache.json', JSON.stringify([...cidCache.entries()]));
+        await fs.writeFile(cachePath, JSON.stringify([...cidCache.entries()]));
       } catch (e) {
         console.warn('could not write cache file:', e);
       }
@@ -330,12 +331,21 @@ task('set-matchmaking-bps')
     await tx.wait();
   });
 
-task('set-mint-reward')
-  .addParam('value')
-  .setAction(async (args, hre) => {
+task('set-task-acceptor')
+  .addParam('addr')
+  .setAction(async ({ addr }, hre) => {
     const { ethers } = hre;
     const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
-    const newMintReward = ethers.utils.parseEther(args.mintFee);
+    const tx = await nftrout.setTaskAcceptor(addr);
+    await tx.wait();
+  });
+
+task('set-mint-reward')
+  .addParam('value')
+  .setAction(async ({ value }, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const newMintReward = ethers.utils.parseEther(value);
     const tx = await nftrout.setMintReward(newMintReward);
     await tx.wait();
   });
