@@ -351,6 +351,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
+        runs: Math.pow(2, 32) - 1,
       },
       viaIR: true,
     },
@@ -361,12 +362,14 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     'sapphire-testnet': {
-      url: 'https://testnet.sapphire.oasis.dev',
+      // url: 'https://testnet.sapphire.oasis.dev',
+      url: 'http://127.0.0.1:8545',
       chainId: 0x5aff,
       accounts,
     },
     sapphire: {
-      url: 'https://sapphire.oasis.io',
+      // url: 'https://sapphire.oasis.io',
+      url: 'http://127.0.0.1:8545',
       chainId: 0x5afe,
       accounts,
     },

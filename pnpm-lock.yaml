@@ -5,8 +5,8 @@ importers:
   evm:
     dependencies:
       '@escrin/evm':
-        specifier: 1.0.0-beta.2
-        version: 1.0.0-beta.2
+        specifier: 1.0.0-beta.3
+        version: 1.0.0-beta.3
       '@oasisprotocol/sapphire-contracts':
         specifier: ^0.2.1
         version: 0.2.1
@@ -522,6 +522,14 @@ packages:
 
   /@escrin/evm@1.0.0-beta.2:
     resolution: {integrity: sha512-8Wvi38E55VRidJ+SMkF/+ebL+0TTsR5bEtXf6reewf331/xpj2DePTteJA2/1ajfaNT+RrSKILV3jtnGHKQVaA==}
+    engines: {node: '>=16', pnpm: '>=7'}
+    dependencies:
+      '@oasisprotocol/sapphire-contracts': 0.2.1
+      '@openzeppelin/contracts': 4.8.3
+    dev: false
+
+  /@escrin/evm@1.0.0-beta.3:
+    resolution: {integrity: sha512-PWSqAcAeh8DKpcfmhcjI42m26AXOUnlUhhD2f7Eac+4OJWdISmCzJRvgXvjZW12A4W0eWFjNk2a9PzD/WHp3zQ==}
     engines: {node: '>=16', pnpm: '>=7'}
     dependencies:
       '@oasisprotocol/sapphire-contracts': 0.2.1

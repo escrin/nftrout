@@ -1,0 +1,143 @@
+{
+  "address": "0x75454aa97a1a1aB33e3852C34FF636A26d5464F2",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_trustedSender",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AcceptedTaskIdsNotSorted",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SubmisionTaskIdsNotSorted",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "_taskIds",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_proof",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_report",
+          "type": "bytes"
+        }
+      ],
+      "name": "acceptTaskResults",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "enum ITaskAcceptorV1.Quantifier",
+              "name": "quantifier",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "taskIds",
+              "type": "uint256[]"
+            }
+          ],
+          "internalType": "struct ITaskAcceptorV1.TaskIdSelector",
+          "name": "sel",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "trustedSender",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xcef63bae9dfec458848f1bf95cdc5c8a9053fa2485880fb87b4905d9611e482e",
+  "receipt": {
+    "to": null,
+    "from": "0x3BA9F711C9808902f6a200d3715ba8a7e4D8b63f",
+    "contractAddress": "0x75454aa97a1a1aB33e3852C34FF636A26d5464F2",
+    "transactionIndex": 0,
+    "gasUsed": "342516",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x09c6eec4d6708c654759b34f5df1542607e3d53ddad787a6aa6552d551562f1e",
+    "transactionHash": "0xcef63bae9dfec458848f1bf95cdc5c8a9053fa2485880fb87b4905d9611e482e",
+    "logs": [],
+    "blockNumber": 410388,
+    "cumulativeGasUsed": "342516",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x7Df2e133FCFF612aA46995E82A54335F716B66be"
+  ],
+  "numDeployments": 2,
+  "solcInputHash": "bd2f623755dbcd39ab9f784fde330606",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.18+commit.87f61d96\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_trustedSender\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AcceptedTaskIdsNotSorted\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SubmisionTaskIdsNotSorted\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256[]\",\"name\":\"_taskIds\",\"type\":\"uint256[]\"},{\"internalType\":\"bytes\",\"name\":\"_proof\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"_report\",\"type\":\"bytes\"}],\"name\":\"acceptTaskResults\",\"outputs\":[{\"components\":[{\"internalType\":\"enum ITaskAcceptorV1.Quantifier\",\"name\":\"quantifier\",\"type\":\"uint8\"},{\"internalType\":\"uint256[]\",\"name\":\"taskIds\",\"type\":\"uint256[]\"}],\"internalType\":\"struct ITaskAcceptorV1.TaskIdSelector\",\"name\":\"sel\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"trustedSender\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"acceptTaskResults(uint256[],bytes,bytes)\":{\"params\":{\"_proof\":\"some proof of having completed the identiied tasks that the acceptor can verify.\",\"_report\":\"some data provided by the submitter that the requester may or may not trust\",\"_taskIds\":\"a sorted set of taskIds completed in this submission\"}}},\"version\":1},\"userdoc\":{\"errors\":{\"AcceptedTaskIdsNotSorted()\":[{\"notice\":\"The set of accepted task ids was not sorted.\"}],\"SubmisionTaskIdsNotSorted()\":[{\"notice\":\"The input task ids were not sorted.\"}]},\"kind\":\"user\",\"methods\":{\"acceptTaskResults(uint256[],bytes,bytes)\":{\"notice\":\"Accepts one or more elements of a task runner's task results submission, returning the seto tasks that were accepted.\"}},\"notice\":\"The `TrustMeBroTaskAcceptor` is the first step in fully autonomizing NFTrout. The `setTaskAcceptor` method in NFTrout allows this one to be replaced with something that checks the validity of the TEE that spawned the trout. Along with `setOwner`, these methods allow NFTrout to be owned autonomously in cooperation with TROUTDAO.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/acceptor/TrustMeBroTaskAcceptor.sol\":\"TrustMeBroTaskAcceptor\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":4294967295},\"remappings\":[],\"viaIR\":true},\"sources\":{\"@escrin/evm/contracts/tasks/acceptor/ITaskAcceptor.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.9;\\n\\nerror UnknownQuantifier(); // yrtLPA== cabb4b3c\\n\\ninterface ITaskAcceptorV1 {\\n    struct TaskIdSelector {\\n        Quantifier quantifier;\\n        /// A sorted list identifying subset of submitted tasks that will interpereted per the quantifier.\\n        uint256[] taskIds;\\n    }\\n\\n    enum Quantifier {\\n        Unknown,\\n        All,\\n        None,\\n        Some,\\n        Excluding\\n    }\\n\\n    /// Accepts one or more elements of a task runner's task results submission, returning the seto tasks that were accepted.\\n    /// @param _taskIds a sorted set of taskIds completed in this submission\\n    /// @param _proof some proof of having completed the identiied tasks that the acceptor can verify.\\n    /// @param _report some data provided by the submitter that the requester may or may not trust\\n    function acceptTaskResults(\\n        uint256[] calldata _taskIds,\\n        bytes calldata _proof,\\n        bytes calldata _report\\n    ) external returns (TaskIdSelector memory);\\n}\\n\\n/// An extension to `ITaskAcceptorV1` that helps task runners know where to find details about how to complete the task.\\ninterface ITaskAcceptanceCriteriaV1 is ITaskAcceptorV1 {\\n    /// @return a string that could be a URI or some abi-encoded data\\n    function taskAcceptanceCriteria(uint256 _taskId) external view returns (string calldata);\\n}\\n\\nlibrary TaskIdSelectorOps {\\n    function countSelected(\\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\\n        uint256 _totalCount\\n    ) internal pure returns (uint256 count) {\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) return _totalCount;\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return 0;\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) return _sel.taskIds.length;\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding)\\n            return _totalCount - _sel.taskIds.length;\\n        revert UnknownQuantifier();\\n    }\\n\\n    /// @param _set a sorted set of task ids\\n    function selected(\\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\\n        uint256[] memory _set\\n    ) internal pure returns (uint256[] memory) {\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) return _set;\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return new uint256[](0);\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) return _sel.taskIds;\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding) {\\n            uint256[] memory out = new uint256[](countSelected(_sel, _set.length));\\n            uint256 selPtr;\\n            uint256 outPtr;\\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\\n                if (_set[setPtr] == _sel.taskIds[selPtr]) continue;\\n                out[outPtr] = _set[setPtr];\\n                selPtr++;\\n                outPtr++;\\n            }\\n            return out;\\n        }\\n        revert UnknownQuantifier();\\n    }\\n\\n    function indices(\\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\\n        uint256[] memory _set\\n    ) internal pure returns (uint256[] memory) {\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.All) {\\n            uint256[] memory ixs = new uint256[](_set.length);\\n            for (uint256 i; i < ixs.length; ++i) ixs[i] = i;\\n            return ixs;\\n        }\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.None) return new uint256[](0);\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Some) {\\n            uint256[] memory ixs = new uint256[](_sel.taskIds.length);\\n            uint256 selPtr;\\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\\n                if (_set[setPtr] != _sel.taskIds[selPtr]) continue;\\n                ixs[selPtr] = setPtr;\\n                selPtr++;\\n            }\\n            return ixs;\\n        }\\n        if (_sel.quantifier == ITaskAcceptorV1.Quantifier.Excluding) {\\n            uint256[] memory ixs = new uint256[](countSelected(_sel, _set.length));\\n            uint256 selPtr;\\n            for (uint256 setPtr; setPtr < _set.length; ++setPtr) {\\n                if (_set[setPtr] == _sel.taskIds[selPtr]) continue;\\n                ixs[selPtr] = setPtr;\\n                selPtr++;\\n            }\\n            return ixs;\\n        }\\n        revert UnknownQuantifier();\\n    }\\n\\n    function pick(\\n        ITaskAcceptorV1.TaskIdSelector memory _sel,\\n        uint256[] memory _set,\\n        uint256[] memory _target\\n    ) internal pure returns (uint256[] memory) {\\n        uint256[] memory ixs = indices(_sel, _set);\\n        uint256[] memory placed = new uint256[](ixs.length);\\n        for (uint256 i; i < ixs.length; ++i) {\\n            placed[i] = _target[ixs[i]];\\n        }\\n        return placed;\\n    }\\n\\n    function all() internal pure returns (ITaskAcceptorV1.TaskIdSelector memory sel) {\\n        sel.quantifier = ITaskAcceptorV1.Quantifier.All;\\n    }\\n\\n    function none() internal pure returns (ITaskAcceptorV1.TaskIdSelector memory sel) {\\n        sel.quantifier = ITaskAcceptorV1.Quantifier.None;\\n    }\\n}\\n\",\"keccak256\":\"0x386386a6ba1c9a27b3af17bd666fa59d5e02dc4bb05b1f4e1d154f0e4d7495b7\",\"license\":\"MIT\"},\"@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.9;\\n\\nimport {ITaskAcceptorV1, TaskIdSelectorOps} from \\\"./ITaskAcceptor.sol\\\";\\n\\n/// The input task ids were not sorted.\\nerror SubmisionTaskIdsNotSorted(); // E+1Qrg== 13ed50ae\\n/// The set of accepted task ids was not sorted.\\nerror AcceptedTaskIdsNotSorted(); // WjXPLQ== 5a35cf2d\\n\\nabstract contract TaskAcceptorV1 is ITaskAcceptorV1 {\\n    using TaskIdSelectorOps for TaskIdSelector;\\n\\n    function acceptTaskResults(\\n        uint256[] calldata _taskIds,\\n        bytes calldata _proof,\\n        bytes calldata _report\\n    ) external virtual returns (TaskIdSelector memory sel) {\\n        if (!_isSortedSet(_taskIds)) revert SubmisionTaskIdsNotSorted();\\n        _beforeTaskResultsAccepted(_taskIds, _proof, _report, msg.sender);\\n        sel = _acceptTaskResults(_taskIds, _proof, _report, msg.sender);\\n        if (!_isSortedSet(sel.taskIds)) revert AcceptedTaskIdsNotSorted();\\n        _afterTaskResultsAccepted(_taskIds, _report, msg.sender, sel);\\n    }\\n\\n    /// Accepts one or more elements of a task runner's task results submission, returning the seto tasks that were accepted.\\n    /// @param _taskIds a sorted set of taskIds completed in this submission\\n    /// @param _proof some proof of having completed the identiied tasks that the acceptor can verify.\\n    /// @param _report Some data provided by the submitter that the requester may or may not trust\\n    /// @param _submitter The account that submitted the task results.\\n    /// @return A selection of the accepted task results, which may be empty.\\n    function _acceptTaskResults(\\n        uint256[] calldata _taskIds,\\n        bytes calldata _proof,\\n        bytes calldata _report,\\n        address _submitter\\n    ) internal virtual returns (TaskIdSelector memory);\\n\\n    /// Runs before tasks are accepted.\\n    function _beforeTaskResultsAccepted(\\n        uint256[] calldata /* _taskIds */,\\n        bytes calldata /* _proof */,\\n        bytes calldata /* _report */,\\n        address /* _submitter */\\n    ) internal virtual {\\n        return;\\n    }\\n\\n    function _afterTaskResultsAccepted(\\n        uint256[] calldata /* _taskIds */,\\n        bytes calldata /* _report */,\\n        address /* _submitter */,\\n        TaskIdSelector memory /* _selected */\\n    ) internal virtual {\\n        return;\\n    }\\n\\n    function _isSortedSet(uint256[] memory _input) internal pure returns (bool) {\\n        for (uint256 i = 1; i < _input.length; ++i) {\\n            if (_input[i] <= _input[i - 1]) {\\n                return false;\\n            }\\n        }\\n        return true;\\n    }\\n}\\n\",\"keccak256\":\"0x45daece284dc5823be37c36694e95f7484a6a8e95ceb527f71e7faef8b0ede1d\",\"license\":\"MIT\"},\"@escrin/evm/contracts/tasks/acceptor/TrustedSenderTaskAcceptor.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.9;\\n\\nimport {Ownable} from \\\"@openzeppelin/contracts/access/Ownable.sol\\\";\\n\\nimport {TaskAcceptorV1} from \\\"./TaskAcceptor.sol\\\";\\n\\nabstract contract TrustedSenderTaskAcceptorV1 is TaskAcceptorV1 {\\n    address public immutable trustedSender;\\n\\n    constructor(address _trustedSender) {\\n        trustedSender = _trustedSender;\\n    }\\n\\n    function _acceptTaskResults(\\n        uint256[] calldata,\\n        bytes calldata,\\n        bytes calldata,\\n        address _submitter\\n    ) internal virtual override returns (TaskIdSelector memory sel) {\\n        sel.quantifier = _isTrustedSender(_submitter) ? Quantifier.All : Quantifier.None;\\n    }\\n\\n    function _isTrustedSender(address addr) internal virtual view returns (bool) {\\n        return addr == trustedSender;\\n    }\\n}\\n\",\"keccak256\":\"0xcb044f9d3df58cbbd1cc21fc1ee01e7db4fb7eef0301f186b034024984c65263\",\"license\":\"MIT\"},\"@openzeppelin/contracts/access/Ownable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract Ownable is Context {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    constructor() {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        _checkOwner();\\n        _;\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if the sender is not the owner.\\n     */\\n    function _checkOwner() internal view virtual {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0xa94b34880e3c1b0b931662cb1c09e5dfa6662f31cba80e07c5ee71cd135c9673\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7\",\"license\":\"MIT\"},\"contracts/acceptor/TrustMeBroTaskAcceptor.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.9;\\n\\nimport {TrustedSenderTaskAcceptorV1} from \\\"@escrin/evm/contracts/tasks/acceptor/TrustedSenderTaskAcceptor.sol\\\";\\n\\n/// The `TrustMeBroTaskAcceptor` is the first step in fully autonomizing NFTrout.\\n/// The `setTaskAcceptor` method in NFTrout allows this one to be replaced with something that checks the validity of the TEE that spawned the trout.\\n/// Along with `setOwner`, these methods allow NFTrout to be owned autonomously in cooperation with TROUTDAO.\\ncontract TrustMeBroTaskAcceptor is TrustedSenderTaskAcceptorV1 {\\n    constructor(address _trustedSender) TrustedSenderTaskAcceptorV1(_trustedSender) {\\n        return;\\n    }\\n}\\n\",\"keccak256\":\"0xf99eb0431b1bdf4dbb0879d766006f89586f6aeb082f46169953266d7decc21a\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60a03461007157601f6105c038819003918201601f19168301916001600160401b038311848410176100765780849260209460405283398101031261007157516001600160a01b038116810361007157608052604051610533908161008d823960805181818161017101526103560152f35b600080fd5b634e487b7160e01b600052604160045260246000fdfe6080604081815260048036101561001557600080fd5b600092833560e01c9081636927cac51461030c5750639c45b66e1461003957600080fd5b346103085760607ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103085780359267ffffffffffffffff9081851161030557366023860112156103055784830135828111610301578060051b906024968783820101913683116102fd5788358681116102f9576100bd903690890161037a565b50506044358681116102f9576100d6903690890161037a565b50506100e06103ad565b9585875260606020809801527fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0603f8a51960116850190858210908211176102ce57885283528701848084015b8383106102be57505050506101419061043f565b156102965761014e6103ad565b92818452828401906060825273ffffffffffffffffffffffffffffffffffffffff7f000000000000000000000000000000000000000000000000000000000000000016331460001461028f5760015b60058110156102645785526101b2825161043f565b1561023d5785519684885260608801955191600583101561021357888089878a8a898982870152519380860152835180925280608086019401925b8281106101fc57505050500390f35b8351855286955093810193928101926001016101ed565b602185917f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b85517f5a35cf2d000000000000000000000000000000000000000000000000000000008152fd5b87846021847f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b600261019d565b8284517f13ed50ae000000000000000000000000000000000000000000000000000000008152fd5b823581529181019186910161012d565b898660418a7f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b8580fd5b8480fd5b5080fd5b80fd5b8280fd5b84903461030157817ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103015760209073ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b9181601f840112156103a85782359167ffffffffffffffff83116103a857602083818601950101116103a857565b600080fd5b604051906040820182811067ffffffffffffffff8211176103cd57604052565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b80518210156104105760209160051b010190565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b9060015b82518110156104f65761045681846103fc565b517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82018281116104c15761048b90856103fc565b5110156104ef577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff81146104c157600101610443565b602460007f4e487b710000000000000000000000000000000000000000000000000000000081526011600452fd5b5060009150565b506001915056fea264697066735822122086c12da2f8384ea0d928dd3be7e4b67cda1ee7352a5cd2143b614a20a766549864736f6c63430008120033",
+  "deployedBytecode": "0x6080604081815260048036101561001557600080fd5b600092833560e01c9081636927cac51461030c5750639c45b66e1461003957600080fd5b346103085760607ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103085780359267ffffffffffffffff9081851161030557366023860112156103055784830135828111610301578060051b906024968783820101913683116102fd5788358681116102f9576100bd903690890161037a565b50506044358681116102f9576100d6903690890161037a565b50506100e06103ad565b9585875260606020809801527fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0603f8a51960116850190858210908211176102ce57885283528701848084015b8383106102be57505050506101419061043f565b156102965761014e6103ad565b92818452828401906060825273ffffffffffffffffffffffffffffffffffffffff7f000000000000000000000000000000000000000000000000000000000000000016331460001461028f5760015b60058110156102645785526101b2825161043f565b1561023d5785519684885260608801955191600583101561021357888089878a8a898982870152519380860152835180925280608086019401925b8281106101fc57505050500390f35b8351855286955093810193928101926001016101ed565b602185917f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b85517f5a35cf2d000000000000000000000000000000000000000000000000000000008152fd5b87846021847f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b600261019d565b8284517f13ed50ae000000000000000000000000000000000000000000000000000000008152fd5b823581529181019186910161012d565b898660418a7f4e487b7100000000000000000000000000000000000000000000000000000000835252fd5b8580fd5b8480fd5b5080fd5b80fd5b8280fd5b84903461030157817ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103015760209073ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b9181601f840112156103a85782359167ffffffffffffffff83116103a857602083818601950101116103a857565b600080fd5b604051906040820182811067ffffffffffffffff8211176103cd57604052565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b80518210156104105760209160051b010190565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b9060015b82518110156104f65761045681846103fc565b517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82018281116104c15761048b90856103fc565b5110156104ef577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff81146104c157600101610443565b602460007f4e487b710000000000000000000000000000000000000000000000000000000081526011600452fd5b5060009150565b506001915056fea264697066735822122086c12da2f8384ea0d928dd3be7e4b67cda1ee7352a5cd2143b614a20a766549864736f6c63430008120033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "acceptTaskResults(uint256[],bytes,bytes)": {
+        "params": {
+          "_proof": "some proof of having completed the identiied tasks that the acceptor can verify.",
+          "_report": "some data provided by the submitter that the requester may or may not trust",
+          "_taskIds": "a sorted set of taskIds completed in this submission"
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "errors": {
+      "AcceptedTaskIdsNotSorted()": [
+        {
+          "notice": "The set of accepted task ids was not sorted."
+        }
+      ],
+      "SubmisionTaskIdsNotSorted()": [
+        {
+          "notice": "The input task ids were not sorted."
+        }
+      ]
+    },
+    "kind": "user",
+    "methods": {
+      "acceptTaskResults(uint256[],bytes,bytes)": {
+        "notice": "Accepts one or more elements of a task runner's task results submission, returning the seto tasks that were accepted."
+      }
+    },
+    "notice": "The `TrustMeBroTaskAcceptor` is the first step in fully autonomizing NFTrout. The `setTaskAcceptor` method in NFTrout allows this one to be replaced with something that checks the validity of the TEE that spawned the trout. Along with `setOwner`, these methods allow NFTrout to be owned autonomously in cooperation with TROUTDAO.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
