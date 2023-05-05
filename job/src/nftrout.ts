@@ -41,9 +41,9 @@ async function main(): Promise<void> {
 
   const chainId = Number.parseInt(chainIdStr, 10);
   let init: InitOpts;
-  if (chainId === 0x5afe) {
+  if (chainId === 0x5afe || chainId === 314) {
     init = ESM.INIT_SAPPHIRE;
-  } else if (chainId === 0x5aff) {
+  } else if (chainId === 0x5aff || chainId === 3141) {
     init = ESM.INIT_SAPPHIRE_TESTNET;
   } else if (chainId === 1337 || chainId == 31337) {
     const { ATTOK_ADDR: attokAddr, LOCKBOX_ADDR: lockboxAddr } = process.env;
@@ -150,7 +150,7 @@ async function generate<T extends TroutId | null>(
 ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
   const tokenId = BigNumber.from(self.tokenId).toNumber();
   const attributes: TroutAttributes = {
-    genesis: tokenId <= 137,
+    genesis: tokenId <= (self.chainId === 0x5aff || self.chainId === 0x5afe ? 137 : 139),
   };
   const fishSvg = toSvg(fishdraw(seed), attributes.genesis ? 'rainbow' : 'normal');
 
@@ -165,4 +165,7 @@ async function generate<T extends TroutId | null>(
   return { troutDescriptor, fishSvg };
 }
 
-main().catch((e) => console.error(e));
+main().catch((e) => {
+  console.error(e)
+  process.exit(1);
+});
