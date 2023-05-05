@@ -128,6 +128,7 @@ task('invoke-spawner')
       try {
         console.info('spawning', tokenId);
         cid = await spawnTrout(nftrout, tokenId, config, cidCache, !args.local);
+        if (!cid) throw new Error('received empty cid');
       } catch (e: any) {
         console.error(inspect(e, undefined, 10, true));
         break; // Post the completed ones.
@@ -141,9 +142,14 @@ task('invoke-spawner')
       const taskIds = [...sortedTasks.keys()];
       const cids = [...sortedTasks.values()];
       const encodedCids = ethers.utils.defaultAbiCoder.encode(['string[]'], [cids]);
-      const tx = await nftrout.acceptTaskResults([...sortedTasks.keys()], [], encodedCids, {
-        gasLimit: 15_000_000,
-      });
+      const opts: { gasLimit?: number } = {};
+      if (chainId === 0x5afe || chainId === 0x5aff) {
+        opts.gasLimit = 15_000_000;
+      } else {
+        // Preflight the tx when signed queries are not required (i.e. non-Sapphire).
+        await nftrout.callStatic.acceptTaskResults([...sortedTasks.keys()], [], encodedCids, opts);
+      }
+      const tx = await nftrout.acceptTaskResults([...sortedTasks.keys()], [], encodedCids, opts);
       console.log(tx.hash);
       const receipt = await tx.wait();
       if (receipt.status !== 1) throw new Error('failed to accept tasks');
@@ -246,7 +252,7 @@ async function getTroutCid(cidCache: CidCache, nftrout: NFTrout, tokenId: number
   try {
     const descriptor = JSON.parse(resBody);
     if (!descriptor.image.startsWith('ipfs://')) return '';
-    cidCache.set(tokenId, { cid, posted: false });
+    cidCache.set(tokenId, { cid, posted: true });
     return cid;
   } catch {}
   return '';
@@ -372,14 +378,14 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     'sapphire-testnet': {
-      // url: 'https://testnet.sapphire.oasis.dev',
-      url: 'http://127.0.0.1:8545',
+      url: 'https://testnet.sapphire.oasis.dev',
+      // url: 'http://127.0.0.1:8545',
       chainId: 0x5aff,
       accounts,
     },
     sapphire: {
-      // url: 'https://sapphire.oasis.io',
-      url: 'http://127.0.0.1:8545',
+      url: 'https://sapphire.oasis.io',
+      // url: 'http://127.0.0.1:8545',
       chainId: 0x5afe,
       accounts,
     },

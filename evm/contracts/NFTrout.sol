@@ -94,7 +94,9 @@ contract NFTrout is
             _safeMint(0xd634351C0e586ebC0B192D8573c0524AA1bC459F, 1);
             _safeMint(0x74BDF046024CDF112F1d881526e6F05d278D35a0, 1);
             _safeMint(0x739A5776F98E50bc2a453C0142cff8597b50DEA7, 1);
-            _safeMint(0x74BDF046024CDF112F1d881526e6F05d278D35a0, 1);
+            _safeMint(0xdA086766BD8E3FCa75DC5a235dE45E5AeDc5F99f, 1);
+            _safeMint(0xdD4c825203f97984e7867F11eeCc813A036089D1, 1);
+            _safeMint(0x246e62FfEe60fD6d2CF5cF9AbA60c3C1b6625E90, 1);
             taskHub().notify();
         }
     }
