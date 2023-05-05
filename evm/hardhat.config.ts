@@ -334,6 +334,7 @@ task('set-matchmaking-bps')
     const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const newMatchBps = ethers.BigNumber.from(args.matchmakingBps);
     const tx = await nftrout.setMatchmakingFee(newMatchBps);
+    console.log(tx.hash);
     await tx.wait();
   });
 
@@ -343,6 +344,7 @@ task('set-task-acceptor')
     const { ethers } = hre;
     const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const tx = await nftrout.setTaskAcceptor(addr);
+    console.log(tx.hash);
     await tx.wait();
   });
 
@@ -353,6 +355,17 @@ task('set-mint-reward')
     const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
     const newMintReward = ethers.utils.parseEther(value);
     const tx = await nftrout.setMintReward(newMintReward);
+    console.log(tx.hash);
+    await tx.wait();
+  });
+
+task('transfer-ownership')
+  .addPositionalParam('owner')
+  .setAction(async ({ owner }, hre) => {
+    const { ethers } = hre;
+    const nftrout = (await ethers.getContract('NFTrout')) as NFTrout;
+    const tx = await nftrout.transferOwnership(owner);
+    console.log(tx.hash);
     await tx.wait();
   });
 
