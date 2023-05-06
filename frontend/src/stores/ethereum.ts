@@ -49,7 +49,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const txOpts = computed(() =>
     network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet
       ? { gasLimit: 1_000_000 }
-      : undefined,
+      : {},
   );
 
   const currency = computed(() => {
