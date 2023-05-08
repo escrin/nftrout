@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import type { Trout } from '../trouts';
-import { Network, useEthereumStore } from '../stores/ethereum';
+import { useEthereumStore } from '../stores/ethereum';
 
 const eth = useEthereumStore();
 
@@ -20,9 +20,7 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 0.45);
-const imageUrl = computed(
-  () => `https://nftstorage.link/ipfs/${props.trout.cid}/image/trout.svg`,
-);
+const imageUrl = computed(() => `https://nftstorage.link/ipfs/${props.trout.cid}/image/trout.svg`);
 const w = computed(() => 500 * scale.value + 2);
 
 function formatFee(fee: BigNumber): string {

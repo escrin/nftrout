@@ -197,18 +197,37 @@ onBeforeUnmount(() => {
 });
 
 const isWithdrawing = ref(false);
+const isDonating = ref(false);
+const suggestedDonation = ref(BigNumber.from(0).mul(1e9).mul(1e9));
 
 async function withdrawEarnings() {
-  if (!nftrout.value) return;
+  if (!nftrout.value) return BigNumber.from(0);
   isWithdrawing.value = true;
   try {
     const tx = await nftrout.value.withdraw(eth.txOpts);
     console.log('withdrawing', tx);
     const receipt = await tx.wait();
     if (receipt.status !== 1) throw new Error('withdraw failed');
+    suggestedDonation.value = earnings.value;
     earnings.value = BigNumber.from(0);
   } finally {
     isWithdrawing.value = false;
+  }
+}
+
+async function donateEarnings() {
+  try {
+    isDonating.value = true;
+    const tx = await eth.signer!.sendTransaction({
+      to: '0x45708C2Ac90A671e2C642cA14002C6f9C0750057',
+      value: suggestedDonation.value,
+    });
+    console.log('donating', tx.hash);
+    await tx.wait();
+    console.warn('Thank you for your donation!');
+    suggestedDonation.value = BigNumber.from(0);
+  } finally {
+    isDonating.value = false;
   }
 }
 
@@ -230,9 +249,9 @@ function hideIntro() {
         is unpredictable and cannot be spontaneously generated, just like a real trout.
       </p>
       <p class="padded">
-        NFTrout is a tech demo of Escrin, which is described in more detail in
-        <a href="https://escrin.org" target="_blank">this blog post</a>. You can connect with our
-        mission of making secure computing accessible to all on
+        NFTrout is a tech demo of the
+        <a href="https://escrin.org" target="_blank">Escrin</a> autonomous computing network. You
+        can connect with our mission of making secure computing accessible to all on
         <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
         <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
       </p>
@@ -283,11 +302,11 @@ function hideIntro() {
 
     <section class="text-center">
       <h2>Owned Trout 🎣</h2>
-      <div class="my-2">
+      <div class="my-2 flex flex-col">
         <form
           v-if="!earnings.isZero()"
           @submit.prevent="withdrawEarnings"
-          class="text-center px-3 py-2 font-medium border-2 border-yellow-400 inline-block mx-auto rounded-md text-black-600 bg-yellow-100"
+          class="cashout-form border-yellow-400 bg-yellow-100"
         >
           You have <span class="text-green-800">{{ ethers.utils.formatEther(earnings) }}</span
           >&nbsp;{{ eth.currency }}
@@ -295,6 +314,20 @@ function hideIntro() {
           <template v-else>
             available to
             <button class="bg-green-500 px-2 py-1 rounded-md text-white">withdraw</button>
+          </template>
+        </form>
+        <form
+          v-if="!suggestedDonation.isZero()"
+          @submit.prevent="donateEarnings"
+          class="cashout-form border-sky-400 bg-sky-100"
+        >
+          <span v-if="isDonating || false"> Thank you for donating ❤️! </span>
+          <template v-else>
+            Would you like to
+            <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
+            your <span>{{ ethers.utils.formatEther(suggestedDonation) }}</span
+            >&nbsp;{{ eth.currency }}
+            earnings?
           </template>
         </form>
       </div>
@@ -363,5 +396,9 @@ a {
 
 .padded {
   @apply px-2 md:px-0;
+}
+
+.cashout-form {
+  @apply text-center px-3 py-2 font-medium border-2 mx-auto rounded-md text-gray-900 my-2;
 }
 </style>
