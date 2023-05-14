@@ -241,66 +241,73 @@ function hideIntro() {
 
 <template>
   <main class="m-auto md:w-2/3 sm:w-4/5">
-    <section class="text-center" v-if="!hidingIntro">
+    <section class="flex flex-col" v-if="!hidingIntro">
       <h2>Introduction 🏞️</h2>
-      <p class="padded">
-        NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because trout
-        genes are secret and known only to the game itself. Since nobody knows the genes, each trout
-        is unpredictable and cannot be spontaneously generated, just like a real trout.
-      </p>
-      <p class="padded">
-        NFTrout is a tech demo of the
-        <a href="https://escrin.org" target="_blank">Escrin</a> autonomous computing network. You
-        can connect with our mission of making secure computing accessible to all on
-        <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
-        <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
-      </p>
-      <h3>How to Play</h3>
-      <ol class="max-w-prose list-decimal text-left m-auto list-inside padded">
-        <li
-          ><span
-            >Connect your browser wallet to
-            <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> or
-            <a href="https://chainlist.org/chain/314" target="_blank">Filecoin</a> and ensure that
-            it is funded.
-          </span></li
-        >
-        <li>Click any two trout to initiate a breeding transaction.</li>
-        <li>Send the tx to begin incubating your trout and join the TROUT community.</li>
-        <li
-          >Your new trout will incubate for a while. Longer incubation is associated with
-          rarity.</li
-        >
-        <li>The baby trout appear under "Owned Trout". Owned trout can be farmed for breeding.</li>
-      </ol>
-      <h3>Tips</h3>
-      <ul class="max-w-prose list-disc text-left m-auto list-inside padded">
-        <li>Long-term NFTrout holders get special perks within the community.</li>
-        <li>NFTrout does not collect any of your personal data.</li>
-        <li>
-          <span
-            >This service is provided under the terms of the
-            <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
-            <a
-              href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
-              target="_blank"
-              >Here's</a
-            >
-            the
-            <a
-              href="https://github.com/escrin/escrin/blob/main/evm/contracts/enclave-identity"
-              target="_blank"
-              >code</a
-            >.
-          </span>
-        </li>
-      </ul>
-      <button @click="hideIntro" class="bg-blue-900 px-2 py-1 my-6 rounded-md text-white mx-auto">
+      <div class="p-5 backdropped inline-block mx-auto">
+        <p class="padded !mt-0">
+          NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because
+          trout genes are secret and known only to the game itself. Since nobody knows the genes,
+          each trout is unpredictable and cannot be spontaneously generated, just like a real trout.
+        </p>
+        <p class="padded">
+          NFTrout is a tech demo of the
+          <a href="https://escrin.org" target="_blank">Escrin</a> autonomous computing network. You
+          can connect with our mission of making secure computing accessible to all on
+          <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
+          <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
+        </p>
+        <h3>How to Play</h3>
+        <ol class="max-w-prose list-decimal text-left m-auto list-inside padded">
+          <li
+            ><span
+              >Connect your browser wallet to
+              <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> or
+              <a href="https://chainlist.org/chain/314" target="_blank">Filecoin</a> and ensure that
+              it is funded.
+            </span></li
+          >
+          <li>Click any two trout to initiate a breeding transaction.</li>
+          <li>Send the tx to begin incubating your trout and join the TROUT community.</li>
+          <li
+            >Your new trout will incubate for a while. Longer incubation is associated with
+            rarity.</li
+          >
+          <li
+            >The baby trout appear under "Owned Trout". Owned trout can be farmed for breeding.</li
+          >
+        </ol>
+        <h3>Tips</h3>
+        <ul class="max-w-prose list-disc text-left m-auto list-inside padded">
+          <li>Long-term NFTrout holders get special perks within the community.</li>
+          <li>NFTrout does not collect any of your personal data.</li>
+          <li>
+            <span
+              >This service is provided under the terms of the
+              <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
+              <a
+                href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
+                target="_blank"
+                >Here's</a
+              >
+              the
+              <a
+                href="https://github.com/escrin/escrin/blob/main/evm/contracts/enclave-identity"
+                target="_blank"
+                >code</a
+              >.
+            </span>
+          </li>
+        </ul>
+      </div>
+      <button
+        @click="hideIntro"
+        class="bg-blue-600 px-2 py-1 my-6 rounded-md text-white mx-auto block"
+      >
         Hide Introduction
       </button>
     </section>
 
-    <section class="text-center">
+    <section>
       <h2>Owned Trout 🎣</h2>
       <div class="my-2 flex flex-col">
         <form
@@ -378,8 +385,12 @@ input {
   @apply block my-4 p-1 mx-auto text-3xl text-center border border-gray-400 rounded-md;
 }
 
+section {
+  @apply text-center;
+}
+
 h2 {
-  @apply font-bold text-2xl mt-8 mb-4 text-center;
+  @apply font-bold text-2xl mt-8 mb-4 text-center inline-block mx-auto px-5 py-2 backdropped;
 }
 
 h3 {
@@ -400,5 +411,9 @@ a {
 
 .cashout-form {
   @apply text-center px-3 py-2 font-medium border-2 mx-auto rounded-md text-gray-900 my-2;
+}
+
+.backdropped {
+  @apply bg-sky-950/40 backdrop-blur-sm rounded-lg;
 }
 </style>

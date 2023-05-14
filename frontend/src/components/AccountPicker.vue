@@ -34,7 +34,11 @@ async function connectWallet() {
 </script>
 
 <template>
-  <button class="v-align disabled:cursor-default" :disabled="!!eth.address" @click="connectWallet">
+  <button
+    class="v-align backdrop-blur-lg disabled:cursor-default"
+    :disabled="!!eth.address"
+    @click="connectWallet"
+  >
     <div class="v-align" v-if="!connecting && eth.address">
       <JazzIcon :size="iconsize" :address="eth.address" />
       <div class="text-xs leading-none ml-1">

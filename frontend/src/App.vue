@@ -6,7 +6,9 @@ import AccountPicker from './components/AccountPicker.vue';
 
 <template>
   <header class="flex flex-row justify-between p-2">
-    <h1 class="mx-5 text-2xl font-medium centered">🐟 NFTrout</h1>
+    <h1 class="mx-5 text-2xl font-medium centered backdrop-blur-lg py-1 px-3 rounded-lg"
+      >🐟&nbsp;NFTrout</h1
+    >
     <div class="centered">
       <AccountPicker class="border border-gray-900 py-1 px-2 rounded-lg mx-5" />
     </div>
