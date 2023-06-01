@@ -404,7 +404,7 @@ const config: HardhatUserConfig = {
     },
     hyperspace: {
       url: 'https://rpc.ankr.com/filecoin_testnet',
-      chainId: 3141,
+      chainId: 314159.,
       accounts,
     },
     filecoin: {
