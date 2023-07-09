@@ -187,9 +187,18 @@ importers:
       '@escrin/runner':
         specifier: link:/home/nhynes/escrin/escrin/runner
         version: link:../../escrin/runner
+      '@noble/hashes':
+        specifier: ^1.3.1
+        version: 1.3.1
+      '@oasislabs/deoxysii':
+        specifier: ^0.0.3
+        version: 0.0.3
       '@oasisprotocol/deoxysii':
         specifier: ^0.0.5
         version: 0.0.5
+      canonicalize:
+        specifier: ^2.0.0
+        version: 2.0.0
       ethers:
         specifier: ^6.6.2
         version: 6.6.2
@@ -1159,6 +1168,11 @@ packages:
     resolution: {integrity: sha512-FZfhjEDbT5GRswV3C6uvLPHMiVD6lQBmpoX5+eSiPaMTXte/IKqI5dykDxzZB/WBeK/CDuQRBWarPdi3FNY2zQ==}
     dev: true
 
+  /@noble/hashes@1.3.1:
+    resolution: {integrity: sha512-EbqwksQwz9xDRGfDST86whPBgM65E0OH/pCgqW0GBVzO22bNE+NuIbeTb714+IfSjU3aRk47EUvXIb5bTsenKA==}
+    engines: {node: '>= 16'}
+    dev: false
+
   /@noble/secp256k1@1.7.1:
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
@@ -1487,6 +1501,14 @@ packages:
       '@nomicfoundation/solidity-analyzer-win32-ia32-msvc': 0.1.1
       '@nomicfoundation/solidity-analyzer-win32-x64-msvc': 0.1.1
     dev: true
+
+  /@oasislabs/deoxysii@0.0.3:
+    resolution: {integrity: sha512-Y37znFccOmbgpBzdz2+tfatJe/g8t7OJuLdW58Ky4vQCXCTmzBPL9UrmzEpn5wHwOB0gpWmLB3oYgT10i8wnOA==}
+    deprecated: 'WARNING: This project has been renamed to @oasisprotocol/deoxysii. Install using @oasisprotocol/deoxysii instead.'
+    dependencies:
+      bsaes: 0.0.2
+      uint32: 0.2.1
+    dev: false
 
   /@oasisprotocol/deoxysii@0.0.5:
     resolution: {integrity: sha512-a6wYPjk8ALDIiQW/971AKOTSTY1qSdld+Y05F44gVZvlb3FOyHfgbIxXm7CZnUG1A+jK49g5SCWYP+V3/Tc75Q==}
@@ -2818,6 +2840,10 @@ packages:
   /caniuse-lite@1.0.30001482:
     resolution: {integrity: sha512-F1ZInsg53cegyjroxLNW9DmrEQ1SuGRTO1QlpA0o2/6OpQ0gFeDRoq1yFmnr8Sakn9qwwt9DmbxHB6w167OSuQ==}
     dev: true
+
+  /canonicalize@2.0.0:
+    resolution: {integrity: sha512-ulDEYPv7asdKvqahuAY35c1selLdzDwHqugK92hfkzvlDCwXRRelDkR+Er33md/PtnpqHemgkuDPanZ4fiYZ8w==}
+    dev: false
 
   /carbites@1.0.6:
     resolution: {integrity: sha512-dS9IQvnrb5VIRvSTNz5Ff+mB9d2MFfi5mojtJi7Rlss79VeF190jr0sZdA7eW0CGHotvHkZaWuM6wgfD9PEFRg==}

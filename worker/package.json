@@ -1,0 +1,29 @@
+{
+  "name": "@escrin/nftrout-task",
+  "scripts": {
+    "lint:prettier": "prettier --check --cache '*.json' 'src/**/*.ts'",
+    "lint": "npm-run-all lint:**",
+    "format:prettier": "prettier --write --cache '*.json' 'src/**/*.ts'",
+    "format": "npm-run-all format:**",
+    "build:typecheck": "tsc -b",
+    "build:bundle": "esbuild --bundle src/nftrout.ts --outfile=bin/nftrout --minify --target=es2020 --format=esm",
+    "build": "npm-run-all --parallel build:**"
+  },
+  "dependencies": {
+    "@escrin/nftrout-evm": "link:../evm",
+    "@escrin/runner": "link:/home/nhynes/escrin/escrin/runner",
+    "@noble/hashes": "^1.3.1",
+    "@oasislabs/deoxysii": "^0.0.3",
+    "@oasisprotocol/deoxysii": "^0.0.5",
+    "canonicalize": "^2.0.0",
+    "ethers": "^6.6.2",
+    "keccak": "^3.0.3",
+    "nft.storage": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/keccak": "^3.0.1",
+    "esbuild": "^0.18.11",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.1.6"
+  }
+}

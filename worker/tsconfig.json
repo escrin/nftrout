@@ -1,0 +1,12 @@
+{
+  "include": ["src"],
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": ["es2021", "dom"],
+    "module": "node16",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": true,
+    "target": "es2021"
+  }
+}
