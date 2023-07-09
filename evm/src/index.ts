@@ -6,9 +6,9 @@ import sapphire from '../deployments/sapphire/NFTrout.json';
 import hyperspace from '../deployments/hyperspace/NFTrout.json';
 import filecoin from '../deployments/filecoin/NFTrout.json';
 
-export const DEPLOYMENTS: Record<number, { address: string, abi: any } | null>  = {
-  0x5aff: sapphireTestnet,
-  0x5afe: sapphire,
-  314: filecoin,
-  3141: hyperspace,
+export const DEPLOYMENTS = {
+  'sapphire-testnet': sapphireTestnet,
+  'sapphire-mainnet': sapphire,
+  'filecoin': filecoin,
+  'hyperspace': hyperspace,
 };
