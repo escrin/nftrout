@@ -11,9 +11,21 @@
   },
   "files": [
     "contracts",
+    "deployments",
     "lib",
     "src"
   ],
+  "exports": {
+    ".": {
+      "import": "./lib/src/index.js"
+    },
+    "./deployments/sapphire-testnet": {
+      "import": "./deployments/sapphire-testnet/NFTrout.json"
+    },
+    "./deployments/sapphire-mainnet": {
+      "import": "./deployments/sapphire/NFTrout.json"
+    }
+  },
   "scripts": {
     "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
     "lint:solhint": "solhint 'contracts/**/*.sol'",

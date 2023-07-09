@@ -2,11 +2,15 @@ import { EscrinRunner } from '@escrin/runner';
 import { ethers } from 'ethers';
 import { NFTStorage, File } from 'nft.storage';
 
-import { DEPLOYMENTS as NfTroutDeployments, NFTrout, NFTroutFactory } from '@escrin/nftrout-evm';
+import { NFTrout, NFTroutFactory } from '@escrin/nftrout-evm';
+// @ts-expect-error missing declaration
+import { address as nftroutSapphireTestnet } from '@escrin/nftrout-evm/deployments/sapphire-testnet';
+// @ts-expect-error missing declaration
+import { address as nftroutSapphireMainnet } from '@escrin/nftrout-evm/deployments/sapphire-mainnet';
 
 import { Box, Cipher } from './crypto.js';
 // @ts-expect-error missing declaration
-import { main as fishdraw, draw_svg as toSvg } from './fishdraw.js';
+import { main as fishdraw, draw_svg as toSvg } from './fishdraw.cjs';
 
 type TokenId = number;
 type CID = string;
@@ -55,10 +59,16 @@ export class Spawner {
     if (!spawners[config.network]) {
       const omniKey: CryptoKey = await rnr.getKey(config.network, 'omni');
       const nftStorageClient = new NFTStorage({ token: config.nftStorageKey }); // TODO: use sealing
+      let nftroutAddr: string = '';
+      if (config.network === 'sapphire-testnet') {
+        nftroutAddr = nftroutSapphireTestnet;
+      } else if (config.network === 'sapphire-mainnet') {
+        nftroutAddr = nftroutSapphireMainnet;
+      }
       spawners[config.network] = new Spawner(
         config.network,
         new ethers.Wallet(config.signerKey),
-        NfTroutDeployments[config.network].address,
+        nftroutAddr,
         omniKey,
         nftStorageClient,
       );
