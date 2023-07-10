@@ -1,12 +1,20 @@
-import { hkdf } from '@noble/hashes/hkdf';
-import { sha512_256 } from '@noble/hashes/sha512';
 import deoxysii from '@oasislabs/deoxysii';
 import canonicalize from 'canonicalize';
 
 const LATEST_KEY_ID = 1;
 
 export class Cipher {
-  #rawOmniKey: Uint8Array | undefined;
+  public static async createRandom(): Promise<Cipher> {
+    return new Cipher(
+      await crypto.subtle.importKey(
+        'raw',
+        crypto.getRandomValues(new Uint8Array(32)),
+        { name: 'HKDF', hash: 'SHA-512-256' },
+        false,
+        ['deriveKey', 'deriveBits'],
+      ),
+    );
+  }
 
   constructor(private readonly omniKey: CryptoKey) {}
 
@@ -35,10 +43,18 @@ export class Cipher {
   }
 
   public async deriveKey(keyId: string, length = 32): Promise<Uint8Array> {
-    if (typeof this.#rawOmniKey === 'undefined') {
-      this.#rawOmniKey = new Uint8Array(await crypto.subtle.exportKey('raw', this.omniKey));
-    }
-    return hkdf(sha512_256, this.#rawOmniKey, '', keyId, length);
+    return new Uint8Array(
+      await crypto.subtle.deriveBits(
+        {
+          name: 'HKDF',
+          hash: 'SHA-512-256',
+          salt: new Uint8Array(),
+          info: new TextEncoder().encode(keyId),
+        },
+        this.omniKey,
+        length << 3, // bits
+      ),
+    );
   }
 
   private bind(prop: unknown): Uint8Array {
