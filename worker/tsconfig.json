@@ -2,12 +2,12 @@
   "include": ["src"],
   "compilerOptions": {
     "esModuleInterop": true,
-    "lib": ["es2021", "dom"],
-    "module": "node16",
+    "lib": ["es2022", "dom"],
+    "module": "es2022",
     "moduleResolution": "node",
     "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "es2021"
+    "target": "es2022"
   }
 }
