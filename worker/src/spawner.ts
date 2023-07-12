@@ -41,9 +41,10 @@ type TroutDescriptor = {
   attributes?: TroutAttributes;
 };
 
-const MAX_SEED = 4294967295n; // 2^32-1
+const MAX_SEED = 4294967295; // 2^32-1
 
 const spawners: {
+  local?: Spawner;
   'sapphire-mainnet'?: Spawner;
   'sapphire-testnet'?: Spawner;
 } = {};
@@ -57,19 +58,28 @@ export type Config = {
 export class Spawner {
   public static async get(rnr: EscrinRunner, config: Config): Promise<Spawner> {
     if (!spawners[config.network]) {
-      const omniKey: CryptoKey = await rnr.getKey(config.network, 'omni');
+      const cipher =
+        config.network === 'local'
+          ? await Cipher.createRandom()
+          : new Cipher(await rnr.getKey(config.network, 'omni'));
       const nftStorageClient = new NFTStorage({ token: config.nftStorageKey }); // TODO: use sealing
-      let nftroutAddr: string = '';
+      let nftroutAddr = '';
+      let gateway = '';
       if (config.network === 'sapphire-testnet') {
         nftroutAddr = nftroutSapphireTestnet;
+        gateway = 'https://testnet.sapphire.oasis.dev';
       } else if (config.network === 'sapphire-mainnet') {
         nftroutAddr = nftroutSapphireMainnet;
+        gateway = 'https://sapphire.oasis.io';
+      } else if (config.network === 'local') {
+        nftroutAddr = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+        gateway = 'http://127.0.0.1:8545';
       }
       spawners[config.network] = new Spawner(
         config.network,
-        new ethers.Wallet(config.signerKey),
+        new ethers.Wallet(config.signerKey).connect(new ethers.JsonRpcProvider(gateway)),
         nftroutAddr,
-        omniKey,
+        cipher,
         nftStorageClient,
       );
     }
@@ -78,7 +88,6 @@ export class Spawner {
 
   #nftrout: NFTrout;
   #cidCache: Map<TokenId, { cid: CID; posted: boolean }> = new Map();
-  #cipher: Cipher;
 
   #batchSize = 30;
 
@@ -86,11 +95,10 @@ export class Spawner {
     public readonly network: keyof typeof spawners,
     signer: ethers.Signer,
     nftroutAddr: string,
-    omniKey: CryptoKey,
+    private readonly cipher: Cipher,
     private readonly nftStorage: NFTStorage,
   ) {
     this.#nftrout = NFTroutFactory.connect(nftroutAddr, signer);
-    this.#cipher = new Cipher(omniKey);
   }
 
   async spawn(): Promise<void> {
@@ -114,7 +122,7 @@ export class Spawner {
     );
 
     taskResults = taskResults.sort(([a], [b]) => a - b).slice(0, this.#batchSize); // Task results must be sorted by task ID.
-
+    if (taskResults.length === 0) return;
     const encodedCids = ethers.AbiCoder.defaultAbiCoder().encode(
       ['string[]'],
       [taskResults.map(([_, cid]) => cid)],
@@ -197,17 +205,17 @@ export class Spawner {
     }
     const troutId = { tokenId, chainId: networkNameToChainId(this.network) };
 
-    const randomInt = async (low: bigint, high: bigint) => {
-      const range = high - low + 1n;
+    const randomInt = async (low: number, high: number) => {
+      const range = BigInt(high - low + 1);
       // This is not ideal. Node.js does not have a VRF and sealing doesn't exist yet.
       const chainId = networkNameToChainId(this.network);
-      const seedMaterial = await this.#cipher.deriveKey(`nftrout/entropy/${chainId}/${tokenId}`);
+      const seedMaterial = await this.cipher.deriveKey(`nftrout/entropy/${chainId}/${tokenId}`);
       const randomNumber = uint8ArrayToBigIntLE(seedMaterial);
-      return (randomNumber % range) + BigInt(low);
+      return Number(randomNumber % range) + low;
     };
 
     if (!leftCid || !rightCid) {
-      return this.doSpawnTrout(null, null, troutId, await randomInt(0n, MAX_SEED));
+      return this.doSpawnTrout(null, null, troutId, await randomInt(0, MAX_SEED));
     }
 
     const [leftMeta, rightMeta] = await Promise.all([
@@ -215,8 +223,8 @@ export class Spawner {
       this.fetchMetadata(rightTokenId, rightCid),
     ]);
     let seedBig =
-      BigInt(leftMeta.seed) * 3n + BigInt(rightMeta.seed) * 5n + (await randomInt(0n, 64n));
-    let seed = seedBig % MAX_SEED;
+      BigInt(leftMeta.seed) * 3n + BigInt(rightMeta.seed) * 5n + BigInt(await randomInt(0, 64));
+    let seed = Number(seedBig % BigInt(MAX_SEED));
     return this.doSpawnTrout(leftMeta.properties.self, rightMeta.properties.self, troutId, seed);
   }
 
@@ -224,7 +232,7 @@ export class Spawner {
     left: T,
     right: T,
     selfId: TroutId,
-    seed: bigint,
+    seed: number,
   ) {
     const { troutDescriptor, fishSvg } = await this.generate(left, right, selfId, seed);
     const name = troutName(selfId);
@@ -240,6 +248,7 @@ export class Spawner {
       image: new File([fishSvg], 'trout.svg', { type: 'image/svg+xml' }),
       properties: troutDescriptor,
     });
+    console.log('storing car');
     await this.nftStorage.storeCar(car);
     return token.ipnft;
   }
@@ -248,7 +257,7 @@ export class Spawner {
     left: T,
     right: T,
     self: TroutId,
-    seed: bigint,
+    seed: number,
   ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
     const tokenId = Number(ethers.getBigInt(self.tokenId));
     const attributes: TroutAttributes = {
@@ -261,7 +270,7 @@ export class Spawner {
       right,
       self,
       attributes,
-      seed: await this.#cipher.encrypt(new TextEncoder().encode(JSON.stringify({ seed })), tokenId),
+      seed: await this.cipher.encrypt(new TextEncoder().encode(JSON.stringify({ seed })), tokenId),
     };
 
     return { troutDescriptor, fishSvg };
@@ -272,7 +281,7 @@ export class Spawner {
     // TODO: verify CID
     const troutMeta = await res.json();
     if (typeof troutMeta.seed === 'number') return troutMeta;
-    const seedJson = await this.#cipher.decrypt(troutMeta.properties.seed, tokenId);
+    const seedJson = await this.cipher.decrypt(troutMeta.properties.seed, tokenId);
     const { seed } = JSON.parse(new TextDecoder().decode(seedJson));
     troutMeta.seed = seed;
     return troutMeta;
@@ -296,6 +305,7 @@ function chainIdToChainName(chainId: number) {
 function networkNameToChainId(networkName: keyof typeof spawners): number {
   if (networkName === 'sapphire-testnet') return 0x5aff;
   if (networkName === 'sapphire-mainnet') return 0x5afe;
+  if (networkName === 'local') return 31337;
   throw new Error(`unrecgnized newtork: ${networkName}`);
 }
 

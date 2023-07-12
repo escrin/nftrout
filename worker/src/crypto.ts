@@ -36,7 +36,7 @@ export class Cipher {
 
   private async getCipher(keyId: number): Promise<deoxysii.AEAD> {
     let key;
-    if (keyId === 0) key = Buffer.alloc(deoxysii.KeySize, 42);
+    if (keyId === 0) key = new Uint8Array(deoxysii.KeySize).fill(42);
     else if (keyId === 1) key = await this.deriveKey('nftrout/encryption/nfts');
     else throw new Error(`unknown key: ${keyId}`);
     return new deoxysii.AEAD(key);
@@ -61,15 +61,38 @@ export class Cipher {
     if (prop === undefined) return new Uint8Array();
     const c = canonicalize(prop);
     if (c === undefined) return new Uint8Array();
-    return Buffer.from(c);
+    return new TextEncoder().encode(c);
   }
 
   private randomBytes(count: number): Uint8Array {
     return crypto.getRandomValues(new Uint8Array(count));
   }
 
-  private encode = (b: Uint8Array) => Buffer.from(b).toString('base64url');
-  private decode = (s: string) => Buffer.from(s, 'base64url');
+  private encode(b: Uint8Array): string {
+    let binaryStr = '';
+    for (let i = 0; i < b.byteLength; i++) {
+      binaryStr += String.fromCharCode(b[i]);
+    }
+    let base64 = btoa(binaryStr);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  private decode(s: string): Uint8Array {
+    // Padding might be needed if input isn't a multiple of 4
+    let padding = '='.repeat((4 - (s.length % 4)) % 4);
+    // Replace url-safe characters back to original base64 characters.
+    let base64 = (s + padding).replace(/-/g, '+').replace(/_/g, '/');
+
+    let binaryStr = atob(base64);
+    let len = binaryStr.length;
+    let bytes = new Uint8Array(binaryStr.length);
+
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    return bytes;
+  }
 }
 
 export type Box = {

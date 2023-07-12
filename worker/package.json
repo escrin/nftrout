@@ -7,8 +7,9 @@
     "format:prettier": "prettier --write --cache '*.json' 'src/**/*.ts'",
     "format": "npm-run-all format:**",
     "build:typecheck": "tsc -b",
-    "build:bundle": "esbuild --bundle src/nftrout.ts --outfile=bin/nftrout --minify --target=es2022 --format=esm",
+    "build:bundle": "esbuild --bundle src/main.ts --outfile=bin/nftrout --minify --target=es2022 --format=esm",
     "build": "npm-run-all --parallel build:**",
+    "watch:bundle": "esbuild --bundle src/main.ts --outfile=bin/nftrout --target=es2022 --format=esm --watch",
     "test": "jest"
   },
   "platforms": {
