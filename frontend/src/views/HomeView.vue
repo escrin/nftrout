@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
 
 import TroutCard from '../components/TroutCard.vue';
-import { sapphireWrap, useNFTrout } from '../contracts';
+import { useNFTrout } from '../contracts';
 import { Network, useEthereumStore } from '../stores/ethereum';
 import type { Trout } from '../trouts';
 import { troutCid } from '../trouts';
@@ -15,7 +15,7 @@ const nftrout = useNFTrout();
 
 type BlockTag = number | string;
 
-const troutSorter = (a: Trout, b: Trout) => a.id.sub(b.id).toNumber();
+const troutSorter = (a: Trout, b: Trout) => Number(a.id - b.id);
 
 const trouts = reactive<Record<string, Trout>>({});
 const myTrouts = computed(() => {
@@ -36,11 +36,11 @@ const pendingTrout = reactive(new Set<string>());
 async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> {
   loadingMyTrouts.value = true;
   if (!eth.address) return;
-  const troutIds = await nftrout.callStatic.tokensOfOwner(eth.address!, { blockTag });
+  const troutIds = await nftrout.tokensOfOwner(eth.address!, { blockTag });
   const chainId = eth.network;
   await Promise.all(
     troutIds.map(async (id) => {
-      const key = id.toHexString();
+      const key = ethers.toBeHex(id);
       const cid = await troutCid(nftrout, id, blockTag);
       if (!cid) watchPendingTroutCid(key);
       if (trouts[key] === undefined) {
@@ -65,7 +65,7 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
   for (let offset = 0; ; offset += batchSize) {
     let studs: NFTrout.StudStructOutput[] = [];
     try {
-      studs = await nftrout.callStatic.getStuds(offset, batchSize, {
+      studs = await nftrout.getStuds(offset, batchSize, {
         blockTag,
       });
     } catch (e: any) {
@@ -74,7 +74,7 @@ async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promi
     }
     await Promise.all(
       studs.map(async ({ tokenId, fee }) => {
-        const key = tokenId.toHexString();
+        const key = ethers.toBeHex(tokenId);
         const cid = await troutCid(nftrout, tokenId);
         if (!cid) {
           watchPendingTroutCid(key);
@@ -104,7 +104,7 @@ function watchPendingTroutCid(troutId: string) {
   pendingTrout.add(troutId);
   async function watcher() {
     if (!nftrout.value) return;
-    const cid = await troutCid(nftrout.value, BigNumber.from(troutId));
+    const cid = await troutCid(nftrout.value, ethers.getBigInt(troutId));
     if (cid) {
       trouts[troutId].cid = cid;
       pendingTrout.delete(troutId);
@@ -137,23 +137,27 @@ async function troutSelected(troutId: string) {
   const [leftId, rightId] = selectedTrouts.value;
   try {
     if (!nftrout.value || !eth.address) return;
-    const fee = await sapphireWrap(nftrout.value).callStatic.getBreedingFee(
-      eth.address,
-      leftId,
-      rightId,
-    );
+    const fee = await nftrout.value.getBreedingFee(eth.address, leftId, rightId);
     const tx = await nftrout.value.breed(leftId, rightId, { value: fee, ...eth.txOpts });
     console.log('breeding', tx.hash);
     const receipt = await tx.wait();
     console.log('breeding completed');
-    let newTokenId = BigNumber.from(0);
-    for (const event of receipt.events ?? []) {
-      if (event.event !== 'Transfer') continue;
-      newTokenId = BigNumber.from(receipt.events![0].topics[3]);
-      break;
+    let newTokenId = 0n;
+    for (const log of receipt?.logs ?? []) {
+      if (log instanceof ethers.EventLog) {
+        if (log.eventName !== 'Transfer') continue;
+        newTokenId = ethers.getBigInt(log.args[2]);
+        break;
+      } else {
+        const event = nftrout.value.interface.parseLog(
+          log as unknown as { data: string; topics: string[] },
+        );
+        if (event?.name !== 'Transfer') continue;
+        newTokenId = ethers.getBigInt(event.args[2]);
+      }
     }
     if (!newTokenId) throw new Error('breeding did not create new token');
-    const key = newTokenId.toHexString();
+    const key = ethers.toBeHex(newTokenId);
     watchPendingTroutCid(key);
     trouts[key] = {
       id: newTokenId,
@@ -168,21 +172,24 @@ async function troutSelected(troutId: string) {
   }
 }
 
-const earnings = ref(BigNumber.from(0));
+const earnings = ref(0n);
 let earningsPollerId: ReturnType<typeof setInterval>;
 
 async function checkEarnings() {
   if (!nftrout.value) return;
-  const caller = await nftrout.value?.signer?.getAddress();
+  const caller = eth.address;
   if (caller) {
-    earnings.value = await nftrout.value.callStatic.earnings(caller);
+    earnings.value = await nftrout.value.earnings(caller);
   }
-  earningsPollerId = setTimeout(checkEarnings, caller ? 30 * 1000 : 1_000);
 }
 
 watch(eth, async (eth) => {
-  const { number: latestBlock } = await eth.provider.getBlock('latest');
+  const { number: latestBlock } = (await eth.provider.getBlock('latest'))!;
   const blockTag = latestBlock - (eth.network === Network.SapphireMainnet ? 2 : 0);
+  if (eth.address) {
+    clearTimeout(earningsPollerId);
+    earningsPollerId = setTimeout(checkEarnings, eth.address ? 30 * 1000 : 1_000);
+  }
   await Promise.all([
     fetchBreedableTrouts(nftrout.value!, blockTag),
     fetchMyTrouts(nftrout.value!, blockTag),
@@ -198,18 +205,18 @@ onBeforeUnmount(() => {
 
 const isWithdrawing = ref(false);
 const isDonating = ref(false);
-const suggestedDonation = ref(BigNumber.from(0).mul(1e9).mul(1e9));
+const suggestedDonation = ref(0n);
 
 async function withdrawEarnings() {
-  if (!nftrout.value) return BigNumber.from(0);
+  if (!nftrout.value) return 0n;
   isWithdrawing.value = true;
   try {
     const tx = await nftrout.value.withdraw(eth.txOpts);
     console.log('withdrawing', tx);
     const receipt = await tx.wait();
-    if (receipt.status !== 1) throw new Error('withdraw failed');
+    if (receipt?.status !== 1) throw new Error('withdraw failed');
     suggestedDonation.value = earnings.value;
-    earnings.value = BigNumber.from(0);
+    earnings.value = 0n;
   } finally {
     isWithdrawing.value = false;
   }
@@ -225,7 +232,7 @@ async function donateEarnings() {
     console.log('donating', tx.hash);
     await tx.wait();
     console.warn('Thank you for your donation!');
-    suggestedDonation.value = BigNumber.from(0);
+    suggestedDonation.value = 0n;
   } finally {
     isDonating.value = false;
   }
@@ -311,11 +318,11 @@ function hideIntro() {
       <h2>Owned Trout 🎣</h2>
       <div class="my-2 flex flex-col">
         <form
-          v-if="!earnings.isZero()"
+          v-if="earnings !== 0n"
           @submit.prevent="withdrawEarnings"
           class="cashout-form border-yellow-400 bg-yellow-100"
         >
-          You have <span class="text-green-800">{{ ethers.utils.formatEther(earnings) }}</span
+          You have <span class="text-green-800">{{ ethers.formatEther(earnings) }}</span
           >&nbsp;{{ eth.currency }}
           <span v-if="isWithdrawing"> being withdrawn now. </span>
           <template v-else>
@@ -324,7 +331,7 @@ function hideIntro() {
           </template>
         </form>
         <form
-          v-if="!suggestedDonation.isZero()"
+          v-if="suggestedDonation !== 0n"
           @submit.prevent="donateEarnings"
           class="cashout-form border-sky-400 bg-sky-100"
         >
@@ -332,7 +339,7 @@ function hideIntro() {
           <template v-else>
             Would you like to
             <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
-            your <span>{{ ethers.utils.formatEther(suggestedDonation) }}</span
+            your <span>{{ ethers.formatEther(suggestedDonation) }}</span
             >&nbsp;{{ eth.currency }}
             earnings?
           </template>
@@ -354,7 +361,7 @@ function hideIntro() {
         <li class="mx-auto my-5" v-for="trout in myTrouts" :key="trout.key">
           <TroutCard
             @selected="() => troutSelected(trout.key)"
-            @feeUpdated="(fee) => (trouts[trout.key].fee = fee)"
+            @feeUpdated="(fee: bigint) => (trouts[trout.key].fee = fee)"
             :trout="trout"
             :selected="isSelected(trout.key)"
             :selectable="!isBreeding"

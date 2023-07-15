@@ -3,10 +3,6 @@ import { ethers } from 'ethers';
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
-type Provider = ethers.providers.Provider;
-const JsonRpcProvider = ethers.providers.JsonRpcProvider;
-const BrowserProvider = ethers.providers.Web3Provider;
-
 export enum Network {
   Unknown = 0,
   SapphireTestnet = 0x5aff,
@@ -41,7 +37,9 @@ export function networkName(network?: Network): string {
 
 export const useEthereumStore = defineStore('ethereum', () => {
   const signer = shallowRef<ethers.Signer | undefined>(undefined);
-  const provider = shallowRef<Provider>(new JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL));
+  const provider = shallowRef<ethers.Provider>(
+    new ethers.JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL),
+  );
   const network = ref<number>(import.meta.env.VITE_CHAIN_ID);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
@@ -63,7 +61,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
   async function connect() {
     const eth = await detectEthereumProvider();
     if (eth === null) throw new Error('no provider detected'); // TODO: catch error
-    const s = new BrowserProvider(eth as any).getSigner();
+    const s = await new ethers.BrowserProvider(eth as any).getSigner();
     await s.provider.send('eth_requestAccounts', []);
 
     const setSigner = (addr: string | undefined, net: Network) => {
@@ -100,15 +98,10 @@ export const useEthereumStore = defineStore('ethereum', () => {
     if (!eth) return;
     await eth.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: toBeHex(network) }],
+      params: [{ chainId: ethers.toBeHex(network) }],
     });
     window.location.reload();
   }
 
   return { signer, provider, address, network, connect, switchNetwork, txOpts, currency };
 });
-
-function toBeHex(num: number): string {
-  // return ethers.toBeHex(num);
-  return ethers.utils.hexlify(num).replace('0x0', '0x');
-}
