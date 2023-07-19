@@ -1,4 +1,4 @@
-import deoxysii from '@oasislabs/deoxysii';
+import deoxysii from '@oasisprotocol/deoxysii';
 import canonicalize from 'canonicalize';
 
 const LATEST_KEY_ID = 1;

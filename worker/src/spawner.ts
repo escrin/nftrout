@@ -61,7 +61,7 @@ export class Spawner {
       const cipher =
         config.network === 'local'
           ? await Cipher.createRandom()
-          : new Cipher(await rnr.getKey(config.network, 'omni'));
+          : new Cipher(await rnr.getOmniKey(config.network));
       const nftStorageClient = new NFTStorage({ token: config.nftStorageKey }); // TODO: use sealing
       let nftroutAddr = '';
       let gateway = '';
@@ -77,7 +77,11 @@ export class Spawner {
       }
       spawners[config.network] = new Spawner(
         config.network,
-        new ethers.Wallet(config.signerKey).connect(new ethers.JsonRpcProvider(gateway)),
+        new ethers.Wallet(config.signerKey).connect(
+          new ethers.JsonRpcProvider(gateway, undefined, {
+            staticNetwork: new ethers.Network(config.network, networkNameToChainId(config.network)),
+          }),
+        ),
         nftroutAddr,
         cipher,
         nftStorageClient,
@@ -115,7 +119,7 @@ export class Spawner {
           this.#cidCache.set(tokenId, { cid, posted: false });
           taskResults.push([tokenId, cid]);
         } catch (e: any) {
-          console.error(e);
+          console.error(`failed to spawn trout ${tokenId}`, e);
           return;
         }
       }),
@@ -144,7 +148,7 @@ export class Spawner {
         this.#cidCache.set(id, { cid, posted: true });
       }
     } catch (e: any) {
-      console.error(e);
+      console.error('failed to post task results:', e);
     }
   }
 
@@ -168,7 +172,7 @@ export class Spawner {
             return;
           } else needsSpawning.push(tokenId);
         } catch (e: any) {
-          console.error(e);
+          console.error(`failed to check CID of trout ${tokenId}:`, e);
         }
       }),
     );
@@ -180,7 +184,7 @@ export class Spawner {
     if (cid) return cid;
     const uri = await this.#nftrout.tokenURI(tokenId);
     if (uri === 'ipfs://') return undefined;
-    return cid;
+    return uri.replace('ipfs://', '');
   }
 
   private async spawnTrout(tokenId: TokenId): Promise<CID> {
@@ -248,7 +252,6 @@ export class Spawner {
       image: new File([fishSvg], 'trout.svg', { type: 'image/svg+xml' }),
       properties: troutDescriptor,
     });
-    console.log('storing car');
     await this.nftStorage.storeCar(car);
     return token.ipnft;
   }

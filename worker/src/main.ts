@@ -31,14 +31,10 @@ escrinWorker({
       throw e;
     }
     try {
-      spawner.spawn();
+      await spawner.spawn();
     } catch (e: any) {
       console.error('failed to spawn', e);
       throw e;
     }
   },
 });
-
-self.onmessage =(e:MessageEvent) => {
-  console.log(e);
-}
