@@ -1,9 +1,9 @@
 const { task } = require('hardhat/config');
 
 // import '@oasisprotocol/sapphire-hardhat';
-require('@typechain/hardhat')
-require('@nomicfoundation/hardhat-ethers')
-require('@nomicfoundation/hardhat-chai-matchers')
+require('@typechain/hardhat');
+require('@nomicfoundation/hardhat-ethers');
+require('@nomicfoundation/hardhat-chai-matchers');
 require('hardhat-watcher');
 require('hardhat-deploy');
 require('hardhat-deploy-ethers');
@@ -33,11 +33,11 @@ task('mint').setAction(async (_, hre) => {
   const { ethers } = hre;
   const [{ address: minter }] = await ethers.getSigners();
   const nftrout = (await ethers.getContract('NFTrout'));
-  const tx = await nftrout.mint({ value: await nftrout.callStatic.getBreedingFee(minter, 0, 0) });
+  const tx = await nftrout.mint({ value: await nftrout.getBreedingFee(minter, 0, 0) });
   const receipt = await tx.wait();
-  for (const event of receipt.events) {
-    if (event.event !== 'Transfer') continue;
-    console.log(ethers.BigNumber.from(receipt.events[0].topics[3]).toNumber());
+  for (const log of receipt.logs) {
+    if (log.fragment?.name !== 'Transfer') continue;
+    console.log(Number(ethers.getBigInt(log.topics[3])));
     break;
   }
 });
@@ -47,17 +47,17 @@ task('breed')
   .addPositionalParam('right')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const [{ address: breeder }] = await ethers.getSigners();
-    const breedingFee = await nftrout.callStatic.getBreedingFee(breeder, args.left, args.right);
+    const breedingFee = await nftrout.getBreedingFee(breeder, args.left, args.right);
     const tx = await nftrout.breed(args.left, args.right, {
       value: breedingFee,
     });
     console.log(tx.hash);
     const receipt = await tx.wait();
-    for (const event of receipt.events) {
-      if (event.event !== 'Transfer') continue;
-      console.log(ethers.BigNumber.from(receipt.events[0].topics[3]).toNumber());
+    for (const log of receipt.logs) {
+      if (log.fragment?.name !== 'Transfer') continue;
+      console.log(Number(ethers.getBigInt(log.topics[3])));
       break;
     }
   });
@@ -66,8 +66,8 @@ task('uri')
   .addParam('id')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
-    console.log(await nftrout.callStatic.tokenURI(args.id));
+    const nftrout = await ethers.getContract('NFTrout');
+    console.log(await nftrout.tokenURI(args.id));
   });
 
 task('make-breedable')
@@ -75,7 +75,7 @@ task('make-breedable')
   .addParam('fee')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.list(args.id, ethers.utils.parseEther(args.fee));
     console.log(tx.hash);
     await tx.wait();
@@ -86,7 +86,7 @@ task('transfer')
   .addParam('to')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.transferFrom(await nftrout.signer.getAddress(), args.to, args.id);
     console.log(tx.hash);
     await tx.wait();
@@ -94,13 +94,13 @@ task('transfer')
 
 task('list-breedable').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = (await ethers.getContract('NFTrout'));
+  const nftrout = await ethers.getContract('NFTrout');
   const { number: blockTag } = await ethers.provider.getBlock('latest');
   const batchSize = 100;
   for (let offset = 0; ; offset += batchSize) {
     let studs = [];
     try {
-      studs = await nftrout.callStatic.getStuds(offset, batchSize, {
+      studs = await nftrout.getStuds(offset, batchSize, {
         blockTag,
       });
     } catch (e) {
@@ -109,8 +109,8 @@ task('list-breedable').setAction(async (_, hre) => {
     }
     await Promise.all(
       studs.map(async ({ tokenId, fee }) => {
-        const tokenUri = await nftrout.callStatic.tokenURI(tokenId);
-        console.log(tokenId.toNumber(), ethers.utils.formatEther(fee), tokenUri);
+        const tokenUri = await nftrout.tokenURI(tokenId);
+        console.log(Number(tokenId), ethers.utils.formatEther(fee), tokenUri);
       }),
     );
     if (studs.length < batchSize) break;
@@ -119,11 +119,11 @@ task('list-breedable').setAction(async (_, hre) => {
 
 task('get-owners').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = (await ethers.getContract('NFTrout'));
-  const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
+  const nftrout = await ethers.getContract('NFTrout');
+  const totalSupply = (await nftrout.totalSupply()).toNumber();
   const ownerPs = [];
   for (let i = 1; i <= totalSupply; i++) {
-    ownerPs.push(nftrout.callStatic.ownerOf(i));
+    ownerPs.push(nftrout.ownerOf(i));
   }
   const owners = await Promise.all(ownerPs);
   for (const owner of owners) {
@@ -135,7 +135,7 @@ task('set-matchmaking-bps')
   .addParam('value')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const newMatchBps = ethers.BigNumber.from(args.matchmakingBps);
     const tx = await nftrout.setMatchmakingFee(newMatchBps);
     console.log(tx.hash);
@@ -146,7 +146,7 @@ task('set-task-acceptor')
   .addParam('addr')
   .setAction(async ({ addr }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.setTaskAcceptor(addr);
     console.log(tx.hash);
     await tx.wait();
@@ -156,7 +156,7 @@ task('set-mint-reward')
   .addParam('value')
   .setAction(async ({ value }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const newMintReward = ethers.utils.parseEther(value);
     const tx = await nftrout.setMintReward(newMintReward);
     console.log(tx.hash);
@@ -167,7 +167,7 @@ task('transfer-ownership')
   .addPositionalParam('owner')
   .setAction(async ({ owner }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.transferOwnership(owner);
     console.log(tx.hash);
     await tx.wait();
@@ -190,7 +190,7 @@ module.exports = {
     },
   },
   networks: {
-    local: {
+    localhost: {
       url: 'http://127.0.0.1:8545',
       chainId: 31337,
     },
@@ -208,7 +208,7 @@ module.exports = {
     },
     hyperspace: {
       url: 'https://rpc.ankr.com/filecoin_testnet',
-      chainId: 314159.,
+      chainId: 314159,
       accounts,
     },
     filecoin: {

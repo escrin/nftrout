@@ -14,7 +14,7 @@ module.exports = async function (hre) {
   const { deployer } = await hre.getNamedAccounts();
   await hre.deployments.deploy(NAME, {
     from: deployer,
-    args: [taskAcceptorAddr, mintReward, 500, true],
+    args: [taskAcceptorAddr, mintReward, 500, chainId !== 31337n],
     log: true,
     autoMine: true,
   });
