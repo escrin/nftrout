@@ -4,11 +4,11 @@ import canonicalize from 'canonicalize';
 const LATEST_KEY_ID = 1;
 
 export class Cipher {
-  public static async createRandom(): Promise<Cipher> {
+  public static async testing(): Promise<Cipher> {
     return new Cipher(
       await crypto.subtle.importKey(
         'raw',
-        crypto.getRandomValues(new Uint8Array(32)),
+        new Uint8Array(32),
         { name: 'HKDF', hash: 'SHA-512-256' },
         false,
         ['deriveKey', 'deriveBits'],

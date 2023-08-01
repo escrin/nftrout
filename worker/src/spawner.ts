@@ -1,4 +1,4 @@
-import { EscrinRunner } from '@escrin/runner';
+import { EscrinRunner } from '@escrin/worker';
 import { ethers } from 'ethers';
 import { NFTStorage, File } from 'nft.storage';
 
@@ -60,7 +60,7 @@ export class Spawner {
     if (!spawners[config.network]) {
       const cipher =
         config.network === 'local'
-          ? await Cipher.createRandom()
+          ? await Cipher.testing()
           : new Cipher(await rnr.getOmniKey(config.network));
       const nftStorageClient = new NFTStorage({ token: config.nftStorageKey }); // TODO: use sealing
       let nftroutAddr = '';
@@ -112,18 +112,17 @@ export class Spawner {
 
     let taskResults: Array<[TokenId, CID]> = tasks.post;
 
-    await Promise.all(
-      tasks.spawn.map(async (tokenId) => {
-        try {
-          const cid = await this.spawnTrout(tokenId);
-          this.#cidCache.set(tokenId, { cid, posted: false });
-          taskResults.push([tokenId, cid]);
-        } catch (e: any) {
-          console.error(`failed to spawn trout ${tokenId}`, e);
-          return;
-        }
-      }),
-    );
+    // TODO: parallelize anti-chains
+    for (const tokenId of tasks.spawn) {
+      try {
+        const cid = await this.spawnTrout(tokenId);
+        this.#cidCache.set(tokenId, { cid, posted: false });
+        taskResults.push([tokenId, cid]);
+      } catch (e: any) {
+        console.error(`failed to spawn trout ${tokenId}`, e);
+        return;
+      }
+    }
 
     taskResults = taskResults.sort(([a], [b]) => a - b).slice(0, this.#batchSize); // Task results must be sorted by task ID.
     if (taskResults.length === 0) return;
@@ -142,7 +141,7 @@ export class Spawner {
         },
       );
       console.log(tx.hash);
-      const receipt = await tx.wait();
+      const receipt = await tx.wait(1);
       if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
       for (const [id, cid] of taskResults) {
         this.#cidCache.set(id, { cid, posted: true });
@@ -282,7 +281,7 @@ export class Spawner {
   private async fetchMetadata(tokenId: number, cid: string): Promise<TroutMeta & { seed: number }> {
     const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
     // TODO: verify CID
-    const troutMeta = await res.json();
+    const troutMeta = await res.json() as any;
     if (typeof troutMeta.seed === 'number') return troutMeta;
     const seedJson = await this.cipher.decrypt(troutMeta.properties.seed, tokenId);
     const { seed } = JSON.parse(new TextDecoder().decode(seedJson));

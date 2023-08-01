@@ -181,6 +181,9 @@ importers:
       '@escrin/runner':
         specifier: link:/home/nhynes/escrin/escrin/runner
         version: link:../../../../../home/nhynes/escrin/escrin/runner
+      '@escrin/worker':
+        specifier: link:../../escrin/runner
+        version: link:../../escrin/runner
       '@oasisprotocol/deoxysii':
         specifier: ^0.0.5
         version: 0.0.5

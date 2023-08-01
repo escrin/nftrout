@@ -1,8 +1,8 @@
-import escrinWorker, { ApiError, EscrinRunner } from '@escrin/runner';
+import escrinWorker, { ApiError, EscrinRunner } from '@escrin/worker';
 
 import { Config as SpawnerConfig, Spawner } from './spawner.js';
 
-escrinWorker({
+export default escrinWorker({
   async tasks(rnr: EscrinRunner): Promise<void> {
     const config = await rnr.getConfig();
     try {
