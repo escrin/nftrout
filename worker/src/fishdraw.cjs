@@ -1,3 +1,13 @@
+const HATX = 410.435;
+const HATY = 285.174;
+const HAT_RATIO = HATY / HATX;
+const santaHat = (x, y, w, f) => {
+  const h = HAT_RATIO * w;
+  const txform = f ? `scale(-1, 1), translate(-${HATX}, 0)` : '';
+  return `<svg x="${x}" y="${y}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HATX} ${HATY}" width="${w}" height="${h}" version="1.0"><g transform="${txform}"><path d="M234.103 28.783c-28.1 7.734-56.904 23.115-77.167 38.007-20.262 14.892-73.19 52.416-85.274 64.307-11.716 11.528-25.555 15.55-31.611 29.756-2.335 5.479 15.837 22.005 19.398 23.721 9.24 4.453 24.304-3.443 31.178-3.914 22.307-1.53 45.167-4.499 67.76 10.792-4.18 4.221 2.458-.323-6.088 36.694-3.013 13.053-9.599 46.919-1.507 53.38 8.04 6.42 12.95-18.605 20.937-14.774-.004.006-.002.021-.005.026l-.004.027c0 .004-.006.023-.005.026.003.003.021.003.025.005a.427.427 0 0 0 .129-.002c.015.007.035.002.05.01.056.027.108.059.165.086l.047-.127c3.781-.978 33.263-13.966 60.176-8.743 15.172 2.944 39.37-5.31 53.29-9.615 22.076-6.828 53.068-12.999 72.728-13.351 14.483-.26 27.587-8.46 41.52-9.415 8.221-.564.6-27.066.43-29.866-.817-13.455-17.566-34.13-26.192-52.503-8.626-18.374-23.082-41.697-39.004-59.986-15.921-18.29-37.401-41.972-52.525-49.259-15.124-7.287-17.953-13.675-48.451-5.282z" style="fill:#d00000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.83349466px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M166.956 93.344c-18.233 4.416-33.848 62.691-56.32 72.822-14.697 6.625-54.748 16.692-51.187 18.408 9.24 4.453 24.304-3.443 31.178-3.914 22.307-1.53 45.167-4.499 67.76 10.792-4.18 4.221 2.458-.323-6.088 36.694-3.013 13.053-9.599 46.919-1.507 53.38 8.04 6.42 12.95-18.605 20.937-14.774-.004.006-.002.021-.005.026l-.004.027c0 .004-.006.023-.005.026.003.003.021.003.025.005a.427.427 0 0 0 .129-.002c.015.007.035.002.05.01.056.027.108.059.165.086l.047-.127c3.781-.978 33.263-13.966 60.176-8.743 15.172 2.944 39.37-5.31 53.29-9.615 22.076-6.828 53.068-12.999 72.728-13.351 14.483-.26 27.587-8.46 41.52-9.415 8.221-.564-51.084 4.52-27.449-12.576 10.486-7.584-104.984 15.808-149.314-34.777-43.895-50.088-37.455-89.505-56.126-84.982" style="opacity:.10112359;fill:#0e0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M41.923 154.632c3.551 2.353 27.398 32.517 30.215 30.406.34-3.33-2.44-4.642-4.397-5.022 2.62-3.33 3.114-6.811-1.432-7.11-5.04-.89-10.543-1.514-5.133-6.936 2.498-3.039-.168-8.435-1.701-11.18-4.03-2.176-7.066-6.114-8.718-8.791" style="opacity:.26966289;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.83016068;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M365.597 219.586c-7.45-2.642-16.8-5.694-23.39-5.287-4.524-3.822-7.997.888-11.918 2.142-.658-7.36-11.51 3.112-16.291 3.172-3.395 1.948-1.055-5.8-7.134-2.853-7.557.714-12.232 1.233-17.839 3.66-1.346 8.013-13.449 12.527-15.26 3.745-6.599 2.871-18.869 8.441-18.948-.642-10.565 8.194-10.9 15.599-21.214 19.553.912-7.092-22.37-10.908-25.545-3.465-6.39 2.573 1.33-9.32-7.904-6.052-10.4-3.024-4.347 17.935-25.554 9.366-11.808-.38-5.269 16.72-13.061 23.882-2.076 7.533-11.084-2.624-14.73-2.06.849 11.927 3.408 7.882.72 15.997-1.604 10.165-3.751 15.255 7.432 17.372 3.62-4.903-.182-2.829.628 6.218 6.457-1.88 14.946-12.64 14.075-1.582 4.382-6.673 18.254-10.151 18.08-17.339 7.021.737 14.902 8.58 20.83-.953 5.95-7.041 14.504-10.307 14.594-4.868 7.233 6.756 7.957 5.387 15.478 3.667-1.938-8.711 17.599-.598 7.282-9.271 4.098-4.104 15.188-6.502 21.597-5.076 5.669 8.254 22.944 8.937 25.631-1.747.564-8.404 13.683-11.279 18.588-5.468 8.53-7.479 21.984 3.388 29.324-2.344-6.598-8.563 9.324-14.158 12.298-7.593 5.841-3.137 11.278-14.423 17.668-6.343 7.35-2.395 16.325-5.726 22.542-8.222 4.667 7.693 16.748-.221 11.51-9.532-2.834-6.65 9.31 3.274 6.004-5.164-3.76-9.077-9.042-21.692-15.514-21.275-8.812-2.201-14.037 3.745-14.403 12.16-.111-6.14-10.522-.154-15.983 2.073l-2.994.712-3.577-2.523" style="opacity:.294045;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.60142648px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M370.524 221.83c-7.451-2.642-14.356-3.013-20.945-2.606-4.525-3.822-9.895-2.569-13.815-1.315-.658-7.36-9.614 6.569-14.395 6.63-3.394 1.947-1.055-5.801-7.133-2.854-7.558.714-16.32-3.972-21.926-1.545-1.346 8.013-13.449 12.527-15.26 3.744-6.599 2.872-14.782 13.647-14.862 4.564-12.384-.543-17.69 11.633-28.003 15.588.912-7.092-15.581-6.943-18.755.5-6.39 2.573-1.7-13.438-10.933-10.17-10.4-3.023-10.117 17.698-22.525 13.484-11.808-.38-10.159 11.358-17.951 18.52-2.077 7.533-6.194 2.738-9.84 3.302 6 8.514-18.393 6.74-11.151 19.87-1.605 10.166.848 17.472 12.031 19.59 3.621-4.904 7.09-8.92 7.9.127 6.457-1.88 14.945-12.64 14.074-1.582 4.382-6.673 18.254-10.151 18.08-17.339 7.022.737 14.902 8.58 20.83-.953 5.95-7.041 6.933-1.296 7.023 4.142 7.234 6.757 15.528-3.623 23.05-5.343-1.938-8.711 17.598-.598 7.282-9.271 4.097-4.104 15.187-6.502 21.596-5.076 5.623 5.334 22.944 8.937 25.632-1.747.564-8.404 13.682-11.279 18.587-5.468 8.53-7.479 21.984 3.388 29.324-2.344-6.597-8.563 9.325-14.158 12.298-7.593 5.842-3.137 11.278-14.423 17.668-6.343 7.35-2.395 16.325-5.726 22.543-8.222 4.666 7.693 16.747-.221 11.51-9.532-2.835-6.65 9.31 3.274 6.004-5.164.074-9.656-3.563-24.6-15.514-21.275-8.812-2.201-14.038 3.745-14.403 12.16-.112-6.14-14.026-3.923-19.487-1.696l-1.789.946-1.278 1.012" style="fill:#fff;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.60142648px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M155.68 210.888c3.14-40.847 23.785-59.45 20.151-92.12-2.148-19.31-19.537-4.673-13.87 13.441" style="fill:none;fill-opacity:.75;fill-rule:evenodd;stroke:#000;stroke-width:.83349466px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M163.978 266.619c-2.076 7.532-6.194 2.737-9.84 3.301 6 8.514-18.392 6.74-11.15 19.87-1.605 10.166.848 17.472 12.03 19.59 3.622-4.904 7.09-8.92 7.9.126 6.457-1.88 14.946-12.64 14.075-1.58 4.382-6.674 18.254-10.152 18.08-17.34 7.021.737 14.565 7.35 20.493-2.183 5.95-7.041 7.27-.066 7.36 5.372 7.233 6.757 15.528-3.623 23.049-5.343-1.938-8.711 8.866-1.545 7.282-9.272-1.037-5.06 33.645-3.562 28.657-8.51-14.906-14.787-38.191 7.492-41.56 6.07-3.369-1.422-7.091-.56-2.385-2.72 4.707-2.159-6.742 1.393-16.277-1.993-9.535-3.387-16.515.894-17.152 9.342-7.181-4.466-7.696.607-18.885 3.718 7.13-10.422-12.6-2.768-12.6-2.768s3.438-11.428-2.739-9.92c3.321-5.964-.365-7.802-.365-7.802s1.82-5.121-5.973 2.042" style="opacity:.11235956;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:.7215721px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M46.945 146.245c-1.302-2.318-5.358-2.957-5.88-4.923.907-2.283-2.659-.627-3.361-1.882-4.195 3.434-9.985 4.92-13.093 9.642 1.653-.362 1.649-2.778-.157-.996-3.401 1.69-6.688 4.658-5.41 8.893.31 2.173-2.425 4.043.914 4.558-.435 3.48-5.655 3.333-5.658 6.404 1.155 3.35.647 6.84-2.1 9.19-2.719 2.541-1.6 6.283-1.5 9.37-1.367 2.066-2.137 3.986-.335 5.953.382 3.548 3.327 5.898 3.349 9.59 1.24 1.934 3.727 1.815 4.997 4.001 3.71.316 3.983 5.497 7.517 6.215 3.036.99 6.629.304 9.365 1.03 2.243 1.82 4.819 3.087 7.643 3.598 3.551 2.26 4.758-3.365 6.907-5.176.112-2.832 2.146-3.052 3.509-.668 3.1 2.103 6.314-1.518 8.537-3.434 2.173-2.369 4.612-4.42 7.032-6.497 3.436-3.878 4.656-9.43 4.464-14.535.34-3.199-2.635-3.376-4.591-3.741.885-2.683 3.113-6.542-1.433-6.83-2.607-.68-8.517-3.593-5.132-6.661 2.498-2.919-.94-6.848-2.474-9.484-2.656-2.114-4.2-5.06-5.85-7.63-3.198-.51-6.195-2.453-7.01-5.846-.854-2.694-.237-.699.033.613" style="fill:#fff;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.81360233;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M20.405 181.846c-1.601-1.968 4.721-1.041 4.2-3.007.906-2.283-.179-2.378-.882-3.634-4.194 3.434-3.206-4.7-6.314.022 1.652-.362 1.38-6.334-.425-4.551-3.401 1.69-2.68-5.806-2.684-2.735 1.155 3.35.647 6.84-2.1 9.19-2.719 2.541-1.6 6.283-1.5 9.37-1.367 2.066-2.137 3.986-.335 5.953.382 3.548 3.327 5.898 3.349 9.59 1.24 1.934 3.727 1.815 4.997 4.001 3.71.316 3.983 5.497 7.517 6.215 3.036.99 6.629.304 9.365 1.03 2.243 1.82 4.819 3.087 7.643 3.598 3.551 2.26 4.758-3.365 6.907-5.176.112-2.832 2.146-3.052 3.509-.668 3.1 2.103 6.314-1.518 8.537-3.434 2.173-2.369-8.346.36-5.926-1.717 3.436-3.879-7.752 5.413-7.945.308.34-3.2-12.37 4.07-9.678-1.554.884-2.682 1.536-.748-3.01-1.035-2.607-.68-9.804-5.494-6.419-8.562 2.498-2.919-1.342.456-2.876-2.18-2.656-2.114-.96-.95-2.611-3.521-3.198-.51-1.792-1.817-2.607-5.21-1.383 3.98-.982-3.604-.712-2.293" style="opacity:.0955056;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:.99599999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M157.67 192.362s13.145-33.512 16.303-46.882c2.955-12.509 2.573-31.603-1.853-35.137-4.426-3.534-10.247 2.578-10.86 9.816-.614 7.238-1.128 9.061 1.843 22.867 1.347 6.259.674 21.093-1.157 28.095-1.831 7.001-5.827 22.946-4.276 21.24" style="fill:#000;fill-opacity:.22346371;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/></g></svg>`;
+}
+consh snowflake = (x, y, s, r) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 397 411" x="${x}" y="${y}" width="${s}" height="${s}" version="1.0"><path transform="rotate(${r} 198.5 205.5)" d="M183.313 43.094v40.719l-30.594-17.688-15.531 26.813 46.125 26.718v60.094L131.5 149.813l-.094-53.532-31 .063.063 35.562-35.375-20.437-15.5 26.844 35.281 20.375-30.625 17.625 15.438 26.875 46.218-26.594 52 30.031-51.812 29.906-46.406-26.687-15.438 26.875 30.813 17.75-35.375 20.406 15.5 26.844 35.28-20.375-.062 35.344 31 .062.094-53.312 52-30v59.812l-46.312 26.844 15.53 26.812 30.782-17.812v40.844h31v-40.72l30.594 17.688 15.531-26.812-46.125-26.719v-60.094l51.813 29.938.093 53.531 31-.062-.062-35.563 35.375 20.438 15.5-26.844-35.281-20.375 30.625-17.625-15.438-26.875-46.187 26.594-52.032-30.032 51.844-29.937 46.375 26.719 15.438-26.875-30.813-17.75 35.375-20.407-15.5-26.844-35.281 20.376.062-35.344-31-.063-.094 53.313-52 30V119.78l46.313-26.844-15.531-26.812-30.781 17.813V43.094z" fill="snow" stroke="gray" /></svg>`
+
 // Source: https://raw.githubusercontent.com/LingDong-/fishdraw/1b31d55/fishdraw.js
 let jsr = 0x5EED;
 let {PI} = Math;
@@ -779,17 +789,64 @@ function poissondisk(W, H, r, samples) {
 }
 
 
-function draw_svg(polylines, variant='normal'){
-  let fillcolor = variant === 'normal' ? 'floralwhite' : 'snow';
-  let gradient = '';
+function draw_svg({ polylines, layout, poi, params }, variant='normal'){
+  let bgcolor = 'floralwhite';
+  let fillcolor = 'floralwhite';
+  let fgstroke = 'black';
+  let underlay = '';
+  let overlay = '';
   if (variant === 'rainbow') {
-    gradient = `<linearGradient xmlns="http://www.w3.org/2000/svg" id="trout-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F0E23"/><stop offset="15%" stop-color="#63343E"/><stop offset="30%" stop-color="#3F7067"/><stop offset="50%" stop-color="#E38A26"/><stop offset="70%" stop-color="#A1161D"/><stop offset="85%" stop-color="#581414"/></linearGradient>`
+    underlay = `<linearGradient xmlns="http://www.w3.org/2000/svg" id="trout-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F0E23"/><stop offset="15%" stop-color="#63343E"/><stop offset="30%" stop-color="#3F7067"/><stop offset="50%" stop-color="#E38A26"/><stop offset="70%" stop-color="#A1161D"/><stop offset="85%" stop-color="#581414"/></linearGradient>`;
+    fgstroke = 'url(#trout-gradient)';
+    fillcolor = 'snow';
+  } else if (variant === 'santa') {
+    const [x, y] = poi.head.neckline;
+    const { bbox, px, s, py, p } = layout;
+    const hatw = poi.head.length * 4;
+    const hath = HAT_RATIO * hatw;
+    fillcolor = '#fff6e5';
+    bgcolor = 'powderblue';
+    const flip = rand() > 0.8;
+    overlay += santaHat(
+      (x - bbox.x) * s + px + p - (flip ? 0 : hatw/2),
+      (y - bbox.y) * s + py + p - hath + 25 + (flip ? 10 : 0),
+      hatw,
+      flip
+    );
+    for (let i = 0; i < 20 + Math.ceil(rand() * 100); i++) {
+      const s = 40 * rand() + 3;
+      const r = Math.round(360 * rand());
+      underlay += snowflake(rand() * (500 - s), rand() * (300 - s), s, r);
+    }
   }
-  const stroke = gradient ? 'url(#trout-gradient)' : 'black';
 
   let o = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320">`
-  o += gradient;
-  o += `<rect x="0" y="0" width="520" height="320" fill="${fillcolor}"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/><path stroke="${stroke}" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round" d="`
+  o += `<rect x="0" y="0" width="520" height="320" fill="${bgcolor}"/>`;
+  o += `<rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/>`;
+  o += underlay;
+
+  const drawBg = (k) => {
+    const start = k < 0 ? polylines.length + k : 0;
+    const stop = k < 0 ? polylines.length : k;
+    const bodyLines = polylines.slice(start, stop).flat();
+    o += `<path fill="${fillcolor}" d="M `
+    for (let i = 0; i < bodyLines.length; i++){
+      let [x,y] = bodyLines[i];
+      o += `${(~~((x+10)*100)) /100} ${(~~((y+10)*100)) /100} `;
+    }
+    o += ` Z"/>\n`;
+  }
+  drawBg(2);
+  drawBg(3);
+  // drawBg(4);
+  drawBg(5);
+  drawBg(-8);
+  drawBg(-5);
+  // drawBg(-4);
+  drawBg(-3);
+  drawBg(-2);
+
+  o += `<path stroke="${fgstroke}" stroke-width="1" fill="${fillcolor}" stroke-linecap="round" stroke-linejoin="round" d="`;
   for (let i = 0; i < polylines.length; i++){
     o += '\nM ';
     for (let j = 0; j < polylines[i].length; j++){
@@ -797,7 +854,9 @@ function draw_svg(polylines, variant='normal'){
       o += `${(~~((x+10)*100)) /100} ${(~~((y+10)*100)) /100} `;
     }
   }
-  o += `\n"/></svg>`
+  o += `\n"/>`;
+  o += `${overlay}`;
+  o += `</svg>`
   return o;
 }
 
@@ -1761,6 +1820,9 @@ function fish_head(x0,y0,x1,y1,x2,y2,arg){
     let dy = (noise(x*0.01,y*0.01,8)*40-20)*(1.01-t);
     curve0.push([x+dx,y+dy]);
   }
+
+  const neckline = curve0[curve0.length-1];
+
   for (let i = 0; i < n; i++){
     let t = i/(n-1);
     let a = PI/2 * t;
@@ -1833,6 +1895,7 @@ function fish_head(x0,y0,x1,y1,x2,y2,arg){
 
   jaw = clip_multi(jaw,lip1).false;
   jaw = clip_multi(jaw,outline).false;
+  jaw.push(jc);
 
   let teeth0s = [];
   let teeth1s = [];
@@ -1892,13 +1955,20 @@ function fish_head(x0,y0,x1,y1,x2,y2,arg){
   let outlinel = [[0,0],[curve0[curve0.length-1][0],0],curve0[curve0.length-1],...curve2,curve1[0],[curve1[0][0],300],[0,300]];
 
   
-  return [outlinel,[
-    ...olines,...inlines,
-    ...lip0s,...lip1s,
-    ...ef,...sh,...sh2,
-    ...bbs,
-    ...teeth0s,...teeth1s,
-    ...jaw]];
+  return [
+    outlinel,
+    [
+      ...olines,...inlines,
+      ...lip0s,...lip1s,
+      ...ef,...sh,...sh2,
+      ...bbs,
+      ...teeth0s,...teeth1s,
+      ...jaw
+    ],
+    {
+      neckline
+    }
+  ];
 }
 
 function bean(x){
@@ -2137,12 +2207,13 @@ function fish(arg){
     }
     
   }
-  let cf,fh;
+  let cf,fh,head_poi;
   if (arg.neck_type == 0){
-    ;[cf,fh] = fish_head(50-arg.head_length,150+arg.nose_height,...curve0[6],...curve1[5],arg);
+    ;[cf,fh, head_poi] = fish_head(50-arg.head_length,150+arg.nose_height,...curve0[6],...curve1[5],arg);
   }else{
-    ;[cf,fh] = fish_head(50-arg.head_length,150+arg.nose_height,...curve0[5],...curve1[6],arg);
+    ;[cf,fh, head_poi] = fish_head(50-arg.head_length,150+arg.nose_height,...curve0[5],...curve1[6],arg);
   }
+  head_poi.length = arg.head_length;
   bd = clip_multi(bd,cf).false;
   
   sh = clip_multi(sh,cf).false;
@@ -2170,19 +2241,21 @@ function fish(arg){
     sh3 = clip_multi(sh3,cf).false;
   }
 
-  return bd.
+  const lines = bd.
   concat(f0).
   concat(f1).
   concat(f2).
   concat(f3).
-  concat(f4).
   concat(f5).
   concat(fh).
   concat(sh).
   concat(sh2).
   concat(sh3).
+  concat(f4).
   // concat([cf]).
   concat();
+
+  return { lines, poi: { head: head_poi } }
 }
 
 function reframe(polylines,pad=20,text=null){
@@ -2207,7 +2280,7 @@ function reframe(polylines,pad=20,text=null){
   tp = tp.map(p=>scl_poly(shr_poly(p,-0.3),0.3,0.3));
   tw *= 0.3;
   polylines.push(...tp.map(p=>trsl_poly(p,250-tw/2,300-pad+5)));
-  return polylines;
+  return { polylines, layout: { bbox, px, py, s, p: pad } };
 }
 
 function cleanup(polylines){
@@ -2582,8 +2655,12 @@ function main(seed){
   } else {
     throw new TypeError('unsupported seed material');
   }
-  let drawing = fish(generate_params());
-  return (cleanup(reframe(drawing,20,'')));
+  // console.error(jsr);
+  // jsr = 0;
+  const params = generate_params();
+  let { lines, poi } = fish(params);
+  const { polylines, layout } = reframe(lines,20,'');
+  return { polylines: cleanup(polylines), layout, poi, params };
 }
 
 
