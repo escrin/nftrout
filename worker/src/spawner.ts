@@ -22,6 +22,7 @@ type TroutId = {
 
 type TroutAttributes = Partial<{
   genesis: boolean;
+  santa: boolean;
 }>;
 
 type TroutMeta = {
@@ -264,8 +265,12 @@ export class Spawner {
     const tokenId = Number(ethers.getBigInt(self.tokenId));
     const attributes: TroutAttributes = {
       genesis: tokenId <= (self.chainId === 0x5aff || self.chainId === 0x5afe ? 137 : 139),
+      santa: self.chainId === 0x5afe && tokenId > 235 && tokenId < 242
     };
-    const fishSvg = toSvg(fishdraw(seed), attributes.genesis ? 'rainbow' : 'normal');
+    const fishSvg = toSvg(
+      fishdraw(seed),
+      attributes.genesis ? 'rainbow' : attributes.santa ? 'santa' : 'normal',
+    );
 
     const troutDescriptor: TroutDescriptor = {
       left,
