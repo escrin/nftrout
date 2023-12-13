@@ -265,7 +265,7 @@ export class Spawner {
     const tokenId = Number(ethers.getBigInt(self.tokenId));
     const attributes: TroutAttributes = {
       genesis: tokenId <= (self.chainId === 0x5aff || self.chainId === 0x5afe ? 137 : 139),
-      santa: self.chainId === 0x5afe && tokenId > 235 && tokenId < 242
+      santa: self.chainId === 0x5afe && tokenId > 235 && tokenId < 242,
     };
     const fishSvg = toSvg(
       fishdraw(seed),
@@ -286,7 +286,7 @@ export class Spawner {
   private async fetchMetadata(tokenId: number, cid: string): Promise<TroutMeta & { seed: number }> {
     const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
     // TODO: verify CID
-    const troutMeta = await res.json() as any;
+    const troutMeta = (await res.json()) as any;
     if (typeof troutMeta.seed === 'number') return troutMeta;
     const seedJson = await this.cipher.decrypt(troutMeta.properties.seed, tokenId);
     const { seed } = JSON.parse(new TextDecoder().decode(seedJson));

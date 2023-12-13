@@ -2,9 +2,9 @@
   "name": "@escrin/nftrout-worker",
   "type": "module",
   "scripts": {
-    "lint:prettier": "prettier --check --cache '*.json' 'src/**/*.ts'",
+    "lint:prettier": "prettier --check --cache '*.json' 'src/**/*.{ts,cjs}'",
     "lint": "npm-run-all lint:**",
-    "format:prettier": "prettier --write --cache '*.json' 'src/**/*.ts'",
+    "format:prettier": "prettier --write --cache '*.json' 'src/**/*.{ts,cjs}'",
     "format": "npm-run-all format:**",
     "build:typecheck": "tsc -b",
     "build:bundle": "esbuild --bundle src/main.ts --outfile=bin/nftrout --minify --target=es2022 --format=esm",
