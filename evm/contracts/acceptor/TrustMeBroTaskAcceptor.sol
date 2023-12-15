@@ -19,9 +19,6 @@ contract TrustMeBroTaskAcceptor is ITaskAcceptorV1 {
         bytes calldata
     ) external virtual returns (TaskIdSelector memory) {
         require(msg.sender == trustedSender, "not trusted sender");
-        return TaskIdSelector({
-            quantifier: Quantifier.All,
-            taskIds: new uint256[](0)
-        });
+        return TaskIdSelector({quantifier: Quantifier.All, taskIds: new uint256[](0)});
     }
 }
