@@ -16,8 +16,8 @@ export function useNFTrout(): ComputedRef<NFTrout | undefined> {
       eth.network === Network.SapphireTestnet
         ? sapphireTestnet.address
         : eth.network === Network.SapphireMainnet
-        ? sapphireMainnet.address
-        : undefined;
+          ? sapphireMainnet.address
+          : undefined;
     if (!deployment) {
       console.error('no deployment for network', eth.network);
       return;

@@ -238,7 +238,7 @@ async function donateEarnings() {
   }
 }
 
-const hidingIntro = ref<boolean>(!!window.localStorage.hideIntro ?? false);
+const hidingIntro = ref<boolean>(!!(window.localStorage.hideIntro ?? false));
 
 function hideIntro() {
   hidingIntro.value = true;
@@ -291,11 +291,7 @@ function hideIntro() {
             <span
               >This service is provided under the terms of the
               <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
-              <a
-                href="https://github.com/escrin/escrin"
-                target="_blank"
-                >Here's</a
-              >
+              <a href="https://github.com/escrin/escrin" target="_blank">Here's</a>
               the
               <a
                 href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"

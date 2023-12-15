@@ -37,10 +37,11 @@ export function networkName(network?: Network): string {
 
 export const useEthereumStore = defineStore('ethereum', () => {
   const signer = shallowRef<ethers.Signer | undefined>(undefined);
+  const env = (import.meta as any).env;
   const provider = shallowRef<ethers.Provider>(
-    new ethers.JsonRpcProvider(import.meta.env.VITE_WEB3_GW_URL),
+    new ethers.JsonRpcProvider(env.VITE_WEB3_GW_URL),
   );
-  const network = ref<number>(import.meta.env.VITE_CHAIN_ID);
+  const network = ref<number>(env.VITE_CHAIN_ID);
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
 
