@@ -292,13 +292,13 @@ function hideIntro() {
               >This service is provided under the terms of the
               <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
               <a
-                href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
+                href="https://github.com/escrin/escrin"
                 target="_blank"
                 >Here's</a
               >
               the
               <a
-                href="https://github.com/escrin/escrin/blob/main/evm/contracts/enclave-identity"
+                href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
                 target="_blank"
                 >code</a
               >.
