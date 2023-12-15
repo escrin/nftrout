@@ -1,19 +1,21 @@
-import { EscrinRunner } from '@escrin/worker';
 import { ethers } from 'ethers';
 import { NFTStorage, File } from 'nft.storage';
 
 import { NFTrout, NFTroutFactory } from '@escrin/nftrout-evm';
-// @ts-expect-error missing declaration
-import { address as nftroutSapphireTestnet } from '@escrin/nftrout-evm/deployments/sapphire-testnet';
-// @ts-expect-error missing declaration
-import { address as nftroutSapphireMainnet } from '@escrin/nftrout-evm/deployments/sapphire-mainnet';
 
 import { Box, Cipher } from './crypto.js';
-// @ts-expect-error missing declaration
-import { main as fishdraw, draw_svg as toSvg } from './fishdraw.cjs';
+import * as fish from './fishdraw.js';
+
+export type Config = {
+  network: { chainId: number; rpcUrl: string };
+  identity: { registry: `0x${string}`; id: `0x${string}` };
+  nftrout: string;
+  nftStorageKey: string;
+  signerKey: `0x${string}`;
+};
 
 type TokenId = number;
-type CID = string;
+type Cid = string;
 
 type TroutId = {
   chainId: number;
@@ -25,79 +27,44 @@ type TroutAttributes = Partial<{
   santa: boolean;
 }>;
 
-type TroutMeta = {
-  name: string;
-  description: string;
-  image: { '/': string };
-  'metadata.json': { '/': string };
-  type: 'nft';
-  properties: TroutDescriptor;
-};
-
-type TroutDescriptor = {
+type TroutProperties = {
   left: TroutId | null;
   right: TroutId | null;
   self: TroutId;
-  seed: Box;
-  attributes?: TroutAttributes;
-};
+  attributes: TroutAttributes;
+  generations: Cid[];
+} & ({ seed: Box } | { traits: Box });
+
+type TroutParent = { id: TroutId; genotype: fish.Diploid };
 
 const MAX_SEED = 4294967295; // 2^32-1
 
-const spawners: {
-  local?: Spawner;
-  'sapphire-mainnet'?: Spawner;
-  'sapphire-testnet'?: Spawner;
-} = {};
-
-export type Config = {
-  network: keyof typeof spawners;
-  nftStorageKey: string;
-  signerKey: string;
-};
-
 export class Spawner {
-  public static async get(rnr: EscrinRunner, config: Config): Promise<Spawner> {
-    if (!spawners[config.network]) {
-      const cipher =
-        config.network === 'local'
-          ? await Cipher.testing()
-          : new Cipher(await rnr.getOmniKey(config.network));
-      const nftStorageClient = new NFTStorage({ token: config.nftStorageKey }); // TODO: use sealing
-      let nftroutAddr = '';
-      let gateway = '';
-      if (config.network === 'sapphire-testnet') {
-        nftroutAddr = nftroutSapphireTestnet;
-        gateway = 'https://testnet.sapphire.oasis.dev';
-      } else if (config.network === 'sapphire-mainnet') {
-        nftroutAddr = nftroutSapphireMainnet;
-        gateway = 'https://sapphire.oasis.io';
-      } else if (config.network === 'local') {
-        nftroutAddr = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-        gateway = 'http://127.0.0.1:8545';
-      }
-      spawners[config.network] = new Spawner(
-        config.network,
-        new ethers.Wallet(config.signerKey).connect(
-          new ethers.JsonRpcProvider(gateway, undefined, {
-            staticNetwork: new ethers.Network(config.network, networkNameToChainId(config.network)),
-          }),
-        ),
-        nftroutAddr,
-        cipher,
-        nftStorageClient,
-      );
-    }
-    return spawners[config.network]!;
+  public static async get(config: Config, cipher: Cipher): Promise<Spawner> {
+    const nftStorageClient = new NFTStorage({ token: config.nftStorageKey });
+    return new Spawner(
+      config.network,
+      new ethers.Wallet(config.signerKey).connect(
+        new ethers.JsonRpcProvider(config.network.rpcUrl, undefined, {
+          staticNetwork: new ethers.Network(
+            chainIdToChainName(config.network.chainId),
+            config.network.chainId,
+          ),
+        }),
+      ),
+      config.nftrout,
+      cipher,
+      nftStorageClient,
+    );
   }
 
   #nftrout: NFTrout;
-  #cidCache: Map<TokenId, { cid: CID; posted: boolean }> = new Map();
+  #cidCache: Map<TokenId, { cid: Cid; posted: boolean; props?: TroutProperties }> = new Map();
 
-  #batchSize = 30;
+  #batchSize = 10;
 
   constructor(
-    public readonly network: keyof typeof spawners,
+    public readonly network: { chainId: number },
     signer: ethers.Signer,
     nftroutAddr: string,
     private readonly cipher: Cipher,
@@ -111,50 +78,55 @@ export class Spawner {
 
     if (tasks.spawn.length === 0 && tasks.post.length === 0) return;
 
-    let taskResults: Array<[TokenId, CID]> = tasks.post;
+    let taskResults: Array<[TokenId, Cid]> = tasks.post;
 
     // TODO: parallelize anti-chains
-    for (const tokenId of tasks.spawn) {
-      try {
-        const cid = await this.spawnTrout(tokenId);
-        this.#cidCache.set(tokenId, { cid, posted: false });
-        taskResults.push([tokenId, cid]);
-      } catch (e: any) {
-        console.error(`failed to spawn trout ${tokenId}`, e);
-        return;
+    let toSpawn = tasks.spawn.slice(0, 50);
+    console.debug('preparing to spawn', toSpawn);
+    for (let i = 0; i < toSpawn.length; i += this.#batchSize) {
+      for (const tokenId of toSpawn.slice(i, i + this.#batchSize)) {
+        try {
+          const res = await this.spawnTrout(tokenId);
+          this.#cidCache.set(tokenId, { ...res, posted: false });
+          taskResults.push([tokenId, res.cid]);
+        } catch (e: any) {
+          console.error(`failed to spawn trout ${tokenId}`, e);
+          return;
+        }
       }
-    }
 
-    taskResults = taskResults.sort(([a], [b]) => a - b).slice(0, this.#batchSize); // Task results must be sorted by task ID.
-    if (taskResults.length === 0) return;
-    const encodedCids = ethers.AbiCoder.defaultAbiCoder().encode(
-      ['string[]'],
-      [taskResults.map(([_, cid]) => cid)],
-    );
-    const submittedTaskIds = taskResults.map(([id]) => id);
-    try {
-      const tx = await this.#nftrout.acceptTaskResults(
-        submittedTaskIds,
-        new Uint8Array(),
-        encodedCids,
-        {
-          gasLimit: this.network.startsWith('sapphire') ? 30_000_000 : undefined,
-        },
+      taskResults = taskResults.sort(([a], [b]) => a - b).slice(0, this.#batchSize); // Task results must be sorted by task ID.
+      if (taskResults.length === 0) return;
+      const encodedCids = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['string[]'],
+        [taskResults.map(([_, cid]) => cid)],
       );
-      console.log(tx.hash);
-      const receipt = await tx.wait(1);
-      if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
-      for (const [id, cid] of taskResults) {
-        this.#cidCache.set(id, { cid, posted: true });
+      const submittedTaskIds = taskResults.map(([id]) => id);
+      console.debug('submitting', taskResults);
+      try {
+        const tx = await this.#nftrout.acceptTaskResults(
+          submittedTaskIds,
+          new Uint8Array(),
+          encodedCids,
+          {
+            gasLimit: Math.abs(this.network.chainId - 23294) <= 1 ? 15_000_000 : undefined,
+          },
+        );
+        console.debug(tx.hash);
+        const receipt = await tx.wait(1);
+        if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
+        for (const [id, cid] of taskResults) {
+          this.#cidCache.set(id, { cid, posted: true });
+        }
+      } catch (e: any) {
+        console.error('failed to post task results:', e);
       }
-    } catch (e: any) {
-      console.error('failed to post task results:', e);
     }
   }
 
-  private async getNewTasks(): Promise<{ spawn: TokenId[]; post: Array<[TokenId, CID]> }> {
+  private async getNewTasks(): Promise<{ spawn: TokenId[]; post: Array<[TokenId, Cid]> }> {
     const totalSupply = Number(await this.#nftrout.totalSupply());
-    const needsPosting: Array<[TokenId, CID]> = [];
+    const needsPosting: Array<[TokenId, Cid]> = [];
     const needsChecking: TokenId[] = [];
     for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
       const { cid, posted } = this.#cidCache.get(tokenId) ?? { cid: undefined, posted: false };
@@ -163,23 +135,31 @@ export class Spawner {
       else needsChecking.push(tokenId);
     }
     const needsSpawning: TokenId[] = [];
-    await Promise.all(
-      needsChecking.map(async (tokenId) => {
-        try {
-          const cid = await this.getTroutCid(tokenId);
-          if (cid) {
-            this.#cidCache.set(tokenId, { cid, posted: true });
-            return;
-          } else needsSpawning.push(tokenId);
-        } catch (e: any) {
-          console.error(`failed to check CID of trout ${tokenId}:`, e);
-        }
-      }),
-    );
-    return { spawn: needsSpawning, post: needsPosting };
+    const batchSize = 5;
+    for (let i = 0; i < needsChecking.length; i += batchSize) {
+      await Promise.all(
+        needsChecking.slice(i, i + batchSize).map(async (tokenId) => {
+          try {
+            const cid = await this.getTroutCid(tokenId);
+            if (cid) {
+              const props = await this.fetchProps(tokenId, cid);
+              if (props && 'traits' in props) {
+                this.#cidCache.set(tokenId, { cid, posted: true, props });
+                return;
+              }
+              console.debug(tokenId, 'needs spawning');
+              needsSpawning.push(tokenId);
+            } else needsSpawning.push(tokenId);
+          } catch (e: any) {
+            console.error(`failed to check CID of trout ${tokenId}:`, e);
+          }
+        }),
+      );
+    }
+    return { spawn: needsSpawning.sort((a, b) => a - b), post: needsPosting };
   }
 
-  private async getTroutCid(tokenId: TokenId): Promise<CID | undefined> {
+  private async getTroutCid(tokenId: TokenId): Promise<Cid | undefined> {
     let { cid } = this.#cidCache.get(tokenId) ?? {};
     if (cid) return cid;
     const uri = await this.#nftrout.tokenURI(tokenId);
@@ -187,8 +167,9 @@ export class Spawner {
     return uri.replace('ipfs://', '');
   }
 
-  private async spawnTrout(tokenId: TokenId): Promise<CID> {
-    const { left, right } = await this.#nftrout.parents(tokenId);
+  private async spawnTrout(selfTokenId: TokenId): Promise<{ cid: Cid; props: TroutProperties }> {
+    console.debug('spawning', selfTokenId);
+    const { left, right } = await this.#nftrout.parents(selfTokenId);
 
     let leftCid = '';
     let leftTokenId = 0;
@@ -207,13 +188,13 @@ export class Spawner {
       leftCid = maybeLeftCid;
       rightCid = maybeRightCid;
     }
-    const troutId = { tokenId, chainId: networkNameToChainId(this.network) };
+    const troutId = { tokenId: selfTokenId, chainId: this.network.chainId };
 
     const randomInt = async (low: number, high: number) => {
       const range = BigInt(high - low + 1);
       // This is not ideal. Node.js does not have a VRF and sealing doesn't exist yet.
-      const chainId = networkNameToChainId(this.network);
-      const seedMaterial = await this.cipher.deriveKey(`nftrout/entropy/${chainId}/${tokenId}`);
+      const chainId = this.network.chainId;
+      const seedMaterial = await this.cipher.deriveKey(`nftrout/entropy/${chainId}/${selfTokenId}`);
       const randomNumber = uint8ArrayToBigIntLE(seedMaterial);
       return Number(randomNumber % range) + low;
     };
@@ -222,29 +203,27 @@ export class Spawner {
       return this.doSpawnTrout(null, null, troutId, await randomInt(0, MAX_SEED));
     }
 
-    const [leftMeta, rightMeta] = await Promise.all([
-      this.fetchMetadata(leftTokenId, leftCid),
-      this.fetchMetadata(rightTokenId, rightCid),
+    const [leftParent, rightParent] = await Promise.all([
+      this.fetchParent(leftTokenId, leftCid),
+      this.fetchParent(rightTokenId, rightCid),
     ]);
-    let seedBig =
-      BigInt(leftMeta.seed) * 3n + BigInt(rightMeta.seed) * 5n + BigInt(await randomInt(0, 64));
-    let seed = Number(seedBig % BigInt(MAX_SEED));
-    return this.doSpawnTrout(leftMeta.properties.self, rightMeta.properties.self, troutId, seed);
+    let seed = await randomInt(0, MAX_SEED);
+    return this.doSpawnTrout(leftParent, rightParent, troutId, seed);
   }
 
-  private async doSpawnTrout<T extends TroutId | null>(
+  private async doSpawnTrout<T extends TroutParent | null>(
     left: T,
     right: T,
     selfId: TroutId,
     seed: number,
-  ) {
+  ): Promise<{ cid: Cid; props: TroutProperties }> {
     const { troutDescriptor, fishSvg } = await this.generate(left, right, selfId, seed);
     const name = troutName(selfId);
     const { token, car } = await NFTStorage.encodeNFT({
       name,
       description: `${name} ${
         left && right
-          ? `was born to ${troutName(left)} and ${troutName(right)}`
+          ? `was born to ${troutName(left.id)} and ${troutName(right.id)}`
           : troutDescriptor.attributes?.genesis
           ? 'has existed since before the dawn of time'
           : 'was spontaneously generated'
@@ -253,45 +232,94 @@ export class Spawner {
       properties: troutDescriptor,
     });
     await this.nftStorage.storeCar(car);
-    return token.ipnft;
+    return { cid: token.ipnft, props: troutDescriptor };
   }
 
-  private async generate<T extends TroutId | null>(
+  private async generate<T extends TroutParent | null>(
     left: T,
     right: T,
     self: TroutId,
     seed: number,
-  ): Promise<{ troutDescriptor: TroutDescriptor; fishSvg: string }> {
+  ): Promise<{ troutDescriptor: TroutProperties; fishSvg: string }> {
     const tokenId = Number(ethers.getBigInt(self.tokenId));
+
     const attributes: TroutAttributes = {
       genesis: tokenId <= (self.chainId === 0x5aff || self.chainId === 0x5afe ? 137 : 139),
       santa: self.chainId === 0x5afe && tokenId > 235 && tokenId < 242,
     };
-    const fishSvg = toSvg(
-      fishdraw(seed),
-      attributes.genesis ? 'rainbow' : attributes.santa ? 'santa' : 'normal',
-    );
 
-    const troutDescriptor: TroutDescriptor = {
-      left,
-      right,
+    let trout: fish.Organism;
+    if (left === null || right === null) {
+      trout = fish.spawn(seed);
+      if (attributes.genesis) {
+        trout.genotype[0].color = 'rainbow';
+        trout.genotype[1].color = 'rainbow';
+        trout.phenotype.color = 'rainbow';
+      }
+    } else {
+      trout = fish.breed(left.genotype, right.genotype, seed);
+    }
+    const fishSvg = fish.draw(trout.phenotype, attributes);
+
+    const pastSelfCid = await this.getTroutCid(tokenId);
+    let generations: Cid[] = [];
+    if (pastSelfCid) {
+      const pastProps = await this.fetchProps(tokenId, pastSelfCid);
+      generations = pastProps.generations ?? [];
+      generations.push(pastSelfCid);
+    }
+
+    const troutDescriptor: TroutProperties = {
+      left: left?.id ?? null,
+      right: right?.id ?? null,
       self,
       attributes,
-      seed: await this.cipher.encrypt(new TextEncoder().encode(JSON.stringify({ seed })), tokenId),
+      traits: await this.cipher.encrypt(
+        new TextEncoder().encode(
+          JSON.stringify({
+            seed,
+            ...trout,
+          }),
+        ),
+        tokenId,
+      ),
+      generations,
     };
 
     return { troutDescriptor, fishSvg };
   }
 
-  private async fetchMetadata(tokenId: number, cid: string): Promise<TroutMeta & { seed: number }> {
-    const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
-    // TODO: verify CID
-    const troutMeta = (await res.json()) as any;
-    if (typeof troutMeta.seed === 'number') return troutMeta;
-    const seedJson = await this.cipher.decrypt(troutMeta.properties.seed, tokenId);
-    const { seed } = JSON.parse(new TextDecoder().decode(seedJson));
-    troutMeta.seed = seed;
-    return troutMeta;
+  private async fetchParent(tokenId: number, cid: string): Promise<TroutParent> {
+    const props = await this.fetchProps(tokenId, cid);
+    if (!('traits' in props)) throw new Error(`encountered legacy trout ${tokenId}`);
+    const traitsJson = await this.cipher.decrypt(props.traits, tokenId);
+    const { genotype } = JSON.parse(new TextDecoder().decode(traitsJson)) as fish.Organism;
+    return { id: props.self, genotype };
+  }
+
+  private async fetchProps(tokenId: number, cid: string): Promise<TroutProperties> {
+    for (let i = 0; i < 3; i++) {
+      try {
+        const cached = this.#cidCache.get(tokenId);
+        if (cached && cached.props) return cached.props;
+        const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
+        // TODO: verify CID
+        const resText = await res.text();
+        let props: TroutProperties;
+        try {
+          props = JSON.parse(resText).properties;
+        } catch (e: any) {
+          console.error('failed to parse nft metadata response:', resText);
+          throw e;
+        }
+        this.#cidCache.set(tokenId, { cid, props, posted: true });
+        return props;
+      } catch (e: any) {
+        console.error('failed to fetch', tokenId, 'props:', e);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    throw new Error(`failed to fetch props for trout ${tokenId}`);
   }
 }
 
@@ -307,13 +335,6 @@ function chainIdToChainName(chainId: number) {
   if (chainId === 1337) return 'Ganache';
   if (chainId === 31337) return 'Hardhat';
   throw new Error(`unrecognized chainid: ${chainId}`);
-}
-
-function networkNameToChainId(networkName: keyof typeof spawners): number {
-  if (networkName === 'sapphire-testnet') return 0x5aff;
-  if (networkName === 'sapphire-mainnet') return 0x5afe;
-  if (networkName === 'local') return 31337;
-  throw new Error(`unrecgnized newtork: ${networkName}`);
 }
 
 function uint8ArrayToBigIntLE(uint8Array: Uint8Array): bigint {

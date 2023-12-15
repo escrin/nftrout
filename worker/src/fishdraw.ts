@@ -1,12 +1,15 @@
+type Pair = [number, number];
+type Polyline = Array<Pair>;
+
 const HATX = 410.435;
 const HATY = 285.174;
 const HAT_RATIO = HATY / HATX;
-const santaHat = (x, y, w, f) => {
+const santaHat = (x: number, y: number, w: number, f: boolean) => {
   const h = HAT_RATIO * w;
   const txform = f ? `scale(-1, 1), translate(-${HATX}, 0)` : '';
   return `<svg x="${x}" y="${y}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HATX} ${HATY}" width="${w}" height="${h}" version="1.0"><g transform="${txform}"><path d="M234.103 28.783c-28.1 7.734-56.904 23.115-77.167 38.007-20.262 14.892-73.19 52.416-85.274 64.307-11.716 11.528-25.555 15.55-31.611 29.756-2.335 5.479 15.837 22.005 19.398 23.721 9.24 4.453 24.304-3.443 31.178-3.914 22.307-1.53 45.167-4.499 67.76 10.792-4.18 4.221 2.458-.323-6.088 36.694-3.013 13.053-9.599 46.919-1.507 53.38 8.04 6.42 12.95-18.605 20.937-14.774-.004.006-.002.021-.005.026l-.004.027c0 .004-.006.023-.005.026.003.003.021.003.025.005a.427.427 0 0 0 .129-.002c.015.007.035.002.05.01.056.027.108.059.165.086l.047-.127c3.781-.978 33.263-13.966 60.176-8.743 15.172 2.944 39.37-5.31 53.29-9.615 22.076-6.828 53.068-12.999 72.728-13.351 14.483-.26 27.587-8.46 41.52-9.415 8.221-.564.6-27.066.43-29.866-.817-13.455-17.566-34.13-26.192-52.503-8.626-18.374-23.082-41.697-39.004-59.986-15.921-18.29-37.401-41.972-52.525-49.259-15.124-7.287-17.953-13.675-48.451-5.282z" style="fill:#d00000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.83349466px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M166.956 93.344c-18.233 4.416-33.848 62.691-56.32 72.822-14.697 6.625-54.748 16.692-51.187 18.408 9.24 4.453 24.304-3.443 31.178-3.914 22.307-1.53 45.167-4.499 67.76 10.792-4.18 4.221 2.458-.323-6.088 36.694-3.013 13.053-9.599 46.919-1.507 53.38 8.04 6.42 12.95-18.605 20.937-14.774-.004.006-.002.021-.005.026l-.004.027c0 .004-.006.023-.005.026.003.003.021.003.025.005a.427.427 0 0 0 .129-.002c.015.007.035.002.05.01.056.027.108.059.165.086l.047-.127c3.781-.978 33.263-13.966 60.176-8.743 15.172 2.944 39.37-5.31 53.29-9.615 22.076-6.828 53.068-12.999 72.728-13.351 14.483-.26 27.587-8.46 41.52-9.415 8.221-.564-51.084 4.52-27.449-12.576 10.486-7.584-104.984 15.808-149.314-34.777-43.895-50.088-37.455-89.505-56.126-84.982" style="opacity:.10112359;fill:#0e0000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M41.923 154.632c3.551 2.353 27.398 32.517 30.215 30.406.34-3.33-2.44-4.642-4.397-5.022 2.62-3.33 3.114-6.811-1.432-7.11-5.04-.89-10.543-1.514-5.133-6.936 2.498-3.039-.168-8.435-1.701-11.18-4.03-2.176-7.066-6.114-8.718-8.791" style="opacity:.26966289;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.83016068;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M365.597 219.586c-7.45-2.642-16.8-5.694-23.39-5.287-4.524-3.822-7.997.888-11.918 2.142-.658-7.36-11.51 3.112-16.291 3.172-3.395 1.948-1.055-5.8-7.134-2.853-7.557.714-12.232 1.233-17.839 3.66-1.346 8.013-13.449 12.527-15.26 3.745-6.599 2.871-18.869 8.441-18.948-.642-10.565 8.194-10.9 15.599-21.214 19.553.912-7.092-22.37-10.908-25.545-3.465-6.39 2.573 1.33-9.32-7.904-6.052-10.4-3.024-4.347 17.935-25.554 9.366-11.808-.38-5.269 16.72-13.061 23.882-2.076 7.533-11.084-2.624-14.73-2.06.849 11.927 3.408 7.882.72 15.997-1.604 10.165-3.751 15.255 7.432 17.372 3.62-4.903-.182-2.829.628 6.218 6.457-1.88 14.946-12.64 14.075-1.582 4.382-6.673 18.254-10.151 18.08-17.339 7.021.737 14.902 8.58 20.83-.953 5.95-7.041 14.504-10.307 14.594-4.868 7.233 6.756 7.957 5.387 15.478 3.667-1.938-8.711 17.599-.598 7.282-9.271 4.098-4.104 15.188-6.502 21.597-5.076 5.669 8.254 22.944 8.937 25.631-1.747.564-8.404 13.683-11.279 18.588-5.468 8.53-7.479 21.984 3.388 29.324-2.344-6.598-8.563 9.324-14.158 12.298-7.593 5.841-3.137 11.278-14.423 17.668-6.343 7.35-2.395 16.325-5.726 22.542-8.222 4.667 7.693 16.748-.221 11.51-9.532-2.834-6.65 9.31 3.274 6.004-5.164-3.76-9.077-9.042-21.692-15.514-21.275-8.812-2.201-14.037 3.745-14.403 12.16-.111-6.14-10.522-.154-15.983 2.073l-2.994.712-3.577-2.523" style="opacity:.294045;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.60142648px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M370.524 221.83c-7.451-2.642-14.356-3.013-20.945-2.606-4.525-3.822-9.895-2.569-13.815-1.315-.658-7.36-9.614 6.569-14.395 6.63-3.394 1.947-1.055-5.801-7.133-2.854-7.558.714-16.32-3.972-21.926-1.545-1.346 8.013-13.449 12.527-15.26 3.744-6.599 2.872-14.782 13.647-14.862 4.564-12.384-.543-17.69 11.633-28.003 15.588.912-7.092-15.581-6.943-18.755.5-6.39 2.573-1.7-13.438-10.933-10.17-10.4-3.023-10.117 17.698-22.525 13.484-11.808-.38-10.159 11.358-17.951 18.52-2.077 7.533-6.194 2.738-9.84 3.302 6 8.514-18.393 6.74-11.151 19.87-1.605 10.166.848 17.472 12.031 19.59 3.621-4.904 7.09-8.92 7.9.127 6.457-1.88 14.945-12.64 14.074-1.582 4.382-6.673 18.254-10.151 18.08-17.339 7.022.737 14.902 8.58 20.83-.953 5.95-7.041 6.933-1.296 7.023 4.142 7.234 6.757 15.528-3.623 23.05-5.343-1.938-8.711 17.598-.598 7.282-9.271 4.097-4.104 15.187-6.502 21.596-5.076 5.623 5.334 22.944 8.937 25.632-1.747.564-8.404 13.682-11.279 18.587-5.468 8.53-7.479 21.984 3.388 29.324-2.344-6.597-8.563 9.325-14.158 12.298-7.593 5.842-3.137 11.278-14.423 17.668-6.343 7.35-2.395 16.325-5.726 22.543-8.222 4.666 7.693 16.747-.221 11.51-9.532-2.835-6.65 9.31 3.274 6.004-5.164.074-9.656-3.563-24.6-15.514-21.275-8.812-2.201-14.038 3.745-14.403 12.16-.112-6.14-14.026-3.923-19.487-1.696l-1.789.946-1.278 1.012" style="fill:#fff;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.60142648px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M155.68 210.888c3.14-40.847 23.785-59.45 20.151-92.12-2.148-19.31-19.537-4.673-13.87 13.441" style="fill:none;fill-opacity:.75;fill-rule:evenodd;stroke:#000;stroke-width:.83349466px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M163.978 266.619c-2.076 7.532-6.194 2.737-9.84 3.301 6 8.514-18.392 6.74-11.15 19.87-1.605 10.166.848 17.472 12.03 19.59 3.622-4.904 7.09-8.92 7.9.126 6.457-1.88 14.946-12.64 14.075-1.58 4.382-6.674 18.254-10.152 18.08-17.34 7.021.737 14.565 7.35 20.493-2.183 5.95-7.041 7.27-.066 7.36 5.372 7.233 6.757 15.528-3.623 23.049-5.343-1.938-8.711 8.866-1.545 7.282-9.272-1.037-5.06 33.645-3.562 28.657-8.51-14.906-14.787-38.191 7.492-41.56 6.07-3.369-1.422-7.091-.56-2.385-2.72 4.707-2.159-6.742 1.393-16.277-1.993-9.535-3.387-16.515.894-17.152 9.342-7.181-4.466-7.696.607-18.885 3.718 7.13-10.422-12.6-2.768-12.6-2.768s3.438-11.428-2.739-9.92c3.321-5.964-.365-7.802-.365-7.802s1.82-5.121-5.973 2.042" style="opacity:.11235956;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:.7215721px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M46.945 146.245c-1.302-2.318-5.358-2.957-5.88-4.923.907-2.283-2.659-.627-3.361-1.882-4.195 3.434-9.985 4.92-13.093 9.642 1.653-.362 1.649-2.778-.157-.996-3.401 1.69-6.688 4.658-5.41 8.893.31 2.173-2.425 4.043.914 4.558-.435 3.48-5.655 3.333-5.658 6.404 1.155 3.35.647 6.84-2.1 9.19-2.719 2.541-1.6 6.283-1.5 9.37-1.367 2.066-2.137 3.986-.335 5.953.382 3.548 3.327 5.898 3.349 9.59 1.24 1.934 3.727 1.815 4.997 4.001 3.71.316 3.983 5.497 7.517 6.215 3.036.99 6.629.304 9.365 1.03 2.243 1.82 4.819 3.087 7.643 3.598 3.551 2.26 4.758-3.365 6.907-5.176.112-2.832 2.146-3.052 3.509-.668 3.1 2.103 6.314-1.518 8.537-3.434 2.173-2.369 4.612-4.42 7.032-6.497 3.436-3.878 4.656-9.43 4.464-14.535.34-3.199-2.635-3.376-4.591-3.741.885-2.683 3.113-6.542-1.433-6.83-2.607-.68-8.517-3.593-5.132-6.661 2.498-2.919-.94-6.848-2.474-9.484-2.656-2.114-4.2-5.06-5.85-7.63-3.198-.51-6.195-2.453-7.01-5.846-.854-2.694-.237-.699.033.613" style="fill:#fff;fill-opacity:1;fill-rule:evenodd;stroke:#000;stroke-width:.81360233;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M20.405 181.846c-1.601-1.968 4.721-1.041 4.2-3.007.906-2.283-.179-2.378-.882-3.634-4.194 3.434-3.206-4.7-6.314.022 1.652-.362 1.38-6.334-.425-4.551-3.401 1.69-2.68-5.806-2.684-2.735 1.155 3.35.647 6.84-2.1 9.19-2.719 2.541-1.6 6.283-1.5 9.37-1.367 2.066-2.137 3.986-.335 5.953.382 3.548 3.327 5.898 3.349 9.59 1.24 1.934 3.727 1.815 4.997 4.001 3.71.316 3.983 5.497 7.517 6.215 3.036.99 6.629.304 9.365 1.03 2.243 1.82 4.819 3.087 7.643 3.598 3.551 2.26 4.758-3.365 6.907-5.176.112-2.832 2.146-3.052 3.509-.668 3.1 2.103 6.314-1.518 8.537-3.434 2.173-2.369-8.346.36-5.926-1.717 3.436-3.879-7.752 5.413-7.945.308.34-3.2-12.37 4.07-9.678-1.554.884-2.682 1.536-.748-3.01-1.035-2.607-.68-9.804-5.494-6.419-8.562 2.498-2.919-1.342.456-2.876-2.18-2.656-2.114-.96-.95-2.611-3.521-3.198-.51-1.792-1.817-2.607-5.21-1.383 3.98-.982-3.604-.712-2.293" style="opacity:.0955056;fill:#000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:.99599999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" transform="translate(-8.903 -24.385)"/><path d="M157.67 192.362s13.145-33.512 16.303-46.882c2.955-12.509 2.573-31.603-1.853-35.137-4.426-3.534-10.247 2.578-10.86 9.816-.614 7.238-1.128 9.061 1.843 22.867 1.347 6.259.674 21.093-1.157 28.095-1.831 7.001-5.827 22.946-4.276 21.24" style="fill:#000;fill-opacity:.22346371;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" transform="translate(-8.903 -24.385)"/></g></svg>`;
 };
-const snowflake = (x, y, s, r) =>
+const snowflake = (x: number, y: number, s: number, r: number) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 397 411" x="${x}" y="${y}" width="${s}" height="${s}" version="1.0"><path transform="rotate(${r} 198.5 205.5)" d="M183.313 43.094v40.719l-30.594-17.688-15.531 26.813 46.125 26.718v60.094L131.5 149.813l-.094-53.532-31 .063.063 35.562-35.375-20.437-15.5 26.844 35.281 20.375-30.625 17.625 15.438 26.875 46.218-26.594 52 30.031-51.812 29.906-46.406-26.687-15.438 26.875 30.813 17.75-35.375 20.406 15.5 26.844 35.28-20.375-.062 35.344 31 .062.094-53.312 52-30v59.812l-46.312 26.844 15.53 26.812 30.782-17.812v40.844h31v-40.72l30.594 17.688 15.531-26.812-46.125-26.719v-60.094l51.813 29.938.093 53.531 31-.062-.062-35.563 35.375 20.438 15.5-26.844-35.281-20.375 30.625-17.625-15.438-26.875-46.187 26.594-52.032-30.032 51.844-29.937 46.375 26.719 15.438-26.875-30.813-17.75 35.375-20.407-15.5-26.844-35.281 20.376.062-35.344-31-.063-.094 53.313-52 30V119.78l46.313-26.844-15.531-26.812-30.781 17.813V43.094z" fill="snow" stroke="gray" /></svg>`;
 
 // Source: https://raw.githubusercontent.com/LingDong-/fishdraw/1b31d55/fishdraw.js
@@ -26,11 +29,11 @@ var PERLIN_ZWRAP = 1 << PERLIN_ZWRAPB;
 var PERLIN_SIZE = 4095;
 var perlin_octaves = 4;
 var perlin_amp_falloff = 0.5;
-var scaled_cosine = function (i) {
+var scaled_cosine = function (i: number) {
   return 0.5 * (1.0 - Math.cos(i * PI));
 };
-var perlin;
-let noise = function (x, y, z) {
+var perlin: number[];
+let noise = function (x: number, y?: number, z?: number) {
   y = y || 0;
   z = z || 0;
   if (perlin == null) {
@@ -98,16 +101,16 @@ let noise = function (x, y, z) {
   return r;
 };
 
-function dist(x0, y0, x1, y1) {
+function dist(x0: number, y0: number, x1: number, y1: number) {
   return Math.hypot(x1 - x0, y1 - y0);
 }
-function lerp(a, b, t) {
+function lerp(a: number, b: number, t: number) {
   return a * (1 - t) + b * t;
 }
-function lerp2d(x0, y0, x1, y1, t) {
+function lerp2d(x0: number, y0: number, x1: number, y1: number, t: number): Pair {
   return [x0 * (1 - t) + x1 * t, y0 * (1 - t) + y1 * t];
 }
-function get_bbox(points) {
+function get_bbox(points: Polyline) {
   let xmin = Infinity;
   let ymin = Infinity;
   let xmax = -Infinity;
@@ -122,7 +125,17 @@ function get_bbox(points) {
   return { x: xmin, y: ymin, w: xmax - xmin, h: ymax - ymin };
 }
 
-function seg_isect(p0x, p0y, p1x, p1y, q0x, q0y, q1x, q1y, is_ray = false) {
+function seg_isect(
+  p0x: number,
+  p0y: number,
+  p1x: number,
+  p1y: number,
+  q0x: number,
+  q0y: number,
+  q1x: number,
+  q1y: number,
+  is_ray = false,
+) {
   let d0x = p1x - p0x;
   let d0y = p1y - p0y;
   let d1x = q1x - q0x;
@@ -138,21 +151,27 @@ function seg_isect(p0x, p0y, p1x, p1y, q0x, q0y, q1x, q1y, is_ray = false) {
   let t = (q0x_p0x * d1y - q0y_p0y * d1x) * vc_vcn;
   let s = (q0x_p0x * d0y - q0y_p0y * d0x) * vc_vcn;
   if (0 <= t && (is_ray || t < 1) && 0 <= s && s < 1) {
-    let ret = { t, s, side: null, other: null, xy: null };
+    let ret: {
+      t: number;
+      s: number;
+      side: number | null;
+      other: number | null;
+      xy: Pair | null;
+    } = { t, s, side: null, other: null, xy: null };
     ret.xy = [p1x * t + p0x * (1 - t), p1y * t + p0y * (1 - t)];
     ret.side = pt_in_pl(p0x, p0y, p1x, p1y, q0x, q0y) < 0 ? 1 : -1;
     return ret;
   }
   return null;
 }
-function pt_in_pl(x, y, x0, y0, x1, y1) {
+function pt_in_pl(x: number, y: number, x0: number, y0: number, x1: number, y1: number) {
   let dx = x1 - x0;
   let dy = y1 - y0;
   let e = (x - x0) * dy - (y - y0) * dx;
   return e;
 }
 
-function poly_bridge(poly0, poly1) {
+function poly_bridge(poly0: Polyline, poly1: Polyline) {
   let dmin = Infinity;
   let imin = null;
   for (let i = 0; i < poly0.length; i++) {
@@ -169,24 +188,24 @@ function poly_bridge(poly0, poly1) {
     }
   }
   let u = poly0
-    .slice(0, imin[0])
-    .concat(poly1.slice(imin[1]))
-    .concat(poly1.slice(0, imin[1]))
-    .concat(poly0.slice(imin[0]));
+    .slice(0, imin![0]!)
+    .concat(poly1.slice(imin![1]))
+    .concat(poly1.slice(0, imin![1]))
+    .concat(poly0.slice(imin![0]));
   return u;
 }
 
-function poly_union(poly0, poly1, self_isect = false) {
+function poly_union(poly0: Polyline, poly1: Polyline, self_isect = false): any {
   let verts0 = poly0.map((xy) => ({ xy, isects: [], isects_map: {} }));
   let verts1 = poly1.map((xy) => ({ xy, isects: [], isects_map: {} }));
 
-  function pair_key() {
-    return Array.from(arguments).join(',');
+  function pair_key(...args: any[]) {
+    return Array.from(args).join(',');
   }
 
   let has_isect = false;
 
-  function build_vertices(poly, other, out, oout, idx) {
+  function build_vertices(poly: Polyline, other: Polyline, out: any, oout: any, idx: number) {
     let n = poly.length;
     let m = other.length;
     if (self_isect) {
@@ -204,7 +223,7 @@ function poly_union(poly0, poly1, self_isect = false) {
           }
           let c = poly[j];
           let d = poly[j1];
-          let xx;
+          let xx: any;
           let ox = out[j].isects_map[id];
           if (ox) {
             xx = {
@@ -238,7 +257,7 @@ function poly_union(poly0, poly1, self_isect = false) {
         let j1 = (j + 1 + m) % m;
         let c = other[j];
         let d = other[j1];
-        let xx;
+        let xx: any;
 
         let ox = oout[j].isects_map[id];
         if (ox) {
@@ -260,7 +279,7 @@ function poly_union(poly0, poly1, self_isect = false) {
           p.isects_map[jd] = xx;
         }
       }
-      p.isects.sort((a2, b2) => a2.t - b2.t);
+      p.isects.sort((a2: any, b2: any) => a2.t - b2.t);
     }
   }
   build_vertices(poly0, poly1, verts0, verts1, 0);
@@ -274,8 +293,8 @@ function poly_union(poly0, poly1, self_isect = false) {
     }
   }
 
-  let isect_mir = {};
-  function mirror_isects(verts0, verts1, idx) {
+  let isect_mir: any = {};
+  function mirror_isects(verts0: any, verts1: any, idx: number) {
     let n = verts0.length;
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < verts0[i].isects.length; j++) {
@@ -283,7 +302,9 @@ function poly_union(poly0, poly1, self_isect = false) {
         let { jump } = verts0[i].isects[j];
         let jd = jump ? 1 - idx : idx;
         let k = verts0[i].isects[j].other;
-        let z = (jump ? verts1 : verts0)[k].isects.findIndex((x) => x.jump == jump && x.other == i);
+        let z = (jump ? verts1 : verts0)[k].isects.findIndex(
+          (x: any) => x.jump == jump && x.other == i,
+        );
         isect_mir[id] = [jd, k, z];
       }
     }
@@ -293,10 +314,10 @@ function poly_union(poly0, poly1, self_isect = false) {
 
   // console.log(verts0,verts1)
 
-  function trace_outline(idx, i0, j0, dir) {
-    let zero = null;
-    let out = [];
-    function trace_from(idx, i0, j0, dir) {
+  const trace_outline: any = (idx: any, i0: number, j0: any, dir: any): Polyline | null => {
+    let zero: any = null;
+    let out: Polyline = [];
+    const trace_from: any = (idx: any, i0: any, j0: any, dir: any) => {
       if (zero == null) {
         zero = [idx, i0, j0];
       } else if (idx == zero[0] && i0 == zero[1] && j0 == zero[2]) {
@@ -319,9 +340,9 @@ function poly_union(poly0, poly1, self_isect = false) {
         return trace_from(idx, i1, -1, dir, [i0, j0]);
       } else {
         let id = pair_key(idx, i0, j0);
-        out.push(p.isects[j0].xy);
+        out.push((p.isects[j0] as any).xy);
 
-        let q = p.isects[j0];
+        let q: any = p.isects[j0];
         let [jdx, k, z] = isect_mir[id];
         let params;
         if (q.side * dir < 0) {
@@ -331,30 +352,30 @@ function poly_union(poly0, poly1, self_isect = false) {
         }
         return trace_from(...params);
       }
-    }
+    };
     let success = trace_from(idx, i0, j0, dir);
     if (!success || out.length < 3) {
       return null;
     }
     return out;
-  }
+  };
 
   let xmin = Infinity;
-  let amin = null;
+  let amin: Pair | null = null;
   for (let i = 0; i < poly0.length; i++) {
     if (poly0[i][0] < xmin) {
       xmin = poly0[i][0];
-      amin = [0, i];
+      amin = [0, i] as Pair;
     }
   }
   for (let i = 0; i < poly1.length; i++) {
     if (poly1[i][0] < xmin) {
       xmin = poly1[i][0];
-      amin = [1, i];
+      amin = [1, i] as Pair;
     }
   }
 
-  function check_concavity(poly, idx) {
+  function check_concavity(poly: Polyline, idx: number) {
     let n = poly.length;
     let a = poly[(idx - 1 + n) % n];
     let b = poly[idx];
@@ -363,15 +384,22 @@ function poly_union(poly0, poly1, self_isect = false) {
     return cw;
   }
 
-  let cw = check_concavity(amin[0] ? poly1 : poly0, amin[1]);
-  let ret = trace_outline(...amin, -1, cw, true);
+  let cw = check_concavity(amin![0] ? poly1 : poly0, amin![1]);
+  let ret = trace_outline(...amin!, -1, cw, true);
   if (!ret) {
     return [];
   }
   return ret;
 }
 
-function seg_isect_poly(x0, y0, x1, y1, poly, is_ray = false) {
+function seg_isect_poly(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  poly: Polyline,
+  is_ray = false,
+) {
   let n = poly.length;
   let isects = [];
   for (let i = 0; i < poly.length; i++) {
@@ -386,7 +414,7 @@ function seg_isect_poly(x0, y0, x1, y1, poly, is_ray = false) {
   return isects;
 }
 
-function clip(polyline, polygon) {
+function clip(polyline: Polyline, polygon: Polyline): { true: Polyline[]; false: Polyline[] } {
   if (!polyline.length) {
     return { true: [], false: [] };
   }
@@ -395,7 +423,7 @@ function clip(polyline, polygon) {
       .length %
       2 !=
     0;
-  let out = {
+  let out: { true: Polyline[]; false: Polyline[] } = {
     true: [[]],
     false: [[]],
   };
@@ -403,13 +431,16 @@ function clip(polyline, polygon) {
   for (let i = 0; i < polyline.length; i++) {
     let a = polyline[i];
     let b = polyline[i + 1];
+    // @ts-ignore
     out[io][out[io].length - 1].push(a);
     if (!b) break;
 
     let isects = seg_isect_poly(...a, ...b, polygon, false);
     for (let j = 0; j < isects.length; j++) {
+      // @ts-ignore
       out[io][out[io].length - 1].push(isects[j].xy);
       io = !io;
+      // @ts-ignore
       out[io].push([isects[j].xy]);
     }
   }
@@ -418,10 +449,14 @@ function clip(polyline, polygon) {
   return out;
 }
 
-function clip_multi(polylines, polygon, clipper_func = clip) {
+function clip_multi(
+  polylines: Polyline[],
+  polygon: any,
+  clipper_func: any = clip,
+): { true: Polyline[]; false: Polyline[] } {
   let out = {
-    true: [],
-    false: [],
+    true: <Polyline[]>[],
+    false: <Polyline[]>[],
   };
   for (let i = 0; i < polylines.length; i++) {
     let c = clipper_func(polylines[i], polygon);
@@ -431,7 +466,7 @@ function clip_multi(polylines, polygon, clipper_func = clip) {
   return out;
 }
 
-function binclip(polyline, func) {
+function binclip(polyline: Polyline, func: any): { true: Polyline[]; false: Polyline[] } {
   if (!polyline.length) {
     return { true: [], false: [] };
   }
@@ -449,6 +484,7 @@ function binclip(polyline, func) {
   for (let i = 0; i < polyline.length; i++) {
     let a = polyline[i];
     let b = polyline[i + 1];
+    // @ts-ignore
     out[io][out[io].length - 1].push(a);
     if (!b) break;
 
@@ -456,8 +492,11 @@ function binclip(polyline, func) {
 
     if (do_isect) {
       let pt = lerp2d(...a, ...b, 0.5);
+      // @ts-ignore
       out[io][out[io].length - 1].push(pt);
+      // @ts-ignore
       io = !io;
+      // @ts-ignore
       out[io].push([pt]);
     }
   }
@@ -466,13 +505,13 @@ function binclip(polyline, func) {
   return out;
 }
 
-function shade_shape(poly, step = 5, dx = 10, dy = 20) {
+function shade_shape(poly: Polyline, step = 5, dx = 10, dy = 20) {
   let bbox = get_bbox(poly);
   bbox.x -= step;
   bbox.y -= step;
   bbox.w += step * 2;
   bbox.h += step * 2;
-  let lines = [];
+  let lines: Polyline[] = [];
   for (let i = -bbox.h; i < bbox.w; i += step) {
     let x0 = bbox.x + i;
     let y0 = bbox.y;
@@ -504,13 +543,13 @@ function shade_shape(poly, step = 5, dx = 10, dy = 20) {
   return lines;
 }
 
-function fill_shape(poly, step = 5) {
+function fill_shape(poly: Polyline, step = 5): Polyline[] {
   let bbox = get_bbox(poly);
   bbox.x -= step;
   bbox.y -= step;
   bbox.w += step * 2;
   bbox.h += step * 2;
-  let lines = [];
+  let lines: Polyline[] = [];
   for (let i = 0; i < bbox.w + bbox.h / 2; i += step) {
     let x0 = bbox.x + i;
     let y0 = bbox.y;
@@ -525,13 +564,17 @@ function fill_shape(poly, step = 5) {
   return lines;
 }
 
-function patternshade_shape(poly, step = 5, pattern_func) {
+function patternshade_shape(
+  poly: Polyline,
+  step = 5,
+  pattern_func: (x: number, y?: number) => number | boolean,
+) {
   let bbox = get_bbox(poly);
   bbox.x -= step;
   bbox.y -= step;
   bbox.w += step * 2;
   bbox.h += step * 2;
-  let lines = [];
+  let lines: Polyline[] = [];
   for (let i = -bbox.h / 2; i < bbox.w; i += step) {
     let x0 = bbox.x + i;
     let y0 = bbox.y;
@@ -553,13 +596,13 @@ function patternshade_shape(poly, step = 5, pattern_func) {
   return lines;
 }
 
-function vein_shape(poly, n = 50) {
+function vein_shape(poly: Polyline, n = 50) {
   let bbox = get_bbox(poly);
-  let out = [];
+  let out: Polyline[] = [];
   for (let i = 0; i < n; i++) {
     let x = bbox.x + rand() * bbox.w;
     let y = bbox.y + rand() * bbox.h;
-    let o = [[x, y]];
+    let o: Polyline = [[x, y]];
     for (let j = 0; j < 15; j++) {
       let dx = (noise(x * 0.1, y * 0.1, 7) - 0.5) * 4;
       let dy = (noise(x * 0.1, y * 0.1, 6) - 0.5) * 4;
@@ -573,8 +616,8 @@ function vein_shape(poly, n = 50) {
   return out;
 }
 
-function smalldot_shape(poly, scale = 1) {
-  let samples = [];
+function smalldot_shape(poly: Polyline, scale = 1) {
+  let samples: Polyline = [];
   let bbox = get_bbox(poly);
   poissondisk(bbox.w, bbox.h, 5 * scale, samples);
   for (let i = 0; i < samples.length; i++) {
@@ -591,7 +634,7 @@ function smalldot_shape(poly, scale = 1) {
       continue;
     }
     for (let k = 0; k < 2; k++) {
-      let o = [];
+      let o: Polyline = [];
       for (let j = 0; j < n; j++) {
         let t = j / (n - 1);
         let a = t * PI * 2;
@@ -604,7 +647,15 @@ function smalldot_shape(poly, scale = 1) {
   return clip_multi(out, poly).true;
 }
 
-function isect_circ_line(cx, cy, r, x0, y0, x1, y1) {
+function isect_circ_line(
+  cx: number,
+  cy: number,
+  r: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+) {
   //https://stackoverflow.com/a/1084899
   let dx = x1 - x0;
   let dy = y1 - y0;
@@ -629,12 +680,12 @@ function isect_circ_line(cx, cy, r, x0, y0, x1, y1) {
   return t;
 }
 
-function resample(polyline, step) {
+function resample(polyline: Polyline, step: number): Polyline {
   if (polyline.length < 2) {
     return polyline.slice();
   }
   polyline = polyline.slice();
-  let out = [polyline[0].slice()];
+  let out: Polyline = [polyline[0].slice() as Pair];
   let next = null;
   let i = 0;
   while (i < polyline.length - 1) {
@@ -655,7 +706,7 @@ function resample(polyline, step) {
       let t = j / n;
       let x = a[0] * (1 - t) + rpx * t;
       let y = a[1] * (1 - t) + rpy * t;
-      let xy = [x, y];
+      let xy: Pair = [x, y];
       for (let k = 2; k < a.length; k++) {
         xy.push(a[k] * (1 - t) + (a[k] * (1 - rest) + b[k] * rest) * t);
       }
@@ -674,7 +725,7 @@ function resample(polyline, step) {
         continue;
       }
 
-      let q = [b[0] * (1 - t) + c[0] * t, b[1] * (1 - t) + c[1] * t];
+      let q: Pair = [b[0] * (1 - t) + c[0] * t, b[1] * (1 - t) + c[1] * t];
       for (let k = 2; k < b.length; k++) {
         q.push(b[k] * (1 - t) + c[k] * t);
       }
@@ -699,11 +750,11 @@ function resample(polyline, step) {
       out.pop();
     }
   }
-  out.push(polyline[polyline.length - 1].slice());
+  out.push(polyline[polyline.length - 1].slice() as Pair);
   return out;
 }
 
-function pt_seg_dist(p, p0, p1) {
+function pt_seg_dist(p: Pair, p0: Pair, p1: Pair) {
   // https://stackoverflow.com/a/6853926
   let x = p[0];
   let y = p[1];
@@ -738,7 +789,7 @@ function pt_seg_dist(p, p0, p1) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function approx_poly_dp(polyline, epsilon) {
+function approx_poly_dp(polyline: Polyline, epsilon: number): Polyline {
   if (polyline.length <= 2) {
     return polyline;
   }
@@ -751,26 +802,26 @@ function approx_poly_dp(polyline, epsilon) {
       argmax = i;
     }
   }
-  let ret = [];
+  let ret: Polyline = [];
   if (dmax > epsilon) {
     let L = approx_poly_dp(polyline.slice(0, argmax + 1), epsilon);
     let R = approx_poly_dp(polyline.slice(argmax, polyline.length), epsilon);
     ret = ret.concat(L.slice(0, L.length - 1)).concat(R);
   } else {
-    ret.push(polyline[0].slice());
-    ret.push(polyline[polyline.length - 1].slice());
+    ret.push(polyline[0].slice() as Pair);
+    ret.push(polyline[polyline.length - 1].slice() as Pair);
   }
   return ret;
 }
 
-function distsq(x0, y0, x1, y1) {
+function distsq(x0: number, y0: number, x1: number, y1: number) {
   let dx = x0 - x1;
   let dy = y0 - y1;
   return dx * dx + dy * dy;
 }
-function poissondisk(W, H, r, samples) {
-  let grid = [];
-  let active = [];
+function poissondisk(W: number, H: number, r: number, samples: Polyline): void {
+  let grid: number[] = [];
+  let active: Pair[] = [];
   let w = r / 1.4142135624;
   let r2 = r * r;
   let cols = ~~(W / w);
@@ -778,7 +829,7 @@ function poissondisk(W, H, r, samples) {
   for (let i = 0; Number(i < cols * rows); i += 1) {
     grid.splice(grid.length, 0, -1);
   }
-  let pos = [W / 2.0, H / 2.0];
+  let pos: Pair = [W / 2.0, H / 2.0];
   samples.splice(samples.length, 0, pos);
   for (let i = 0; Number(i < samples.length); i += 1) {
     let col = ~~(samples[i][0] / w);
@@ -820,7 +871,7 @@ function poissondisk(W, H, r, samples) {
         if (ok) {
           found = 1;
           grid[row * cols + col] = samples.length;
-          let sample = [sx, sy];
+          let sample: Pair = [sx, sy];
           active.splice(active.length, 0, sample);
           samples.splice(samples.length, 0, sample);
         }
@@ -832,17 +883,30 @@ function poissondisk(W, H, r, samples) {
   }
 }
 
-function draw_svg({ polylines, layout, poi, params }, variant = 'normal') {
+type DrawSvgInput = {
+  polylines: Polyline[];
+  layout: any;
+  poi: { head: { length: number; neckline: Pair } };
+  params: any;
+};
+
+function draw_svg(
+  { polylines, layout, poi }: DrawSvgInput,
+  attrs: Partial<{ color: 'normal' | 'santa' | 'rainbow'; santa: boolean }>,
+) {
   let bgcolor = 'floralwhite';
   let fillcolor = 'floralwhite';
   let fgstroke = 'black';
   let underlay = '';
   let overlay = '';
-  if (variant === 'rainbow') {
+
+  if (attrs.color === 'rainbow') {
     underlay = `<linearGradient xmlns="http://www.w3.org/2000/svg" id="trout-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F0E23"/><stop offset="15%" stop-color="#63343E"/><stop offset="30%" stop-color="#3F7067"/><stop offset="50%" stop-color="#E38A26"/><stop offset="70%" stop-color="#A1161D"/><stop offset="85%" stop-color="#581414"/></linearGradient>`;
     fgstroke = 'url(#trout-gradient)';
     fillcolor = 'snow';
-  } else if (variant === 'santa') {
+  }
+
+  if (attrs.santa) {
     const [x, y] = poi.head.neckline;
     const { bbox, px, s, py, p } = layout;
     const hatw = poi.head.length * 4;
@@ -868,7 +932,7 @@ function draw_svg({ polylines, layout, poi, params }, variant = 'normal') {
   o += `<rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/>`;
   o += underlay;
 
-  const drawBg = (k) => {
+  const drawBg = (k: number) => {
     const start = k < 0 ? polylines.length + k : 0;
     const stop = k < 0 ? polylines.length : k;
     const bodyLines = polylines.slice(start, stop).flat();
@@ -903,100 +967,33 @@ function draw_svg({ polylines, layout, poi, params }, variant = 'normal') {
   return o;
 }
 
-function draw_svg_anim(polylines, speed) {
-  let o = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320">`;
-  o += `<rect x="0" y="0" width="520" height="320" fill="floralwhite"/><rect x="10" y="10" width="500" height="300" stroke="black" stroke-width="1" fill="none"/>`;
-  let lengths = [];
-  let acc_lengths = [];
-  let total_l = 0;
-  for (let i = 0; i < polylines.length; i++) {
-    let l = 0;
-    for (let j = 1; j < polylines[i].length; j++) {
-      l += Math.hypot(
-        polylines[i][j - 1][0] - polylines[i][j][0],
-        polylines[i][j - 1][1] - polylines[i][j][1],
-      );
-    }
-    lengths.push(l);
-    acc_lengths.push(total_l);
-    total_l += l;
-  }
-  for (let i = 0; i < polylines.length; i++) {
-    let l = lengths[i];
-    o += `
-    <path 
-      stroke="black" 
-      stroke-width="1" 
-      fill="none" 
-      stroke-dasharray="${l}"
-      stroke-dashoffset="${l}"
-      d="M`;
-    for (let j = 0; j < polylines[i].length; j++) {
-      o += polylines[i][j] + ' ';
-    }
-    let t = speed * l;
-    o += `">
-    <animate id="a${i}"
-      attributeName="stroke-dashoffset" 
-      fill="freeze"
-      from="${l}" to="${0}" dur="${t}s" 
-      begin="${acc_lengths[i] * speed}s;a${i}.end+${8 + speed * total_l - t}s"/>
-    />
-    <animate id="b${i}"
-      attributeName="stroke-dashoffset" 
-      fill="freeze"
-      from="${0}" to="${l}" dur="${3}s" 
-      begin="${5 + speed * total_l}s;b${i}.end+${5 + speed * total_l}s"/>
-    />
-    </path>`;
-  }
-  o += `</svg>`;
-  return o;
-}
-
-function draw_ps(polylines) {
-  let o = `%!PS-Adobe-3.0 EPSF-3.0
-%%BoundingBox: 0 0 520 320
-1 setlinewidth
-0.5 0.5 translate
-/m /moveto load def
-/l /lineto load def
-/F /stroke load def
-%%EndPageSetup
-10 10 m
-510 10 l
-510 310 l
-10 310 l
-closepath
-F
-`;
-  for (let i = 0; i < polylines.length; i++) {
-    for (let j = 0; j < polylines[i].length; j++) {
-      let [x, y] = polylines[i][j];
-      o += `${~~((x + 10) * 100) / 100} ${~~((310 - y) * 100) / 100} `;
-      if (j == 0) {
-        o += `m\n`;
-      } else {
-        o += `l\n`;
-      }
-    }
-    o += `F\n\n`;
-  }
-  return o;
-}
-
-function pow(a, b) {
+function pow(a: number, b: number) {
   return Math.sign(a) * Math.pow(Math.abs(a), b);
 }
 
-function gauss2d(x, y) {
+function gauss2d(x: number, y: number) {
   let z0 = Math.exp(-0.5 * x * x);
   let z1 = Math.exp(-0.5 * y * y);
   return z0 * z1;
 }
 
-function squama_mask(w, h) {
-  let p = [];
+function gauss1d(mean: number, std: number) {
+  const sample01 = () => {
+    // convert [0, 1) to (0, 1)
+    let r = rand();
+    do {
+      r = rand();
+    } while (r === 0);
+    return r;
+  };
+  const u = sample01();
+  const v = sample01();
+  let normal = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  return mean + std * normal;
+}
+
+function squama_mask(w: number, h: number): Polyline {
+  let p: Polyline = [];
   let n = 7;
   for (let i = 0; i < n; i++) {
     let t = i / n;
@@ -1008,8 +1005,8 @@ function squama_mask(w, h) {
   return p;
 }
 
-function squama(w, h, m = 3) {
-  let p = [];
+function squama(w: number, h: number, m = 3): Polyline[] {
+  let p: Polyline = [];
   let n = 8;
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
@@ -1018,7 +1015,7 @@ function squama(w, h, m = 3) {
     let y = pow(Math.sin(a), 1.4) * h;
     p.push([x, y]);
   }
-  let q = [p];
+  let q: Polyline[] = [p];
   for (let i = 0; i < m; i++) {
     let t = i / (m - 1);
     q.push([
@@ -1029,18 +1026,18 @@ function squama(w, h, m = 3) {
   return q;
 }
 
-function trsl_poly(poly, x, y) {
+function trsl_poly(poly: Polyline, x: number, y: number): Polyline {
   return poly.map((xy) => [xy[0] + x, xy[1] + y]);
 }
-function scl_poly(poly, sx, sy) {
+function scl_poly(poly: Polyline, sx: number, sy: number): Polyline {
   if (sy === undefined) sy = sx;
   return poly.map((xy) => [xy[0] * sx, xy[1] * sy]);
 }
-function shr_poly(poly, sx) {
+function shr_poly(poly: Polyline, sx: number): Polyline {
   return poly.map((xy) => [xy[0] + xy[1] * sx, xy[1]]);
 }
-function rot_poly(poly, th) {
-  let qoly = [];
+function rot_poly(poly: Polyline, th: number): Polyline {
+  let qoly: Polyline = [];
   let costh = Math.cos(th);
   let sinth = Math.sin(th);
   for (let i = 0; i < poly.length; i++) {
@@ -1052,10 +1049,19 @@ function rot_poly(poly, th) {
   return qoly;
 }
 
-function squama_mesh(m, n, uw, uh, squama_func, noise_x, noise_y, interclip = true) {
+function squama_mesh(
+  m: number,
+  n: number,
+  uw: number,
+  uh: number,
+  squama_func: any,
+  noise_x: number,
+  noise_y: number,
+  interclip = true,
+) {
   let clipper = null;
 
-  let pts = [];
+  let pts: Polyline = [];
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < m; j++) {
       let x = j * uw;
@@ -1069,7 +1075,7 @@ function squama_mesh(m, n, uw, uh, squama_func, noise_x, noise_y, interclip = tr
   }
   let out = [];
 
-  let whs = [];
+  let whs: Polyline = [];
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < m; j++) {
       if (i == 0 || j == 0 || i == n - 1 || j == m - 1) {
@@ -1094,7 +1100,7 @@ function squama_mesh(m, n, uw, uh, squama_func, noise_x, noise_y, interclip = tr
       let [dw, dh] = whs[i * m + j];
       let q = trsl_poly(squama_mask(dw, dh), x, y);
 
-      let p = squama_func(x, y, dw, dh).map((a) => trsl_poly(a, x, y));
+      let p = squama_func(x, y, dw, dh).map((a: Polyline) => trsl_poly(a, x, y));
       if (!interclip) {
         out.push(...p);
       } else {
@@ -1123,7 +1129,7 @@ function squama_mesh(m, n, uw, uh, squama_func, noise_x, noise_y, interclip = tr
       dw *= 1.2;
       let q = trsl_poly(squama_mask(dw, dh), x, y);
 
-      let p = squama_func(x, y, dw, dh).map((a) => trsl_poly(a, x, y));
+      let p = squama_func(x, y, dw, dh).map((a: Polyline) => trsl_poly(a, x, y));
       if (!interclip) {
         out.push(...p);
       } else {
@@ -1150,13 +1156,13 @@ function squama_mesh(m, n, uw, uh, squama_func, noise_x, noise_y, interclip = tr
 }
 
 function pattern_dot(scale = 1) {
-  let samples = [];
+  let samples: Polyline = [];
   poissondisk(500, 300, 20 * scale, samples);
-  let rs = [];
+  let rs: number[] = [];
   for (let i = 0; i < samples.length; i++) {
     rs.push((rand() * 5 + 10) * scale);
   }
-  return function (x, y) {
+  return function (x: number, y: number) {
     for (let i = 0; i < samples.length; i++) {
       let r = rs[i];
       if (dist(x, y, ...samples[i]) < r) {
@@ -1172,7 +1178,7 @@ function pattern_dot(scale = 1) {
   };
 }
 
-function fish_body_a(curve0, curve1, scale_scale, pattern_func) {
+function fish_body_a(curve0: Polyline, curve1: Polyline, scale_scale: number, pattern_func: any) {
   let curve2 = [];
   let curve3 = [];
   for (let i = 0; i < curve0.length; i++) {
@@ -1190,11 +1196,12 @@ function fish_body_a(curve0, curve1, scale_scale, pattern_func) {
   let uh = bbox.h / n;
 
   let fn = pattern_func
-    ? (x, y, w, h) => squama(w, h, Number(pattern_func(x, y)) * 3)
-    : (x, y, w, h) => squama(w, h);
+    ? (x: number, y: number, w: number, h: number) => squama(w, h, Number(pattern_func(x, y)) * 3)
+    : (x: number, y: number, w: number, h: number) => squama(w, h);
   let sq = squama_mesh(m, n + 3, uw, uh, fn, uw * 3, uh * 3, true).map((a) =>
     trsl_poly(a, bbox.x, bbox.y - uh * 1.5),
   );
+  // @ts-ignore
   let o0 = clip_multi(sq, outline2)[true];
   let o1 = clip_multi(o0, outline3);
   o1.false = o1.false.filter((x) => rand() < 0.6);
@@ -1203,7 +1210,12 @@ function fish_body_a(curve0, curve1, scale_scale, pattern_func) {
   return o;
 }
 
-function fish_body_b(curve0, curve1, scale_scale, pattern_func) {
+function fish_body_b(
+  curve0: Polyline,
+  curve1: Polyline,
+  scale_scale: number,
+  pattern_func: any,
+): Polyline[] {
   let curve2 = [];
   for (let i = 0; i < curve0.length; i++) {
     curve2.push(lerp2d(...curve0[i], ...curve1[i], 0.95));
@@ -1222,11 +1234,12 @@ function fish_body_b(curve0, curve1, scale_scale, pattern_func) {
     n + 16,
     uw,
     uh,
-    (x, y, w, h) => squama(w * 0.7, h * 0.6, 0),
+    (x: number, y: number, w: number, h: number) => squama(w * 0.7, h * 0.6, 0),
     uw * 8,
     uh * 8,
     false,
   ).map((a) => trsl_poly(a, bbox.x, bbox.y - uh * 8));
+  // @ts-ignore
   let o0 = clip_multi(sq, outline2)[true];
 
   let o1 = [];
@@ -1254,11 +1267,11 @@ function fish_body_b(curve0, curve1, scale_scale, pattern_func) {
   return o;
 }
 
-function ogee(x) {
+function ogee(x: number) {
   return 4 * Math.pow(x - 0.5, 3) + 0.5;
 }
 
-function fish_body_c(curve0, curve1, scale_scale) {
+function fish_body_c(curve0: Polyline, curve1: Polyline, scale_scale: number) {
   let step = 6 * scale_scale;
 
   let curve2 = [];
@@ -1314,9 +1327,10 @@ function fish_body_c(curve0, curve1, scale_scale) {
     }
   }
 
+  // @ts-ignore
   let o0 = clip_multi(lines, outline2)[true];
 
-  o0 = clip_multi(o0, (x, y, t) => rand() > t || rand() > t, binclip).true;
+  o0 = clip_multi(o0, (x: number, y: number, t: number) => rand() > t || rand() > t, binclip).true;
 
   let o = [];
 
@@ -1324,7 +1338,7 @@ function fish_body_c(curve0, curve1, scale_scale) {
   return o;
 }
 
-function fish_body_d(curve0, curve1, scale_scale) {
+function fish_body_d(curve0: Polyline, curve1: Polyline, scale_scale: number) {
   let curve2 = [];
   for (let i = 0; i < curve0.length; i++) {
     curve2.push(lerp2d(...curve0[i], ...curve1[i], 0.4));
@@ -1358,7 +1372,7 @@ function fish_body_d(curve0, curve1, scale_scale) {
     o1.push(
       ...binclip(
         o0[i],
-        (x, y, t) =>
+        (x: number, y: number, t: number) =>
           (rand() > Math.cos(t * PI) && rand() < x / 500) ||
           (rand() > Math.cos(t * PI) && rand() < x / 500),
       ).true,
@@ -1374,15 +1388,15 @@ function fish_body_d(curve0, curve1, scale_scale) {
 }
 
 function fin_a(
-  curve,
-  ang0,
-  ang1,
-  func,
-  clip_root = false,
+  curve: Polyline,
+  ang0: number,
+  ang1: number,
+  func: (t: number) => number,
+  clip_root: boolean | 1 | 0 = false,
   curvature0 = 0,
   curvature1 = 0,
   softness = 10,
-) {
+): [Polyline, Polyline[]] {
   let angs = [];
   for (let i = 0; i < curve.length; i++) {
     if (i == 0) {
@@ -1400,10 +1414,10 @@ function fin_a(
       angs.push(a);
     }
   }
-  let out0 = [];
-  let out1 = [];
-  let out2 = [];
-  let out3 = [];
+  let out0: Polyline = [];
+  let out1: Polyline[] = [];
+  let out2: Polyline = [];
+  let out3: Polyline = [];
   for (let i = 0; i < curve.length; i++) {
     let t = i / (curve.length - 1);
     let aa = lerp(ang0, ang1, t);
@@ -1457,7 +1471,13 @@ function fin_a(
   return [o.concat(curve.slice().reverse()), out1];
 }
 
-function fin_b(curve, ang0, ang1, func, dark = 1) {
+function fin_b(
+  curve: Polyline,
+  ang0: number,
+  ang1: number,
+  func: (t: number) => number,
+  dark = 1,
+): [Polyline, Polyline[]] {
   let angs = [];
   for (let i = 0; i < curve.length; i++) {
     if (i == 0) {
@@ -1476,10 +1496,10 @@ function fin_b(curve, ang0, ang1, func, dark = 1) {
     }
   }
 
-  let out0 = [];
-  let out1 = [];
-  let out2 = [];
-  let out3 = [];
+  let out0: Polyline[] = [];
+  let out1: Polyline = [];
+  let out2: Polyline[] = [];
+  let out3: Polyline[] = [];
   for (let i = 0; i < curve.length; i++) {
     let t = i / (curve.length - 1);
     let aa = lerp(ang0, ang1, t);
@@ -1490,11 +1510,17 @@ function fin_b(curve, ang0, ang1, func, dark = 1) {
     let x1 = x0 + Math.cos(a) * w;
     let y1 = y0 + Math.sin(a) * w;
 
-    let b = [x1 + 0.5 * Math.cos(a - PI / 2), y1 + 0.5 * Math.sin(a - PI / 2)];
-    let c = [x1 + 0.5 * Math.cos(a + PI / 2), y1 + 0.5 * Math.sin(a + PI / 2)];
+    let b: Pair = [x1 + 0.5 * Math.cos(a - PI / 2), y1 + 0.5 * Math.sin(a - PI / 2)];
+    let c: Pair = [x1 + 0.5 * Math.cos(a + PI / 2), y1 + 0.5 * Math.sin(a + PI / 2)];
 
-    let p = [curve[i][0] + 1.8 * Math.cos(a - PI / 2), curve[i][1] + 1.8 * Math.sin(a - PI / 2)];
-    let q = [curve[i][0] + 1.8 * Math.cos(a + PI / 2), curve[i][1] + 1.8 * Math.sin(a + PI / 2)];
+    let p: Pair = [
+      curve[i][0] + 1.8 * Math.cos(a - PI / 2),
+      curve[i][1] + 1.8 * Math.sin(a - PI / 2),
+    ];
+    let q: Pair = [
+      curve[i][0] + 1.8 * Math.cos(a + PI / 2),
+      curve[i][1] + 1.8 * Math.sin(a + PI / 2),
+    ];
     out1.push([x1, y1]);
     out0.push([p, b, c, q]);
   }
@@ -1507,7 +1533,7 @@ function fin_b(curve, ang0, ang1, func, dark = 1) {
     let b = lerp2d(...a0, ...q0, 0.1);
     let c = lerp2d(...a1, ...p1, 0.1);
 
-    let o = [];
+    let o: Polyline = [];
     let ang = Math.atan2(c[1] - b[1], c[0] - b[0]);
 
     for (let j = 0; j < n; j++) {
@@ -1534,7 +1560,7 @@ function fin_b(curve, ang0, ang1, func, dark = 1) {
 
   let out4 = [];
   if (out0.length > 1) {
-    let clipper = out0[0];
+    let clipper: Polyline = out0[0];
     out4.push(out0[0]);
     for (let i = 1; i < out0.length; i++) {
       out4.push(...clip(out0[i], clipper).false);
@@ -1545,7 +1571,7 @@ function fin_b(curve, ang0, ang1, func, dark = 1) {
   return [out2.flat().concat(curve.slice().reverse()), out4.concat(out2).concat(out3)];
 }
 
-function finlet(curve, h, dir = 1) {
+function finlet(curve: Polyline, h: number, dir = 1): [Polyline, Polyline[]] {
   let angs = [];
   for (let i = 0; i < curve.length; i++) {
     if (i == 0) {
@@ -1563,7 +1589,7 @@ function finlet(curve, h, dir = 1) {
       angs.push(a);
     }
   }
-  let out0 = [];
+  let out0: Polyline = [];
   for (let i = 0; i < curve.length; i++) {
     let t = i / (curve.length - 1);
     let a = angs[i];
@@ -1589,7 +1615,7 @@ function finlet(curve, h, dir = 1) {
   return [out0.concat(curve.slice().reverse()), [out0]];
 }
 
-function fin_adipose(curve, dx, dy, r) {
+function fin_adipose(curve: Polyline, dx: number, dy: number, r: number): [Polyline, Polyline[]] {
   let n = 20;
   let [x0, y0] = curve[~~(curve.length / 2)];
   let [x, y] = [x0 + dx, y0 + dy];
@@ -1605,11 +1631,11 @@ function fin_adipose(curve, dx, dy, r) {
   while (a02 < a01) {
     a02 += PI * 2;
   }
-  let out0 = [[x1, y1]];
+  let out0: Polyline = [[x1, y1]];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = lerp(a01, a02, t);
-    let p = [x + Math.cos(a) * r, y + Math.sin(a) * r];
+    let p: Pair = [x + Math.cos(a) * r, y + Math.sin(a) * r];
     out0.push(p);
   }
   out0.push([x2, y2]);
@@ -1624,11 +1650,15 @@ function fin_adipose(curve, dx, dy, r) {
   let cc = out0.concat(curve.slice().reverse());
   let out1 = clip(trsl_poly(out0, 0, 4), cc).true;
 
-  out1 = clip_multi(out1, (x, y, t) => rand() < Math.sin(t * PI), binclip).true;
+  out1 = clip_multi(
+    out1,
+    (x: number, y: number, t: number) => rand() < Math.sin(t * PI),
+    binclip,
+  ).true;
   return [cc, [out0, ...out1]];
 }
 
-function fish_lip(x0, y0, x1, y1, w) {
+function fish_lip(x0: number, y0: number, x1: number, y1: number, w: number): Polyline {
   x0 += rand() * 0.001 - 0.0005;
   y0 += rand() * 0.001 - 0.0005;
   x1 += rand() * 0.001 - 0.0005;
@@ -1639,7 +1669,7 @@ function fish_lip(x0, y0, x1, y1, w) {
   let ang = Math.acos(w / h);
   let dx = Math.cos(a0 + PI / 2) * 0.5;
   let dy = Math.sin(a0 + PI / 2) * 0.5;
-  let o = [[x0 - dx, y0 - dy]];
+  let o: Polyline = [[x0 - dx, y0 - dy]];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = lerp(ang, PI * 2 - ang, t) + a0;
@@ -1657,20 +1687,31 @@ function fish_lip(x0, y0, x1, y1, w) {
   return o;
 }
 
-function fish_teeth(x0, y0, x1, y1, h, dir, sep = 3.5) {
+function fish_teeth(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  h: number,
+  dir: number,
+  sep = 3.5,
+): Polyline[] {
   let n = Math.max(2, ~~(dist(x0, y0, x1, y1) / sep));
   let ang = Math.atan2(y1 - y0, x1 - x0);
-  let out = [];
+  let out: Polyline[] = [];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = lerp2d(x0, y0, x1, y1, t);
     let w = h * t;
-    let b = [a[0] + Math.cos(ang + (dir * PI) / 2) * w, a[1] + Math.sin(ang + (dir * PI) / 2) * w];
-    let c = [a[0] + 1 * Math.cos(ang), a[1] + 1 * Math.sin(ang)];
-    let d = [a[0] + 1 * Math.cos(ang + PI), a[1] + 1 * Math.sin(ang + PI)];
+    let b: Pair = [
+      a[0] + Math.cos(ang + (dir * PI) / 2) * w,
+      a[1] + Math.sin(ang + (dir * PI) / 2) * w,
+    ];
+    let c: Pair = [a[0] + 1 * Math.cos(ang), a[1] + 1 * Math.sin(ang)];
+    let d: Pair = [a[0] + 1 * Math.cos(ang + PI), a[1] + 1 * Math.sin(ang + PI)];
     let e = lerp2d(...c, ...b, 0.7);
     let f = lerp2d(...d, ...b, 0.7);
-    let g = [
+    let g: Pair = [
       a[0] + Math.cos(ang + dir * (PI / 2 + 0.15)) * w,
       a[1] + Math.sin(ang + dir * (PI / 2 + 0.15)) * w,
     ];
@@ -1680,18 +1721,25 @@ function fish_teeth(x0, y0, x1, y1, h, dir, sep = 3.5) {
   return out;
 }
 
-function fish_jaw(x0, y0, x1, y1, x2, y2) {
+function fish_jaw(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): [Polyline, Polyline[]] {
   let n = 10;
   let ang = Math.atan2(y2 - y0, x2 - x0);
   let d = dist(x0, y0, x2, y2);
-  let o = [];
+  let o: Polyline = [];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let s = Math.sin(t * PI);
     let w = (s * d) / 20;
     let p = lerp2d(x2, y2, x0, y0, t);
-    let q = [p[0] + Math.cos(ang - PI / 2) * w, p[1] + Math.sin(ang - PI / 2) * w];
-    let qq = [
+    let q: Pair = [p[0] + Math.cos(ang - PI / 2) * w, p[1] + Math.sin(ang - PI / 2) * w];
+    let qq: Pair = [
       q[0] + (noise(q[0] * 0.01, q[1] * 0.01, 1) - 0.5) * 4 * s,
       q[1] + (noise(q[0] * 0.01, q[1] * 0.01, 4) - 0.5) * 4 * s,
     ];
@@ -1707,11 +1755,11 @@ function fish_jaw(x0, y0, x1, y1, x2, y2) {
   ];
 }
 
-function fish_eye_a(ex, ey, rad) {
+function fish_eye_a(ex: number, ey: number, rad: number): [Polyline, Polyline[]] {
   let n = 20;
-  let eye0 = [];
-  let eye1 = [];
-  let eye2 = [];
+  let eye0: Polyline = [];
+  let eye1: Polyline = [];
+  let eye2: Polyline = [];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = t * PI * 2 + (Math.PI / 4) * 3;
@@ -1726,11 +1774,11 @@ function fish_eye_a(ex, ey, rad) {
   return [eye0, [eye0, eye1, eye2, ...ef]];
 }
 
-function fish_eye_b(ex, ey, rad) {
+function fish_eye_b(ex: number, ey: number, rad: number): [Polyline, Polyline[]] {
   let n = 20;
-  let eye0 = [];
-  let eye1 = [];
-  let eye2 = [];
+  let eye0: Polyline = [];
+  let eye1: Polyline[] = [];
+  let eye2: Polyline = [];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = t * PI * 2 + Math.E;
@@ -1740,7 +1788,7 @@ function fish_eye_b(ex, ey, rad) {
   let m = ~~((rad * 0.6) / 2);
   for (let i = 0; i < m; i++) {
     let r = rad - i * 2;
-    let e = [];
+    let e: Polyline = [];
     for (let i = 0; i < n; i++) {
       let t = i / (n - 1);
       let a = lerp((PI * 7) / 8, (PI * 13) / 8, t);
@@ -1748,7 +1796,7 @@ function fish_eye_b(ex, ey, rad) {
     }
     eye1.push(e);
   }
-  let trig = [
+  let trig: Polyline = [
     [ex + Math.cos((-PI * 3) / 4) * (rad * 0.9), ey + Math.sin((-PI * 3) / 4) * (rad * 0.9)],
     [ex + 1, ey + 1],
     [ex + Math.cos((-PI * 11) / 12) * (rad * 0.9), ey + Math.sin((-PI * 11) / 12) * (rad * 0.9)],
@@ -1765,13 +1813,13 @@ function fish_eye_b(ex, ey, rad) {
 
   ef = clip_multi(ef, trig).false;
   eye1 = clip_multi(eye1, trig).false;
-  eye2 = clip(eye2, trig).false;
+  let eye2P = clip(eye2, trig).false;
 
-  return [eye0, [eye0, ...eye1, ...eye2, ...ef]];
+  return [eye0, [eye0, ...eye1, ...eye2P, ...ef]];
 }
 
-function barbel(x, y, n, ang, dd = 3) {
-  let curve = [[x, y]];
+function barbel(x: number, y: number, n: number, ang: number, dd = 3): Polyline {
+  let curve: Polyline = [[x, y]];
   let sd = rand() * PI * 2;
   let ar = 1;
   for (let i = 0; i < n; i++) {
@@ -1785,8 +1833,8 @@ function barbel(x, y, n, ang, dd = 3) {
     }
     curve.push([x, y]);
   }
-  let o0 = [];
-  let o1 = [];
+  let o0: Polyline = [];
+  let o1: Polyline = [];
   for (let i = 0; i < n - 1; i++) {
     let t = i / (n - 1);
     let w = 1.5 * (1 - t);
@@ -1817,11 +1865,19 @@ function barbel(x, y, n, ang, dd = 3) {
   return o0.concat(o1.slice().reverse());
 }
 
-function fish_head(x0, y0, x1, y1, x2, y2, arg) {
+function fish_head(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  arg: Haploid,
+): [Polyline, Polyline[], { neckline: Pair }] {
   let n = 20;
-  let curve0 = [];
-  let curve1 = [];
-  let curve2 = [];
+  let curve0: Polyline = [];
+  let curve1: Polyline = [];
+  let curve2: Polyline = [];
   for (let i = 0; i < n; i++) {
     let t = i / (n - 1);
     let a = (PI / 2) * t;
@@ -1858,9 +1914,9 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
     let dy = Math.sin(ang - Math.PI / 2) * r;
     curve2.push([p[0] + dx, p[1] + dy]);
   }
-  let outline = curve0.concat(curve2).concat(curve1);
+  let outline: Polyline = curve0.concat(curve2).concat(curve1);
 
-  let inline = curve2
+  let inline: Polyline = curve2
     .slice(~~(curve2.length / 3))
     .concat(curve1.slice(0, ~~(curve1.length / 2)))
     .slice(0, curve0.length);
@@ -1889,11 +1945,14 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
     ey = y0 * 0.5 + y1 * 0.5 + Math.sin(ang) * arg.eye_size;
   }
 
-  let jaw_pt0 = curve1[18 - arg.mouth_size];
+  let jaw_pt0: Pair = curve1[18 - arg.mouth_size];
   let jaw_l = dist(...jaw_pt0, ...curve1[18]) * arg.jaw_size;
   let jaw_ang0 = Math.atan2(curve1[18][1] - jaw_pt0[1], curve1[18][0] - jaw_pt0[0]);
   let jaw_ang = jaw_ang0 - ((arg.has_teeth * 0.5 + 0.5) * arg.jaw_open * PI) / 4;
-  let jaw_pt1 = [jaw_pt0[0] + Math.cos(jaw_ang) * jaw_l, jaw_pt0[1] + Math.sin(jaw_ang) * jaw_l];
+  let jaw_pt1: Pair = [
+    jaw_pt0[0] + Math.cos(jaw_ang) * jaw_l,
+    jaw_pt0[1] + Math.sin(jaw_ang) * jaw_l,
+  ];
 
   let [eye0, ef] = (arg.eye_type ? fish_eye_b : fish_eye_a)(ex, ey, arg.eye_size);
   ef = clip_multi(ef, outline).true;
@@ -1902,7 +1961,7 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
 
   let lip0 = fish_lip(...jaw_pt0, ...curve1[18], 3);
 
-  let lip1 = fish_lip(...jaw_pt0, ...jaw_pt1, 3);
+  let lip1: Polyline = fish_lip(...jaw_pt0, ...jaw_pt1, 3);
 
   let [jc, jaw] = fish_jaw(...curve1[15 - arg.mouth_size], ...jaw_pt0, ...jaw_pt1);
 
@@ -1910,8 +1969,8 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
   jaw = clip_multi(jaw, outline).false;
   jaw.push(jc);
 
-  let teeth0s = [];
-  let teeth1s = [];
+  let teeth0s: Polyline[] = [];
+  let teeth1s: Polyline[] = [];
   if (arg.has_teeth) {
     let teeth0 = fish_teeth(...jaw_pt0, ...curve1[18], arg.teeth_length, -1, arg.teeth_space);
     let teeth1 = fish_teeth(...jaw_pt0, ...jaw_pt1, arg.teeth_length, 1, arg.teeth_space);
@@ -1949,9 +2008,9 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
   }
 
   if (arg.has_beard) {
-    let jaw_pt;
+    let jaw_pt: Pair;
     if (jaw[0] && jaw[0].length) {
-      jaw_pt = jaw[0][~~(jaw[0].length / 2)];
+      jaw_pt = jaw[0][~~(jaw[0].length / 2)] as Pair;
     } else {
       jaw_pt = curve1[8];
     }
@@ -1977,7 +2036,7 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
     bbs.push(bb1, ...bb2c, ...bb3c);
   }
 
-  let outlinel = [
+  let outlinel: Polyline = [
     [0, 0],
     [curve0[curve0.length - 1][0], 0],
     curve0[curve0.length - 1],
@@ -2001,25 +2060,25 @@ function fish_head(x0, y0, x1, y1, x2, y2, arg) {
       ...teeth0s,
       ...teeth1s,
       ...jaw,
-    ],
+    ] as Polyline[],
     {
       neckline,
     },
   ];
 }
 
-function bean(x) {
+function bean(x: number) {
   return Math.pow(0.25 - Math.pow(x - 0.5, 2), 0.5) * (2.6 + 2.4 * Math.pow(x, 1.5)) * 0.542;
 }
 
-function deviate(n) {
+function deviate(n: number) {
   return rand() * 2 * n - n;
 }
 
-function fish(arg) {
+function fish(arg: Haploid) {
   let n = 32;
-  let curve0 = [];
-  let curve1 = [];
+  let curve0: Polyline = [];
+  let curve1: Polyline = [];
   if (arg.body_curve_type == 0) {
     let s = arg.body_curve_amount;
     for (let i = 0; i < n; i++) {
@@ -2061,7 +2120,7 @@ function fish(arg) {
   let outline = curve0.concat(curve1.slice().reverse());
   let sh = shade_shape(outline, 8, -12, -12);
 
-  let pattern_func;
+  let pattern_func: any;
   if (arg.pattern_type == 0) {
     //none
     pattern_func = null;
@@ -2071,11 +2130,11 @@ function fish(arg) {
     // };
     pattern_func = pattern_dot(arg.pattern_scale);
   } else if (arg.pattern_type == 2) {
-    pattern_func = (x, y) => {
+    pattern_func = (x: number, y: number) => {
       return noise(x * 0.1, y * 0.1) * Math.max(0.35, (y - 10) / 280) < 0.2;
     };
   } else if (arg.pattern_type == 3) {
-    pattern_func = (x, y) => {
+    pattern_func = (x: number, y: number) => {
       let dx = noise(x * 0.01, y * 0.01) * 30;
       return ~~((x + dx) / (30 * arg.pattern_scale)) % 2 == 1;
     };
@@ -2084,40 +2143,41 @@ function fish(arg) {
     pattern_func = null;
   }
 
-  let bd;
+  let bd: Polyline[];
   if (arg.scale_type == 0) {
-    bd = fish_body_a(curve0, curve1, arg.scale_scale, pattern_func);
+    bd = fish_body_a(curve0, curve1, arg.scale_scale, pattern_func!);
   } else if (arg.scale_type == 1) {
-    bd = fish_body_b(curve0, curve1, arg.scale_scale, pattern_func);
+    bd = fish_body_b(curve0, curve1, arg.scale_scale, pattern_func!);
   } else if (arg.scale_type == 2) {
     bd = fish_body_c(curve0, curve1, arg.scale_scale);
   } else if (arg.scale_type == 3) {
     bd = fish_body_d(curve0, curve1, arg.scale_scale);
   }
 
-  let f0_func, f0_a0, f0_a1, f0_cv;
+  let f0_func: any, f0_a0: any, f0_a1: any, f0_cv;
   if (arg.dorsal_type == 0) {
     f0_a0 = 0.2 + deviate(0.05);
     f0_a1 = 0.3 + deviate(0.05);
     f0_cv = 0;
-    f0_func = (t) => (0.3 + noise(t * 3) * 0.7) * arg.dorsal_length * Math.sin(t * PI) ** 0.5;
+    f0_func = (t: number) =>
+      (0.3 + noise(t * 3) * 0.7) * arg.dorsal_length * Math.sin(t * PI) ** 0.5;
   } else if (arg.dorsal_type == 1) {
     f0_a0 = 0.6 + deviate(0.05);
     f0_a1 = 0.3 + deviate(0.05);
     f0_cv = arg.dorsal_length / 8;
-    f0_func = (t) => arg.dorsal_length * (Math.pow(t - 1, 2) * 0.5 + (1 - t) * 0.5);
+    f0_func = (t: number) => arg.dorsal_length * (Math.pow(t - 1, 2) * 0.5 + (1 - t) * 0.5);
   }
-  let f0_curve, c0, f0;
+  let f0_curve, c0: Polyline, f0;
   if (arg.dorsal_texture_type == 0) {
     f0_curve = resample(curve0.slice(arg.dorsal_start, arg.dorsal_end), 5);
-    [c0, f0] = fin_a(f0_curve, f0_a0, f0_a1, f0_func, false, f0_cv, 0);
+    [c0, f0] = fin_a(f0_curve, f0_a0!, f0_a1!, f0_func!, false, f0_cv, 0);
   } else {
     f0_curve = resample(curve0.slice(arg.dorsal_start, arg.dorsal_end), 15);
-    [c0, f0] = fin_b(f0_curve, f0_a0, f0_a1, f0_func);
+    [c0, f0] = fin_b(f0_curve, f0_a0!, f0_a1!, f0_func!);
   }
   f0 = clip_multi(f0, trsl_poly(outline, 0, 0.001)).false;
 
-  let f1_curve = [];
+  let f1_curve: Polyline = [];
   let f1_func, f1_a0, f1_a1, f1_soft, f1_cv;
   let f1_pt = lerp2d(...curve0[arg.wing_start], ...curve1[arg.wing_end], arg.wing_y);
 
@@ -2131,14 +2191,14 @@ function fish(arg) {
     f1_a1 = 0.4 + deviate(0.05);
     f1_soft = 10;
     f1_cv = 0;
-    f1_func = (t) =>
+    f1_func = (t: number) =>
       ((40 + (20 + noise(t * 3) * 70) * Math.sin(t * PI) ** 0.5) / 130) * arg.wing_length;
   } else {
     f1_a0 = 0 + deviate(0.05);
     f1_a1 = 0.4 + deviate(0.05);
     f1_soft = 5;
     f1_cv = arg.wing_length / 25;
-    f1_func = (t) => arg.wing_length * (1 - t * 0.95);
+    f1_func = (t: number) => arg.wing_length * (1 - t * 0.95);
   }
 
   let c1, f1;
@@ -2149,19 +2209,19 @@ function fish(arg) {
     f1_curve = resample(f1_curve, 4);
     [c1, f1] = fin_b(f1_curve, f1_a0, f1_a1, f1_func, 0.3);
   }
-  bd = clip_multi(bd, c1).false;
+  bd = clip_multi(bd!, c1).false;
 
   let f2_curve;
   let f2_func, f2_a0, f2_a1;
   if (arg.pelvic_type == 0) {
     f2_a0 = -0.8 + deviate(0.05);
     f2_a1 = -0.5 + deviate(0.05);
-    f2_func = (t) =>
+    f2_func = (t: number) =>
       ((10 + (15 + noise(t * 3) * 60) * Math.sin(t * PI) ** 0.5) / 85) * arg.pelvic_length;
   } else {
     f2_a0 = -0.9 + deviate(0.05);
     f2_a1 = -0.3 + deviate(0.05);
-    f2_func = (t) => (t * 0.5 + 0.5) * arg.pelvic_length;
+    f2_func = (t: number) => (t * 0.5 + 0.5) * arg.pelvic_length;
   }
   let c2, f2;
   if (arg.pelvic_texture_type == 0) {
@@ -2184,12 +2244,12 @@ function fish(arg) {
   if (arg.anal_type == 0) {
     f3_a0 = -0.4 + deviate(0.05);
     f3_a1 = -0.4 + deviate(0.05);
-    f3_func = (t) =>
+    f3_func = (t: number) =>
       ((10 + (10 + noise(t * 3) * 30) * Math.sin(t * PI) ** 0.5) / 50) * arg.anal_length;
   } else {
     f3_a0 = -0.4 + deviate(0.05);
     f3_a1 = -0.4 + deviate(0.05);
-    f3_func = (t) => arg.anal_length * (t * t * 0.8 + 0.2);
+    f3_func = (t: number) => arg.anal_length * (t * t * 0.8 + 0.2);
   }
   let c3, f3;
   if (arg.anal_texture_type == 0) {
@@ -2201,7 +2261,7 @@ function fish(arg) {
   }
   f3 = clip_multi(f3, c1).false;
 
-  let f4_curve, c4, f4;
+  let f4_curve: Polyline, c4: Polyline, f4: Polyline[];
   let f4_r = dist(...curve0[curve0.length - 2], ...curve1[curve1.length - 2]);
   let f4_n = ~~(f4_r / 1.5);
   f4_n = Math.max(Math.min(f4_n, 20), 8);
@@ -2214,7 +2274,8 @@ function fish(arg) {
       f4_curve,
       -0.6,
       0.6,
-      (t) => ((75 - (10 + noise(t * 3) * 10) * Math.sin(3 * t * PI - PI)) / 75) * arg.tail_length,
+      (t: number) =>
+        ((75 - (10 + noise(t * 3) * 10) * Math.sin(3 * t * PI - PI)) / 75) * arg.tail_length,
       1,
     );
   } else if (arg.tail_type == 1) {
@@ -2224,7 +2285,7 @@ function fish(arg) {
       f4_curve,
       -0.6,
       0.6,
-      (t) => arg.tail_length * (Math.sin(t * PI) * 0.5 + 0.5),
+      (t: number) => arg.tail_length * (Math.sin(t * PI) * 0.5 + 0.5),
       1,
     );
   } else if (arg.tail_type == 2) {
@@ -2235,7 +2296,7 @@ function fish(arg) {
       f4_curve,
       -0.6,
       0.6,
-      (t) => (Math.abs(Math.cos(PI * t)) * 0.8 + 0.2) * arg.tail_length,
+      (t: number) => (Math.abs(Math.cos(PI * t)) * 0.8 + 0.2) * arg.tail_length,
       1,
       cv,
       -cv,
@@ -2243,7 +2304,13 @@ function fish(arg) {
   } else if (arg.tail_type == 3) {
     f4_curve = [curve0[curve0.length - 2], curve1[curve1.length - 2]];
     f4_curve = resample(f4_curve, f4_d);
-    [c4, f4] = fin_a(f4_curve, -0.6, 0.6, (t) => (1 - Math.sin(t * PI) * 0.3) * arg.tail_length, 1);
+    [c4, f4] = fin_a(
+      f4_curve,
+      -0.6,
+      0.6,
+      (t: number) => (1 - Math.sin(t * PI) * 0.3) * arg.tail_length,
+      1,
+    );
   } else if (arg.tail_type == 4) {
     f4_curve = [curve0[curve0.length - 2], curve1[curve1.length - 2]];
     f4_curve = resample(f4_curve, f4_d);
@@ -2251,7 +2318,7 @@ function fish(arg) {
       f4_curve,
       -0.6,
       0.6,
-      (t) => (1 - Math.sin(t * PI) * 0.6) * (1 - t * 0.45) * arg.tail_length,
+      (t: number) => (1 - Math.sin(t * PI) * 0.6) * (1 - t * 0.45) * arg.tail_length,
       1,
     );
   } else if (arg.tail_type == 5) {
@@ -2261,18 +2328,18 @@ function fish(arg) {
       f4_curve,
       -0.6,
       0.6,
-      (t) => (1 - Math.sin(t * PI) ** 0.4 * 0.55) * arg.tail_length,
+      (t: number) => (1 - Math.sin(t * PI) ** 0.4 * 0.55) * arg.tail_length,
       1,
     );
   }
   // f4 = clip_multi(f4,trsl_poly(outline,-1,0)).false;
-  bd = clip_multi(bd, trsl_poly(c4, 1, 0)).false;
+  bd = clip_multi(bd, trsl_poly(c4!, 1, 0)).false;
 
-  f4 = clip_multi(f4, c1).false;
+  f4 = clip_multi(f4!, c1).false;
 
   let f5_curve,
-    c5,
-    f5 = [];
+    c5: Polyline,
+    f5: Polyline[] = [];
   if (arg.finlet_type == 0) {
     //pass
   } else if (arg.finlet_type == 1) {
@@ -2293,11 +2360,12 @@ function fish(arg) {
         f5_curve,
         0.2,
         0.3,
-        (t) => (0.3 + noise(t * 3) * 0.7) * arg.dorsal_length * 0.6 * Math.sin(t * PI) ** 0.5,
+        (t: number) =>
+          (0.3 + noise(t * 3) * 0.7) * arg.dorsal_length * 0.6 * Math.sin(t * PI) ** 0.5,
       );
     }
   }
-  let cf, fh, head_poi;
+  let cf: Polyline, fh: Polyline[], head_poi: any;
   if (arg.neck_type == 0) {
     [cf, fh, head_poi] = fish_head(
       50 - arg.head_length,
@@ -2325,8 +2393,8 @@ function fish(arg) {
 
   f0 = clip_multi(f0, c1).false;
 
-  let sh2 = [];
-  if (pattern_func) {
+  let sh2: Polyline[] = [];
+  if (pattern_func!) {
     if (arg.scale_type > 1) {
       sh2 = patternshade_shape(poly_union(outline, trsl_poly(c0, 0, 3)), 3.5, pattern_func);
     } else {
@@ -2336,7 +2404,7 @@ function fish(arg) {
     sh2 = clip_multi(sh2, c1).false;
   }
 
-  let sh3 = [];
+  let sh3: Polyline[] = [];
   if (arg.pattern_type == 4) {
     sh3 = smalldot_shape(poly_union(outline, trsl_poly(c0, 0, 5)), arg.pattern_scale);
     sh3 = clip_multi(sh3, c1).false;
@@ -2360,7 +2428,7 @@ function fish(arg) {
   return { lines, poi: { head: head_poi } };
 }
 
-function reframe(polylines, pad = 20, text = null) {
+function reframe(polylines: Polyline[], pad = 20, text: string | null = null) {
   let W = 500 - pad * 2;
   let H = 300 - pad * 2 - (text ? 10 : 0);
   let bbox = get_bbox(polylines.flat());
@@ -2377,14 +2445,10 @@ function reframe(polylines, pad = 20, text = null) {
       polylines[i][j] = [x, y];
     }
   }
-  let [tw, tp] = put_text(text);
-  tp = tp.map((p) => scl_poly(shr_poly(p, -0.3), 0.3, 0.3));
-  tw *= 0.3;
-  polylines.push(...tp.map((p) => trsl_poly(p, 250 - tw / 2, 300 - pad + 5)));
   return { polylines, layout: { bbox, px, py, s, p: pad } };
 }
 
-function cleanup(polylines) {
+function cleanup(polylines: Polyline[]) {
   for (let i = polylines.length - 1; i >= 0; i--) {
     polylines[i] = approx_poly_dp(polylines[i], 0.1);
     for (let j = 0; j < polylines[i].length; j++) {
@@ -2397,6 +2461,7 @@ function cleanup(polylines) {
       continue;
     }
     if (polylines[i].length == 2) {
+      // @ts-ignore
       if (dist(...polylines[0], ...polylines[1]) < 0.9) {
         polylines.splice(i, 1);
         continue;
@@ -2406,7 +2471,98 @@ function cleanup(polylines) {
   return polylines;
 }
 
-function default_params() {
+export type Haploid = {
+  body_curve_type: 0 | 1;
+  body_curve_amount: number;
+  body_length: number;
+  body_height: number;
+  scale_type: 0 | 1 | 2 | 3;
+  scale_scale: number;
+  pattern_type: 0 | 1 | 2 | 3 | 4;
+  pattern_scale: number;
+  dorsal_texture_type: 0 | 1;
+  dorsal_type: 0 | 1;
+  dorsal_length: number;
+  dorsal_start: number;
+  dorsal_end: number;
+  wing_texture_type: 0 | 1;
+  wing_type: 0 | 1;
+  wing_start: number;
+  wing_end: number;
+  wing_y: number;
+  wing_length: number;
+  wing_width: number;
+  pelvic_start: number;
+  pelvic_end: number;
+  pelvic_length: number;
+  pelvic_type: 0 | 1;
+  pelvic_texture_type: 0 | 1;
+  anal_start: number;
+  anal_end: number;
+  anal_length: number;
+  anal_type: 0 | 1;
+  anal_texture_type: 0 | 1;
+  tail_type: 0 | 1 | 2 | 3 | 4 | 5;
+  tail_length: number;
+  finlet_type: 0 | 1 | 2 | 3;
+  neck_type: 0 | 1;
+  nose_height: number;
+  mouth_size: number;
+  head_length: number;
+  head_texture_amount: number;
+  has_moustache: 0 | 1;
+  moustache_length: number;
+  has_beard: 0 | 1;
+  has_teeth: 0 | 1;
+  teeth_length: number;
+  teeth_space: number;
+  beard_length: number;
+  eye_type: 0 | 1;
+  eye_size: number;
+  jaw_size: number;
+  jaw_open: 0 | 1;
+  color: 'rainbow' | 'normal';
+};
+
+export type Diploid = [Haploid, Haploid];
+
+export type Organism = { genotype: Diploid; phenotype: Haploid };
+
+function choice<T>(opts: T[], percs?: number[]): T {
+  if (!percs) {
+    percs = opts.map(() => 1);
+  }
+  let s = 0;
+  for (let i = 0; i < percs.length; i++) {
+    s += percs[i];
+  }
+  let r = rand() * s;
+  s = 0;
+  for (let i = 0; i < percs.length; i++) {
+    s += percs[i];
+    if (r <= s) {
+      return opts[i];
+    }
+  }
+  throw new Error('no choice');
+}
+
+function rndtri(a: number, b: number, c: number) {
+  let s0 = (b - a) / 2;
+  let s1 = (c - b) / 2;
+  let s = s0 + s1;
+  let r = rand() * s;
+  if (r < s0) {
+    //d * d/(b-a) / 2 = r;
+    let d = Math.sqrt(2 * r * (b - a));
+    return a + d;
+  }
+  //d * d/(c-b) / 2 = s-r;
+  let d = Math.sqrt(2 * (s - r) * (c - b));
+  return c - d;
+}
+
+function default_params(): Haploid {
   return {
     body_curve_type: 0,
     body_curve_amount: 0.85,
@@ -2457,43 +2613,11 @@ function default_params() {
     eye_size: 10,
     jaw_size: 1,
     jaw_open: 1,
+    color: 'normal',
   };
 }
 
-function choice(opts, percs) {
-  if (!percs) {
-    percs = opts.map((x) => 1);
-  }
-  let s = 0;
-  for (let i = 0; i < percs.length; i++) {
-    s += percs[i];
-  }
-  let r = rand() * s;
-  s = 0;
-  for (let i = 0; i < percs.length; i++) {
-    s += percs[i];
-    if (r <= s) {
-      return opts[i];
-    }
-  }
-}
-
-function rndtri(a, b, c) {
-  let s0 = (b - a) / 2;
-  let s1 = (c - b) / 2;
-  let s = s0 + s1;
-  let r = rand() * s;
-  if (r < s0) {
-    //d * d/(b-a) / 2 = r;
-    let d = Math.sqrt(2 * r * (b - a));
-    return a + d;
-  }
-  //d * d/(c-b) / 2 = s-r;
-  let d = Math.sqrt(2 * (s - r) * (c - b));
-  return c - d;
-}
-
-function generate_params() {
+function generate_params(): Haploid {
   let arg = default_params();
   arg.body_curve_type = choice([0, 1]);
   arg.body_curve_amount = rndtri(0.5, 0.85, 0.98);
@@ -2576,795 +2700,252 @@ function generate_params() {
   return arg;
 }
 
-function binomen() {
-  let data = [
-    [
-      'A',
-      'AB',
-      'AL',
-      'AN',
-      'AP',
-      'AR',
-      'AU',
-      'BA',
-      'BE',
-      'BO',
-      'BRA',
-      'CA',
-      'CAR',
-      'CENT',
-      'CHAE',
-      'CHAN',
-      'CHI',
-      'CHRO',
-      'CHRY',
-      'CO',
-      'CTE',
-      'CY',
-      'CYP',
-      'DE',
-      'E',
-      'EU',
-      'GA',
-      'GAS',
-      'GNA',
-      'GO',
-      'HE',
-      'HIP',
-      'HO',
-      'HY',
-      'LA',
-      'LAB',
-      'LE',
-      'LI',
-      'LO',
-      'LU',
-      'MAC',
-      'ME',
-      'MIC',
-      'MO',
-      'MU',
-      'MY',
-      'NA',
-      'NAN',
-      'NE',
-      'NO',
-      'O',
-      'ON',
-      'OP',
-      'OS',
-      'PA',
-      'PER',
-      'PHO',
-      'PI',
-      'PLA',
-      'PLEU',
-      'PO',
-      'PSEU',
-      'PTE',
-      'RA',
-      'RHI',
-      'RHOM',
-      'RU',
-      'SAL',
-      'SAR',
-      'SCA',
-      'SCOM',
-      'SE',
-      'SI',
-      'STE',
-      'TAU',
-      'TEL',
-      'THO',
-      'TRI',
-      'XE',
-      'XI',
-    ],
-    [
-      'BE',
-      'BI',
-      'BO',
-      'BU',
-      'CA',
-      'CAM',
-      'CAN',
-      'CE',
-      'CENT',
-      'CHA',
-      'CHEI',
-      'CHI',
-      'CHO',
-      'CHY',
-      'CI',
-      'CIRR',
-      'CO',
-      'DI',
-      'DO',
-      'DON',
-      'DOP',
-      'GA',
-      'GAS',
-      'GO',
-      'HI',
-      'HYN',
-      'LA',
-      'LAB',
-      'LE',
-      'LEOT',
-      'LI',
-      'LICH',
-      'LIS',
-      'LO',
-      'LOS',
-      'LU',
-      'LY',
-      'MA',
-      'ME',
-      'MI',
-      'MICH',
-      'MO',
-      'MU',
-      'NA',
-      'NE',
-      'NEC',
-      'NI',
-      'NO',
-      'NOCH',
-      'NOP',
-      'NOS',
-      'PA',
-      'PE',
-      'PEN',
-      'PHA',
-      'PHI',
-      'PHO',
-      'PHY',
-      'PHYO',
-      'PI',
-      'PIP',
-      'PIS',
-      'PO',
-      'POG',
-      'POPH',
-      'RA',
-      'RAE',
-      'RAM',
-      'REOCH',
-      'RI',
-      'RICH',
-      'RIP',
-      'RIS',
-      'RO',
-      'ROI',
-      'ROP',
-      'ROS',
-      'RY',
-      'RYN',
-      'SE',
-      'SO',
-      'TA',
-      'TE',
-      'TEL',
-      'THAL',
-      'THE',
-      'THO',
-      'THOP',
-      'THU',
-      'TI',
-      'TICH',
-      'TO',
-      'TOG',
-      'TOP',
-      'TOS',
-      'VA',
-      'XI',
-      'XO',
-    ],
-    [
-      'BIUS',
-      'BUS',
-      'CA',
-      'CHUS',
-      'CION',
-      'CON',
-      'CUS',
-      'DA',
-      'DES',
-      'DEUS',
-      'DON',
-      'DUS',
-      'GER',
-      'GON',
-      'GUS',
-      'HUS',
-      'LA',
-      'LEA',
-      'LIS',
-      'LIUS',
-      'LUS',
-      'MA',
-      'MIS',
-      'MUS',
-      'NA',
-      'NIA',
-      'NIO',
-      'NIUS',
-      'NOPS',
-      'NUS',
-      'PHEUS',
-      'PHIS',
-      'PIS',
-      'PUS',
-      'RA',
-      'RAS',
-      'RAX',
-      'RIA',
-      'RION',
-      'RIS',
-      'RUS',
-      'RYS',
-      'SA',
-      'SER',
-      'SIA',
-      'SIS',
-      'SUS',
-      'TER',
-      'TES',
-      'TEUS',
-      'THUS',
-      'THYS',
-      'TIA',
-      'TIS',
-      'TUS',
-      'TYS',
-    ],
-    [
-      'A',
-      'AE',
-      'AL',
-      'AN',
-      'AR',
-      'AT',
-      'AU',
-      'AUST',
-      'AY',
-      'BA',
-      'BAR',
-      'BE',
-      'BI',
-      'BO',
-      'CA',
-      'CAL',
-      'CAM',
-      'CAN',
-      'CAR',
-      'CAU',
-      'CE',
-      'CHI',
-      'CHRY',
-      'COR',
-      'CRY',
-      'CU',
-      'CYA',
-      'DA',
-      'DE',
-      'DEN',
-      'DI',
-      'DIA',
-      'DO',
-      'DOR',
-      'DU',
-      'E',
-      'FA',
-      'FAS',
-      'FES',
-      'FI',
-      'FLO',
-      'FOR',
-      'FRE',
-      'FUR',
-      'GLA',
-      'GO',
-      'HA',
-      'HE',
-      'HIP',
-      'HO',
-      'HYP',
-      'I',
-      'IM',
-      'IN',
-      'JA',
-      'LA',
-      'LAB',
-      'LE',
-      'LEU',
-      'LI',
-      'LO',
-      'LU',
-      'MA',
-      'MAC',
-      'MAR',
-      'ME',
-      'MO',
-      'MOO',
-      'MOR',
-      'NA',
-      'NE',
-      'NI',
-      'NIG',
-      'NO',
-      'O',
-      'OR',
-      'PA',
-      'PAL',
-      'PE',
-      'PEC',
-      'PHO',
-      'PLA',
-      'PLU',
-      'PO',
-      'PRO',
-      'PU',
-      'PUL',
-      'RA',
-      'RE',
-      'RHOM',
-      'RI',
-      'RO',
-      'ROST',
-      'RU',
-      'SA',
-      'SAL',
-      'SE',
-      'SO',
-      'SPI',
-      'SPLEN',
-      'STRIA',
-      'TAU',
-      'THO',
-      'TRI',
-      'TY',
-      'U',
-      'UN',
-      'VA',
-      'VI',
-      'VIT',
-      'VUL',
-      'WAL',
-      'XAN',
-    ],
-    [
-      'BA',
-      'BAR',
-      'BER',
-      'BI',
-      'BO',
-      'BOI',
-      'BU',
-      'CA',
-      'CAN',
-      'CAU',
-      'CE',
-      'CEL',
-      'CHA',
-      'CHEL',
-      'CHOP',
-      'CI',
-      'CIA',
-      'CIL',
-      'CIO',
-      'CO',
-      'COS',
-      'CU',
-      'DA',
-      'DE',
-      'DEL',
-      'DI',
-      'DIA',
-      'DO',
-      'FAS',
-      'FEL',
-      'FI',
-      'FOR',
-      'GA',
-      'GE',
-      'GI',
-      'HA',
-      'HYN',
-      'KE',
-      'LA',
-      'LAN',
-      'LE',
-      'LEA',
-      'LEU',
-      'LI',
-      'LIA',
-      'LO',
-      'LON',
-      'LOP',
-      'MA',
-      'ME',
-      'MEN',
-      'MI',
-      'MIE',
-      'MO',
-      'NA',
-      'NE',
-      'NEA',
-      'NEL',
-      'NEN',
-      'NI',
-      'NIF',
-      'NO',
-      'NOI',
-      'NOP',
-      'NU',
-      'PA',
-      'PE',
-      'PER',
-      'PHA',
-      'PHE',
-      'PI',
-      'PIN',
-      'PO',
-      'QUI',
-      'RA',
-      'RAC',
-      'RE',
-      'REN',
-      'RES',
-      'RI',
-      'RIA',
-      'RIEN',
-      'RIF',
-      'RO',
-      'ROR',
-      'ROS',
-      'ROST',
-      'RU',
-      'RYTH',
-      'SA',
-      'SE',
-      'SI',
-      'SO',
-      'SU',
-      'TA',
-      'TAE',
-      'TE',
-      'TER',
-      'THAL',
-      'THO',
-      'THU',
-      'TI',
-      'TIG',
-      'TO',
-      'TU',
-      'VA',
-      'VE',
-      'VES',
-      'VI',
-      'VIT',
-      'XEL',
-      'XI',
-      'ZO',
-    ],
-    [
-      'BEUS',
-      'CA',
-      'CENS',
-      'CEPS',
-      'CEUS',
-      'CHA',
-      'CHUS',
-      'CI',
-      'CUS',
-      'DA',
-      'DAX',
-      'DENS',
-      'DES',
-      'DI',
-      'DIS',
-      'DUS',
-      'FER',
-      'GA',
-      'GI',
-      'GUS',
-      'KEI',
-      'KI',
-      'LA',
-      'LAS',
-      'LI',
-      'LIS',
-      'LIUS',
-      'LOR',
-      'LUM',
-      'LUS',
-      'MA',
-      'MIS',
-      'MUS',
-      'NA',
-      'NEUS',
-      'NI',
-      'NII',
-      'NIS',
-      'NIUS',
-      'NUS',
-      'PIS',
-      'PUS',
-      'RA',
-      'RE',
-      'RI',
-      'RIAE',
-      'RIE',
-      'RII',
-      'RIO',
-      'RIS',
-      'RIX',
-      'RONS',
-      'RU',
-      'RUM',
-      'RUS',
-      'SA',
-      'SEUS',
-      'SI',
-      'SIS',
-      'SUS',
-      'TA',
-      'TEUS',
-      'THUS',
-      'TI',
-      'TIS',
-      'TOR',
-      'TUM',
-      'TUS',
-      'TZI',
-      'ZI',
-    ],
-  ];
-  let freq = [
-    [
-      27, 2, 4, 4, 2, 2, 2, 5, 2, 2, 3, 4, 2, 5, 3, 2, 2, 2, 3, 8, 3, 3, 2, 2, 7, 2, 3, 2, 2, 2, 6,
-      3, 2, 4, 5, 2, 5, 2, 3, 2, 2, 5, 5, 4, 2, 3, 2, 3, 2, 2, 9, 2, 2, 2, 7, 2, 2, 2, 2, 2, 5, 6,
-      2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 3, 3, 2, 3,
-    ],
-    [
-      2, 2, 3, 3, 5, 2, 11, 6, 4, 2, 7, 2, 4, 4, 3, 3, 5, 4, 9, 2, 2, 4, 5, 13, 3, 3, 12, 3, 3, 2,
-      8, 3, 4, 15, 6, 2, 3, 10, 3, 3, 2, 2, 2, 8, 7, 3, 4, 20, 2, 2, 3, 4, 3, 2, 10, 2, 6, 2, 2, 5,
-      2, 2, 13, 2, 2, 14, 3, 2, 2, 9, 4, 2, 5, 42, 2, 4, 2, 6, 3, 3, 11, 2, 19, 2, 3, 2, 5, 3, 2, 4,
-      2, 27, 2, 2, 2, 2, 2, 2,
-    ],
-    [
-      3, 3, 7, 7, 3, 2, 3, 2, 5, 2, 13, 7, 2, 3, 4, 2, 13, 2, 2, 2, 24, 18, 13, 17, 12, 4, 2, 5, 3,
-      19, 3, 2, 2, 3, 7, 3, 2, 5, 2, 6, 29, 3, 2, 2, 2, 3, 4, 4, 16, 2, 6, 12, 5, 5, 6, 2,
-    ],
-    [
-      23, 3, 11, 6, 6, 3, 8, 2, 2, 2, 3, 3, 9, 3, 8, 2, 2, 3, 2, 2, 2, 2, 6, 2, 2, 3, 4, 3, 4, 2, 2,
-      2, 2, 2, 2, 15, 2, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 3, 2, 2, 3, 2, 2, 2, 7, 2, 2, 3, 3, 4, 4,
-      13, 7, 3, 10, 2, 2, 2, 5, 2, 3, 6, 4, 14, 2, 3, 2, 5, 2, 2, 3, 2, 3, 2, 2, 2, 3, 5, 2, 2, 3,
-      2, 3, 5, 2, 5, 2, 3, 3, 3, 3, 3, 7, 2, 3, 2, 4, 3, 2, 2, 2, 2,
-    ],
-    [
-      5, 2, 2, 4, 4, 2, 2, 10, 6, 2, 3, 5, 3, 2, 2, 6, 12, 2, 3, 6, 2, 22, 4, 4, 2, 7, 5, 6, 10, 2,
-      2, 2, 9, 7, 4, 2, 2, 2, 39, 3, 10, 3, 2, 20, 2, 10, 2, 2, 12, 9, 3, 8, 2, 4, 19, 5, 5, 3, 3,
-      12, 2, 9, 3, 2, 7, 3, 4, 3, 6, 2, 8, 5, 2, 4, 25, 2, 4, 3, 2, 26, 2, 2, 2, 21, 2, 2, 4, 6, 5,
-      3, 6, 4, 6, 2, 14, 2, 19, 2, 2, 2, 2, 21, 3, 14, 2, 3, 5, 2, 5, 2, 2, 2, 3,
-    ],
-    [
-      2, 7, 4, 3, 5, 2, 5, 2, 13, 6, 2, 2, 6, 8, 2, 4, 3, 4, 2, 5, 2, 5, 11, 3, 7, 19, 2, 2, 2, 11,
-      10, 4, 6, 12, 3, 15, 4, 6, 2, 18, 3, 3, 11, 4, 14, 2, 2, 3, 2, 13, 2, 3, 2, 4, 21, 7, 2, 10,
-      8, 13, 31, 2, 5, 5, 2, 2, 10, 68, 2, 3,
-    ],
-  ];
+type DominanceFn<T> = (g: Haploid, l: T, r: T) => T;
 
-  let name = choice(data[0], freq[0]);
-  let n = ~~(rand() * 3);
-  for (let i = 0; i < n; i++) {
-    name += choice(data[1], freq[1]);
-  }
-  name += choice(data[2], freq[2]);
-  name += ' ';
-  name += choice(data[3], freq[3]);
-  n = ~~(rand() * 3);
-  for (let i = 0; i < n; i++) {
-    name += choice(data[4], freq[4]);
-  }
-  name += choice(data[5], freq[5]);
-  name = name.replace(/([A-Z])\1\1+/g, '$1$1');
-  return name[0] + name.slice(1).toLowerCase();
-}
-
-let hershey_raw = {
-  501: '  9I[RFJ[ RRFZ[ RMTWT',
-  502: ' 24G\\KFK[ RKFTFWGXHYJYLXNWOTP RKPTPWQXRYTYWXYWZT[K[',
-  503: ' 19H]ZKYIWGUFQFOGMILKKNKSLVMXOZQ[U[WZYXZV',
-  504: ' 16G\\KFK[ RKFRFUGWIXKYNYSXVWXUZR[K[',
-  505: ' 12H[LFL[ RLFYF RLPTP RL[Y[',
-  506: '  9HZLFL[ RLFYF RLPTP',
-  507: ' 23H]ZKYIWGUFQFOGMILKKNKSLVMXOZQ[U[WZYXZVZS RUSZS',
-  508: '  9G]KFK[ RYFY[ RKPYP',
-  509: '  3NVRFR[',
-  510: ' 11JZVFVVUYTZR[P[NZMYLVLT',
-  511: '  9G\\KFK[ RYFKT RPOY[',
-  512: '  6HYLFL[ RL[X[',
-  513: ' 12F^JFJ[ RJFR[ RZFR[ RZFZ[',
-  514: '  9G]KFK[ RKFY[ RYFY[',
-  515: ' 22G]PFNGLIKKJNJSKVLXNZP[T[VZXXYVZSZNYKXIVGTFPF',
-  516: ' 14G\\KFK[ RKFTFWGXHYJYMXOWPTQKQ',
-  517: ' 25G]PFNGLIKKJNJSKVLXNZP[T[VZXXYVZSZNYKXIVGTFPF RSWY]',
-  518: ' 17G\\KFK[ RKFTFWGXHYJYLXNWOTPKP RRPY[',
-  519: ' 21H\\YIWGTFPFMGKIKKLMMNOOUQWRXSYUYXWZT[P[MZKX',
-  520: '  6JZRFR[ RKFYF',
-  521: ' 11G]KFKULXNZQ[S[VZXXYUYF',
-  522: '  6I[JFR[ RZFR[',
-  523: ' 12F^HFM[ RRFM[ RRFW[ R\\FW[',
-  524: '  6H\\KFY[ RYFK[',
-  525: '  7I[JFRPR[ RZFRP',
-  526: '  9H\\YFK[ RKFYF RK[Y[',
-  601: ' 18I\\XMX[ RXPVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  602: ' 18H[LFL[ RLPNNPMSMUNWPXSXUWXUZS[P[NZLX',
-  603: ' 15I[XPVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  604: ' 18I\\XFX[ RXPVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  605: ' 18I[LSXSXQWOVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  606: '  9MYWFUFSGRJR[ ROMVM',
-  607: ' 23I\\XMX]W`VaTbQbOa RXPVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  608: ' 11I\\MFM[ RMQPNRMUMWNXQX[',
-  609: '  9NVQFRGSFREQF RRMR[',
-  610: ' 12MWRFSGTFSERF RSMS^RaPbNb',
-  611: '  9IZMFM[ RWMMW RQSX[',
-  612: '  3NVRFR[',
-  613: ' 19CaGMG[ RGQJNLMOMQNRQR[ RRQUNWMZM\\N]Q][',
-  614: ' 11I\\MMM[ RMQPNRMUMWNXQX[',
-  615: ' 18I\\QMONMPLSLUMXOZQ[T[VZXXYUYSXPVNTMQM',
-  616: ' 18H[LMLb RLPNNPMSMUNWPXSXUWXUZS[P[NZLX',
-  617: ' 18I\\XMXb RXPVNTMQMONMPLSLUMXOZQ[T[VZXX',
-  618: '  9KXOMO[ ROSPPRNTMWM',
-  619: ' 18J[XPWNTMQMNNMPNRPSUTWUXWXXWZT[Q[NZMX',
-  620: '  9MYRFRWSZU[W[ ROMVM',
-  621: ' 11I\\MMMWNZP[S[UZXW RXMX[',
-  622: '  6JZLMR[ RXMR[',
-  623: ' 12G]JMN[ RRMN[ RRMV[ RZMV[',
-  624: '  6J[MMX[ RXMM[',
-  625: ' 10JZLMR[ RXMR[P_NaLbKb',
-  626: '  9J[XMM[ RMMXM RM[X[',
-  710: '  6MWRYQZR[SZRY',
+const dominances: { [K in keyof Haploid]: DominanceFn<Haploid[K]> } = {
+  body_curve_type: mendelian([0, 1]),
+  body_curve_amount: incomplete(0.5, 0.98),
+  body_length: incomplete(200, 420),
+  body_height: incomplete(45, 150),
+  scale_type: mendelian([0, 1, 2, 3]),
+  scale_scale: incomplete(0.8, 1.5),
+  pattern_type: mendelian([0, 1, 2, 3, 4]),
+  pattern_scale: incomplete(0.5, 2),
+  dorsal_texture_type: mendelian([0, 1]),
+  dorsal_type: mendelian([0, 1]),
+  dorsal_length: incomplete(30, 180),
+  dorsal_start: epistatic('dorsal_type', {
+    0: incomplete(7, 15, undefined, Math.floor),
+    1: incomplete(11, 16, undefined, Math.floor),
+  }),
+  dorsal_end: epistatic('dorsal_type', {
+    0: incomplete(20, 28, undefined, Math.floor),
+    1: incomplete(19, 24, undefined, Math.floor),
+  }),
+  wing_texture_type: mendelian([0, 1]),
+  wing_type: mendelian([0, 1]),
+  wing_length: epistatic('wing_type', {
+    0: incomplete(40, 200),
+    1: incomplete(40, 350),
+  }),
+  wing_width: epistatic('wing_texture_type', {
+    0: incomplete(7, 20),
+    1: incomplete(20, 50),
+  }),
+  wing_y: epistatic('wing_texture_type', {
+    0: incomplete(0.45, 0.85),
+    1: incomplete(0.45, 0.75),
+  }),
+  wing_start: incomplete(5, 8, undefined, Math.floor),
+  wing_end: incomplete(5, 8, undefined, Math.floor),
+  pelvic_texture_type: epistatic('dorsal_texture_type', {
+    0: () => 0 as 0 | 1,
+    1: mendelian<0 | 1>([0, 1]),
+  }),
+  pelvic_type: mendelian([0, 1]),
+  pelvic_length: incomplete(30, 140),
+  pelvic_start: epistatic('pelvic_type', {
+    0: incomplete(7, 11, undefined, Math.floor),
+    1: incomplete(11, 12, undefined, Math.floor),
+  }),
+  pelvic_end: epistatic('pelvic_type', {
+    0: incomplete(13, 15, undefined, Math.floor),
+    1: (g: Haploid) => g.pelvic_start + 2,
+  }),
+  anal_texture_type: epistatic('dorsal_texture_type', {
+    0: () => 0 as 0 | 1,
+    1: mendelian<0 | 1>([0, 1]),
+  }),
+  anal_type: mendelian([0, 1]),
+  anal_length: incomplete(20, 80),
+  anal_start: incomplete(16, 23, undefined, Math.floor),
+  anal_end: incomplete(25, 31, undefined, Math.floor),
+  tail_type: mendelian([0, 1, 2, 3, 4, 5]),
+  tail_length: incomplete(50, 180),
+  finlet_type: mendelian([0, 1, 2, 3]),
+  neck_type: mendelian([0, 1]),
+  nose_height: incomplete(-50, 35),
+  head_length: incomplete(20, 35),
+  mouth_size: incomplete(6, 11, undefined, Math.floor),
+  head_texture_amount: incomplete(30, 160, undefined, Math.floor),
+  has_moustache: mendelian([0, 1]),
+  has_beard: mendelian([0, 1]),
+  moustache_length: epistatic('has_moustache', {
+    0: () => 0,
+    1: incomplete(10, 40, undefined, Math.floor),
+  }),
+  beard_length: epistatic('has_beard', {
+    0: () => 0,
+    1: incomplete(20, 50, undefined, Math.floor),
+  }),
+  eye_type: mendelian([0, 1]),
+  eye_size: incomplete(8, 28),
+  jaw_size: incomplete(0.7, 1.4),
+  has_teeth: mendelian([1, 0]),
+  teeth_length: incomplete(5, 15),
+  teeth_space: incomplete(3, 6),
+  color: mendelian(['normal', 'rainbow']),
+  jaw_open: epistatic('has_teeth', {
+    0: () => (rand() < 0.8 ? 1 : 0),
+    1: () => 1 as 0 | 1,
+  }),
 };
 
-let hershey_cache = {};
-
-function compile_hershey(i) {
-  if (hershey_cache[i]) {
-    return hershey_cache[i];
-  }
-  var entry = hershey_raw[i];
-  if (entry == null) {
-    return;
-  }
-  var ordR = 82;
-  var bound = entry.substring(3, 5);
-  var xmin = bound.charCodeAt(0) - ordR;
-  var xmax = bound.charCodeAt(1) - ordR;
-  var content = entry.substring(5);
-  var polylines = [[]];
-  var j = 0;
-  while (j < content.length) {
-    var digit = content.substring(j, j + 2);
-    if (digit == ' R') {
-      polylines.push([]);
-    } else {
-      var x = digit.charCodeAt(0) - ordR;
-      var y = digit.charCodeAt(1) - ordR;
-      polylines[polylines.length - 1].push([x, y]);
-    }
-    j += 2;
-  }
-  let data = {
-    xmin: xmin,
-    xmax: xmax,
-    polylines: polylines,
+function mendelian<T>(totalOrder: T[]): DominanceFn<T> {
+  return (_g, l, r) => {
+    const lpos = totalOrder.indexOf(l);
+    const rpos = totalOrder.indexOf(r);
+    if (lpos === -1) return r;
+    if (rpos === -1) return l;
+    return rpos < lpos ? r : l;
   };
-  hershey_cache[i] = data;
-  return data;
 }
 
-function put_text(txt) {
-  let base = 500;
-  let x = 0;
-  let o = [];
-  for (let i = 0; i < txt.length; i++) {
-    let ord = txt.charCodeAt(i);
-    let idx;
-    if (65 <= ord && ord <= 90) {
-      idx = base + 1 + (ord - 65);
-    } else if (97 <= ord && ord <= 122) {
-      idx = base + 101 + (ord - 97);
-    } else if (ord == 46) {
-      idx = 710;
-    } else if (ord == 32) {
-      x += 10;
-      continue;
-    } else {
-      continue;
-    }
-    let { xmin, xmax, polylines } = compile_hershey(idx);
-    polylines = polylines.map((p) => trsl_poly(p, x - xmin, 0));
-    o.push(...polylines);
-    x += xmax - xmin;
-  }
-  return [x, o];
+function incomplete(
+  min: number,
+  max: number,
+  factor = 0.05,
+  post = (n: number) => n,
+): DominanceFn<number> {
+  const s = (max - min) * factor;
+  return (_g, l, r) => {
+    const o = gauss1d((l + r) / 2, s);
+    return post(Math.max(min, Math.min(o, max)));
+  };
 }
 
-function str_to_seed(str) {
-  let n = 1;
-  for (let i = 0; i < str.length; i++) {
-    let x = str.charCodeAt(i) + 1;
-    n ^= x << (7 + (i % 5));
-    // if (i % 2){
-    n ^= n << 17;
-    n ^= n >> 13;
-    n ^= n << 5;
-    // }
-    n = (n >>> 0) % 4294967295;
-  }
-  return n;
+function epistatic<T, K extends keyof Haploid>(
+  gene: K,
+  options: Record<Haploid[K], DominanceFn<T>>,
+): DominanceFn<T> {
+  return (g, l, r) => {
+    const d = options[g[gene]];
+    if (!d) throw new Error(`no dominance function for epistatic gene ${gene}`);
+    return d(g, l, r);
+  };
 }
 
-function main(seed) {
-  if (seed === undefined) {
-    jsr = ~~(Math.random() * 10000);
-    let name = binomen();
-    seed = name;
-  } else if (typeof jsr === 'string') {
-    jsr = str_to_seed(seed);
-  } else if (typeof jsr === 'number') {
-    jsr = seed % 4294967295;
-  } else {
-    throw new TypeError('unsupported seed material');
+function makePhenotype([left, right]: Diploid): Haploid {
+  const genes = Object.keys(dominances) as Array<keyof Haploid>;
+  const phenotype: Record<keyof Haploid, any> = {} as any;
+  for (const gene of genes) {
+    const d: DominanceFn<any> = dominances[gene];
+    phenotype[gene] = d(phenotype, left[gene], right[gene]);
   }
-  // console.error(jsr);
-  // jsr = 0;
-  const params = generate_params();
-  let { lines, poi } = fish(params);
+  return phenotype;
+}
+
+function makeGamete([left, right]: Diploid): Haploid {
+  const genes = Object.keys(left) as Array<keyof Haploid>;
+  return Object.fromEntries(
+    genes.map((gene) => [gene, rand() < 0.5 ? left[gene] : right[gene]]),
+  ) as Haploid;
+}
+
+type MutationFn<T> = (v: T) => T;
+
+const mutations: { [K in keyof Haploid]: MutationFn<Haploid[K]> } = {
+  body_curve_type: discrete([0, 1]),
+  body_curve_amount: continuous(0.5, 0.98),
+  body_length: continuous(200, 420),
+  body_height: continuous(45, 150),
+  scale_type: discrete([0, 1, 2, 3]),
+  scale_scale: continuous(0.8, 1.5),
+  pattern_type: discrete([0, 1, 2, 3, 4]),
+  pattern_scale: continuous(0.5, 2),
+  dorsal_texture_type: discrete([0, 1]),
+  dorsal_type: discrete([0, 1]),
+  dorsal_length: continuous(30, 180),
+  dorsal_start: continuous(11, 15),
+  dorsal_end: continuous(19, 28),
+  wing_texture_type: discrete([0, 1]),
+  wing_type: discrete([0, 1]),
+  wing_length: continuous(40, 350),
+  wing_width: continuous(7, 50),
+  wing_y: continuous(0.45, 0.85),
+  wing_start: continuous(5, 8),
+  wing_end: continuous(5, 8),
+  pelvic_texture_type: discrete([0, 1]),
+  pelvic_type: discrete([0, 1]),
+  pelvic_length: continuous(30, 140),
+  pelvic_start: continuous(7, 12),
+  pelvic_end: continuous(13, 15),
+  anal_texture_type: discrete([0, 1]),
+  anal_type: discrete([0, 1]),
+  anal_length: continuous(20, 80),
+  anal_start: continuous(16, 23),
+  anal_end: continuous(25, 31),
+  tail_type: discrete([0, 1, 2, 3, 4, 5]),
+  tail_length: continuous(50, 180),
+  finlet_type: discrete([0, 1, 2, 3]),
+  neck_type: discrete([0, 1]),
+  nose_height: continuous(-50, 35),
+  head_length: continuous(20, 35),
+  mouth_size: continuous(6, 11),
+  head_texture_amount: continuous(30, 160),
+  has_moustache: discrete([0, 1]),
+  has_beard: discrete([0, 1]),
+  moustache_length: continuous(0, 40),
+  beard_length: continuous(0, 50),
+  eye_type: discrete([0, 1]),
+  eye_size: continuous(8, 28),
+  jaw_size: continuous(0.7, 1.4),
+  has_teeth: discrete([1, 0]),
+  teeth_length: continuous(5, 15),
+  teeth_space: continuous(3, 6),
+  color: discrete(['normal', 'rainbow'], 1e-3),
+  jaw_open: (v) => v,
+};
+
+function discrete<T>(values: T[], mutationRate = 2e-3): MutationFn<T> {
+  return (v) => {
+    if (rand() >= mutationRate) return v;
+    return values[Math.floor(rand() * values.length)];
+  };
+}
+
+function continuous(min: number, max: number, mutationRate = 0.001): MutationFn<number> {
+  return (v) => Math.max(min, Math.max(v + gauss1d(0, (max - min) * mutationRate), max));
+}
+
+function mutate(g: Haploid): Haploid {
+  const mutators: Array<[keyof Haploid, MutationFn<any>]> = Object.entries(mutations) as any;
+  return Object.fromEntries(
+    mutators.map(([gene, fn]) => [gene, fn(g[gene as keyof Haploid] as any)]),
+  ) as Haploid;
+}
+
+export function breed(left: Diploid, right: Diploid, seed: number): Organism {
+  jsr = seed % 2 ** 32;
+  const leftGamete = mutate(makeGamete(left));
+  const rightGamete = mutate(makeGamete(right));
+  const genotype: Diploid = [leftGamete, rightGamete];
+  const phenotype = makePhenotype(genotype);
+  return { genotype, phenotype };
+}
+
+export function spawn(seed: number): Organism {
+  jsr = seed % 2 ** 32;
+  const genotype: Diploid = [generate_params(), generate_params()];
+  const phenotype = makePhenotype(genotype);
+  return { genotype, phenotype };
+}
+
+export function draw(phenotype: Haploid, items: Partial<{ santa: boolean }>): string {
+  let { lines, poi } = fish(phenotype);
   const { polylines, layout } = reframe(lines, 20, '');
-  return { polylines: cleanup(polylines), layout, poi, params };
+  return draw_svg(
+    { polylines: cleanup(polylines), layout, poi, params: phenotype },
+    { color: phenotype.color, ...items },
+  );
 }
 
-if (typeof module != 'undefined') {
-  module.exports = {
-    main,
-    generate_params,
-    default_params,
-    fish,
-    reframe,
-    cleanup,
-    draw_svg,
-    binomen,
-    str_to_seed,
-  };
-  if (require.main === module) {
-    let seed = undefined;
-    let format = 'svg';
-    let speed = 0.005;
-    for (let i = 2; i < process.argv.length; i++) {
-      let a = process.argv[i];
-      if (a == '--seed') {
-        seed = process.argv[i + 1];
-      } else if (a == '--format') {
-        format = process.argv[i + 1];
-      } else if (a == '--speed') {
-        if (process.argv[i + 1] > 0) speed = speed / process.argv[i + 1];
-      }
-    }
-    let polylines = main(seed);
-    if (format == 'svg') {
-      console.log(draw_svg(polylines));
-    } else if (format == 'json') {
-      console.log(JSON.stringify(polylines));
-    } else if (format == 'smil') {
-      console.log(draw_svg_anim(polylines, speed));
-    } else if (format == 'csv') {
-      console.log(polylines.map((x) => x.flat().join(',')).join('\n'));
-    } else if (format == 'ps') {
-      console.log(draw_ps(polylines));
-    }
-  }
+if (import.meta.url === `file://${globalThis?.process?.argv?.[1]}`) {
+  jsr = 123;
+  const left: Diploid = [generate_params(), generate_params()];
+  const right: Diploid = [generate_params(), generate_params()];
+  const offspring = breed(left, right, 456);
+  // console.log(draw(makePhenotype(left)));
+  // console.log(draw(makePhenotype(right)));
+  console.log(draw(offspring.phenotype, { santa: false }));
 }

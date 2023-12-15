@@ -9,7 +9,7 @@ export class Cipher {
       await crypto.subtle.importKey(
         'raw',
         new Uint8Array(32),
-        { name: 'HKDF', hash: 'SHA-512-256' },
+        { name: 'HKDF', hash: 'SHA-512' },
         false,
         ['deriveKey', 'deriveBits'],
       ),
@@ -47,7 +47,7 @@ export class Cipher {
       await crypto.subtle.deriveBits(
         {
           name: 'HKDF',
-          hash: 'SHA-512-256',
+          hash: 'SHA-512',
           salt: new Uint8Array(),
           info: new TextEncoder().encode(keyId),
         },

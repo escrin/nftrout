@@ -1,36 +1,37 @@
-import escrinWorker, { ApiError, EscrinRunner } from '@escrin/worker';
+import escrinWorker, * as escrin from '@escrin/worker';
 
-import { Config as SpawnerConfig, Spawner } from './spawner.js';
+import { Cipher } from './crypto.js';
+import { Config, Spawner } from './spawner.js';
 
 export default escrinWorker({
-  async tasks(rnr: EscrinRunner): Promise<void> {
-    const config = await rnr.getConfig();
-    try {
-      if (
-        config.network !== 'local' &&
-        config.network !== 'sapphire-testnet' &&
-        config.network !== 'sapphire-mainnet'
-      ) {
-        throw new ApiError(500, `invalid network: ${config.network}`);
-      }
-      if (typeof config.nftStorageKey !== 'string') {
-        throw new ApiError(500, `missing NFT Storage key`);
-      }
-      if (typeof config.signerKey !== 'string') {
-        throw new ApiError(500, `missing signer key`);
-      }
-    } catch (e: any) {
-      console.error('failed to parse config:', e);
-      throw e;
+  async tasks(rnr: escrin.Runner): Promise<void> {
+    const config = (await rnr.getConfig()) as Config;
+
+    let cipher: Cipher;
+    if (config.network.chainId === 31337 || config.network.chainId === 1337) {
+      cipher = await Cipher.testing();
+    } else {
+      console.debug('acquiring identity');
+      await rnr.acquireIdentity({
+        network: config.network,
+        identity: config.identity,
+        permitTtl: 24 * 60 * 60, // 24 hours
+        duration: 24 * 60 * 60,
+      });
+      console.debug('obtaining omni key');
+      cipher = new Cipher(await rnr.getOmniKey(config));
     }
+
     let spawner: Spawner;
     try {
-      spawner = await Spawner.get(rnr, config as SpawnerConfig);
+      console.debug('getting spawner');
+      spawner = await Spawner.get(config, cipher);
     } catch (e: any) {
       console.error('failed to get spawner', e);
       throw e;
     }
     try {
+      console.debug('spawning');
       await spawner.spawn();
     } catch (e: any) {
       console.error('failed to spawn', e);

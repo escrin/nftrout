@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@escrin/nftrout-evm": "link:../evm",
-    "@escrin/worker": "1.0.0-alpha.4",
+    "@escrin/worker": "link:../../monorepo/worker",
     "@oasisprotocol/deoxysii": "^0.0.5",
     "canonicalize": "^2.0.0",
     "ethers": "^6.6.7",

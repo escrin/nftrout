@@ -1,0 +1,11 @@
+{
+  "network": {
+    "chainId": 23294,
+    "rpcUrl": "https://sapphire.oasis.io"
+  },
+  "identity": {
+    "registry": "0x6e4039C3330681F91bC4bd394dc1a5AAE615FB36",
+    "id": "0x4e480cb017f26e6c5532f71e052022a360c2db594d9670a4b959e8e93b8a029f"
+  },
+  "nftrout": "0x998633BDF6eE32A9CcA6c9A247F428596e8e65d8"
+}
