@@ -81,7 +81,7 @@ export class Spawner {
     let taskResults: Array<[TokenId, Cid]> = tasks.post;
 
     // TODO: parallelize anti-chains
-    let toSpawn = tasks.spawn.slice(0, 50);
+    let toSpawn = tasks.spawn.slice(0, 20);
     console.debug('preparing to spawn', toSpawn);
     for (let i = 0; i < toSpawn.length; i += this.#batchSize) {
       for (const tokenId of toSpawn.slice(i, i + this.#batchSize)) {
@@ -102,7 +102,7 @@ export class Spawner {
         [taskResults.map(([_, cid]) => cid)],
       );
       const submittedTaskIds = taskResults.map(([id]) => id);
-      console.debug('submitting', taskResults);
+      console.debug('submitting', submittedTaskIds);
       try {
         const tx = await this.#nftrout.acceptTaskResults(
           submittedTaskIds,
@@ -112,7 +112,7 @@ export class Spawner {
             gasLimit: Math.abs(this.network.chainId - 23294) <= 1 ? 15_000_000 : undefined,
           },
         );
-        console.debug(tx.hash);
+        console.info(tx.hash);
         const receipt = await tx.wait(1);
         if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
         for (const [id, cid] of taskResults) {
@@ -121,6 +121,7 @@ export class Spawner {
       } catch (e: any) {
         console.error('failed to post task results:', e);
       }
+      taskResults = [];
     }
   }
 
@@ -148,6 +149,7 @@ export class Spawner {
                 return;
               }
               console.debug(tokenId, 'needs spawning');
+              this.#cidCache.set(tokenId, { cid, posted: false, props });
               needsSpawning.push(tokenId);
             } else needsSpawning.push(tokenId);
           } catch (e: any) {
@@ -168,7 +170,7 @@ export class Spawner {
   }
 
   private async spawnTrout(selfTokenId: TokenId): Promise<{ cid: Cid; props: TroutProperties }> {
-    console.debug('spawning', selfTokenId);
+    console.log('spawning', selfTokenId);
     const { left, right } = await this.#nftrout.parents(selfTokenId);
 
     let leftCid = '';
@@ -298,6 +300,7 @@ export class Spawner {
   }
 
   private async fetchProps(tokenId: number, cid: string): Promise<TroutProperties> {
+    console.debug('fetching props for', tokenId, 'from', cid);
     for (let i = 0; i < 3; i++) {
       try {
         const cached = this.#cidCache.get(tokenId);
@@ -315,9 +318,9 @@ export class Spawner {
         this.#cidCache.set(tokenId, { cid, props, posted: true });
         return props;
       } catch (e: any) {
-        console.error('failed to fetch', tokenId, 'props:', e);
+        console.error('failed to fetch props for', tokenId, 'at', cid, ':', e);
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
       }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
     throw new Error(`failed to fetch props for trout ${tokenId}`);
   }

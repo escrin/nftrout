@@ -16,7 +16,7 @@ export default escrinWorker({
         network: config.network,
         identity: config.identity,
         permitTtl: 24 * 60 * 60, // 24 hours
-        duration: 24 * 60 * 60,
+        duration: 5 * 60, // 5 minutes
       });
       console.debug('obtaining omni key');
       cipher = new Cipher(await rnr.getOmniKey(config));
@@ -33,6 +33,7 @@ export default escrinWorker({
     try {
       console.debug('spawning');
       await spawner.spawn();
+      console.debug('done spawning');
     } catch (e: any) {
       console.error('failed to spawn', e);
       throw e;
