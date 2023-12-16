@@ -28,15 +28,18 @@ type TroutAttributes = Partial<{
 }>;
 
 type TroutProperties = {
+  version?: number;
   left: TroutId | null;
   right: TroutId | null;
   self: TroutId;
   attributes: TroutAttributes;
   generations: Cid[];
-} & ({ seed: Box } | { traits: Box });
+  traits: Box;
+};
 
 type TroutParent = { id: TroutId; genotype: fish.Diploid };
 
+const CURRENT_VERSION = 3;
 const MAX_SEED = 4294967295; // 2^32-1
 
 export class Spawner {
@@ -144,7 +147,7 @@ export class Spawner {
             const cid = await this.getTroutCid(tokenId);
             if (cid) {
               const props = await this.fetchProps(tokenId, cid);
-              if (props && 'traits' in props) {
+              if (props && 'version' in props && props.version == CURRENT_VERSION) {
                 this.#cidCache.set(tokenId, { cid, posted: true, props });
                 return;
               }
@@ -272,6 +275,7 @@ export class Spawner {
     }
 
     const troutDescriptor: TroutProperties = {
+      version: CURRENT_VERSION,
       left: left?.id ?? null,
       right: right?.id ?? null,
       self,
@@ -293,7 +297,6 @@ export class Spawner {
 
   private async fetchParent(tokenId: number, cid: string): Promise<TroutParent> {
     const props = await this.fetchProps(tokenId, cid);
-    if (!('traits' in props)) throw new Error(`encountered legacy trout ${tokenId}`);
     const traitsJson = await this.cipher.decrypt(props.traits, tokenId);
     const { genotype } = JSON.parse(new TextDecoder().decode(traitsJson)) as fish.Organism;
     return { id: props.self, genotype };
