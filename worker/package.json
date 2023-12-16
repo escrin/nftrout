@@ -21,17 +21,17 @@
     "@escrin/worker": "link:../../monorepo/worker",
     "@oasisprotocol/deoxysii": "^0.0.5",
     "canonicalize": "^2.0.0",
-    "ethers": "^6.6.7",
+    "ethers": "^6.9.0",
     "nft.storage": "^7.1.1"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.22.9",
-    "@babel/preset-typescript": "^7.22.5",
-    "@types/jest": "^29.5.3",
-    "@types/node": "^20.4.5",
-    "esbuild": "^0.18.17",
-    "jest": "^29.6.2",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/preset-typescript": "^7.23.3",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.4",
+    "esbuild": "^0.19.9",
+    "jest": "^29.7.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.1.6"
+    "typescript": "^5.3.3"
   }
 }

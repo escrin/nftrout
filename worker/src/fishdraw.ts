@@ -2905,7 +2905,7 @@ function discrete<T>(values: T[], mutationRate = 2e-3): MutationFn<T> {
 }
 
 function continuous(min: number, max: number, mutationRate = 0.001): MutationFn<number> {
-  return (v) => Math.max(min, Math.max(v + gauss1d(0, (max - min) * mutationRate), max));
+  return (v) => Math.max(min, Math.min(v + gauss1d(0, (max - min) * mutationRate), max));
 }
 
 function mutate(g: Haploid): Haploid {
@@ -2944,8 +2944,12 @@ if (import.meta.url === `file://${globalThis?.process?.argv?.[1]}`) {
   jsr = 123;
   const left: Diploid = [generate_params(), generate_params()];
   const right: Diploid = [generate_params(), generate_params()];
+  console.log('l0', left[0].head_length);
+  console.log('l1', left[1].head_length);
+  console.log('r0', right[0].head_length);
+  console.log('r1', right[1].head_length);
   const offspring = breed(left, right, 456);
-  // console.log(draw(makePhenotype(left)));
-  // console.log(draw(makePhenotype(right)));
-  console.log(draw(offspring.phenotype, { santa: false }));
+  console.log('o0', offspring.genotype[0].head_length);
+  console.log('o1', offspring.genotype[1].head_length);
+  console.log('op', offspring.phenotype.head_length);
 }

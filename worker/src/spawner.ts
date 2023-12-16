@@ -116,7 +116,7 @@ export class Spawner {
         const receipt = await tx.wait(1);
         if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
         for (const [id, cid] of taskResults) {
-          this.#cidCache.set(id, { cid, posted: true });
+          this.#cidCache.set(id, { ...(this.#cidCache.get(id) ?? {}), cid, posted: true });
         }
       } catch (e: any) {
         console.error('failed to post task results:', e);
