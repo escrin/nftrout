@@ -62,9 +62,9 @@ export class Spawner {
   }
 
   #nftrout: NFTrout;
-  #cidCache: Map<TokenId, { cid: Cid; posted: boolean; props?: TroutProperties }> = new Map();
+  #cidCache: Map<TokenId, { cid: Cid; props?: TroutProperties }> = new Map();
 
-  #batchSize = 10;
+  #batchSize = 30;
 
   constructor(
     public readonly network: { chainId: number },
@@ -78,19 +78,16 @@ export class Spawner {
 
   async spawn(): Promise<void> {
     const tasks = await this.getNewTasks();
+    if (tasks.length === 0) return;
 
-    if (tasks.spawn.length === 0 && tasks.post.length === 0) return;
-
-    let taskResults: Array<[TokenId, Cid]> = tasks.post;
+    let taskResults: Array<[TokenId, Cid]> = [];
 
     // TODO: parallelize anti-chains
-    let toSpawn = tasks.spawn.slice(0, 20);
-    console.debug('preparing to spawn', toSpawn);
-    for (let i = 0; i < toSpawn.length; i += this.#batchSize) {
-      for (const tokenId of toSpawn.slice(i, i + this.#batchSize)) {
+    for (let i = 0; i < tasks.length; i += this.#batchSize) {
+      for (const tokenId of tasks.slice(i, i + this.#batchSize)) {
         try {
           const res = await this.spawnTrout(tokenId);
-          this.#cidCache.set(tokenId, { ...res, posted: false });
+          this.#cidCache.set(tokenId, res);
           taskResults.push([tokenId, res.cid]);
         } catch (e: any) {
           console.error(`failed to spawn trout ${tokenId}`, e);
@@ -119,7 +116,7 @@ export class Spawner {
         const receipt = await tx.wait(1);
         if (!receipt || receipt.status !== 1) throw new Error('failed to accept tasks');
         for (const [id, cid] of taskResults) {
-          this.#cidCache.set(id, { ...(this.#cidCache.get(id) ?? {}), cid, posted: true });
+          this.#cidCache.set(id, { ...(this.#cidCache.get(id) ?? {}), cid });
         }
       } catch (e: any) {
         console.error('failed to post task results:', e);
@@ -128,40 +125,36 @@ export class Spawner {
     }
   }
 
-  private async getNewTasks(): Promise<{ spawn: TokenId[]; post: Array<[TokenId, Cid]> }> {
+  private async getNewTasks(): Promise<TokenId[]> {
+    const needsSpawning = async (tokenId: number, cid?: Cid) => {
+      if (!cid) return true;
+      const props = await this.fetchProps(tokenId, cid);
+      this.#cidCache.set(tokenId, { cid, props });
+      const version = props?.version ?? -1;
+      return version !== CURRENT_VERSION;
+    };
+
     const totalSupply = Number(await this.#nftrout.totalSupply());
-    const needsPosting: Array<[TokenId, Cid]> = [];
-    const needsChecking: TokenId[] = [];
-    for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
-      const { cid, posted } = this.#cidCache.get(tokenId) ?? { cid: undefined, posted: false };
-      if (posted) continue;
-      if (cid) needsPosting.push([tokenId, cid]);
-      else needsChecking.push(tokenId);
+
+    let a = 1;
+    let b = a + totalSupply;
+    while (a !== b) {
+      const mp = a + Math.floor((b - a) / 2);
+      await retry(async () => {
+        const cid = await this.getTroutCid(mp);
+        if (await needsSpawning(mp, cid)) {
+          b = mp;
+        } else {
+          a = mp + 1;
+        }
+      });
     }
-    const needsSpawning: TokenId[] = [];
-    const batchSize = 5;
-    for (let i = 0; i < needsChecking.length; i += batchSize) {
-      await Promise.all(
-        needsChecking.slice(i, i + batchSize).map(async (tokenId) => {
-          try {
-            const cid = await this.getTroutCid(tokenId);
-            if (cid) {
-              const props = await this.fetchProps(tokenId, cid);
-              if (props && 'version' in props && props.version == CURRENT_VERSION) {
-                this.#cidCache.set(tokenId, { cid, posted: true, props });
-                return;
-              }
-              console.debug(tokenId, 'needs spawning');
-              this.#cidCache.set(tokenId, { cid, posted: false, props });
-              needsSpawning.push(tokenId);
-            } else needsSpawning.push(tokenId);
-          } catch (e: any) {
-            console.error(`failed to check CID of trout ${tokenId}:`, e);
-          }
-        }),
-      );
+
+    const toSpawn = [];
+    for (let i = a; i <= totalSupply; i++) {
+      toSpawn.push(i);
     }
-    return { spawn: needsSpawning.sort((a, b) => a - b), post: needsPosting };
+    return toSpawn;
   }
 
   private async getTroutCid(tokenId: TokenId): Promise<Cid | undefined> {
@@ -173,7 +166,7 @@ export class Spawner {
   }
 
   private async spawnTrout(selfTokenId: TokenId): Promise<{ cid: Cid; props: TroutProperties }> {
-    console.log('spawning', selfTokenId);
+    console.debug('spawning', selfTokenId);
     const { left, right } = await this.#nftrout.parents(selfTokenId);
 
     let leftCid = '';
@@ -304,28 +297,22 @@ export class Spawner {
 
   private async fetchProps(tokenId: number, cid: string): Promise<TroutProperties> {
     console.debug('fetching props for', tokenId, 'from', cid);
-    for (let i = 0; i < 3; i++) {
+    return retry(async () => {
+      const cached = this.#cidCache.get(tokenId);
+      if (cached && cached.props) return cached.props;
+      const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
+      // TODO: verify CID
+      const resText = await res.text();
+      let props: TroutProperties;
       try {
-        const cached = this.#cidCache.get(tokenId);
-        if (cached && cached.props) return cached.props;
-        const res = await fetch(`https://nftstorage.link/ipfs/${cid}/metadata.json`);
-        // TODO: verify CID
-        const resText = await res.text();
-        let props: TroutProperties;
-        try {
-          props = JSON.parse(resText).properties;
-        } catch (e: any) {
-          console.error('failed to parse nft metadata response:', resText);
-          throw e;
-        }
-        this.#cidCache.set(tokenId, { cid, props, posted: true });
-        return props;
+        props = JSON.parse(resText).properties;
       } catch (e: any) {
-        console.error('failed to fetch props for', tokenId, 'at', cid, ':', e);
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        console.error('failed to parse nft metadata response:', resText);
+        throw e;
       }
-    }
-    throw new Error(`failed to fetch props for trout ${tokenId}`);
+      this.#cidCache.set(tokenId, { cid, props });
+      return props;
+    });
   }
 }
 
@@ -353,4 +340,18 @@ function uint8ArrayToBigIntLE(uint8Array: Uint8Array): bigint {
   }
 
   return result;
+}
+
+async function retry<T>(f: () => Promise<T>, times = 3, delay = 1_000): Promise<T> {
+  let lastError;
+  for (let i = 0; i < times; i++) {
+    try {
+      return await f();
+    } catch (e: any) {
+      lastError = e;
+      console.error(e);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
 }
