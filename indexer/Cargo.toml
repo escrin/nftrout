@@ -1,0 +1,25 @@
+[package]
+name = "nftrout-indexer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.76"
+axum = { version = "0.7.2", default-features = false, features = ["json", "http1", "http2", "query", "tokio"] }
+config = { version = "0.13.4", default-features = false, features = ["toml"] }
+ethers = "2.0.11"
+futures = { version = "0.3.29", default-features = false, features = ["std"] }
+reqwest = { version = "0.11.23", default-features = false, features = ["rustls-tls", "stream"] }
+rusqlite = { version = "0.30.0", features = ["bundled"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+thiserror = "1.0.51"
+tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros", "time"] }
+tower-http = { version = "0.5.0", features = ["cors"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+url = "2.5.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
