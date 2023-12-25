@@ -47,6 +47,7 @@ fn make_router(state: AppState) -> Router {
         .route("/", get(root))
         // .route("/trout/:chain/:id/metadata.json", get(get_trout_meta))
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             cors::CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])
@@ -69,8 +70,9 @@ async fn get_trout_image(
             None => return Ok(Err(StatusCode::NOT_FOUND)),
         };
 
-    let res = ipfs.fetch_content(&image_cid).await?;
+    let res = ipfs.cat(&image_cid).await?;
     Ok(Ok(Response::builder()
+        .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
         .status(res.status().as_u16())
         .body(Body::from_stream(res.bytes_stream()))?))
 }

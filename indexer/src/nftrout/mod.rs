@@ -19,7 +19,7 @@ pub enum Error {
     NoUri(u64),
 }
 
-ethers::contract::abigen!(NFTrout, "../evm/deployments/sapphire/NFTrout.json");
+ethers::contract::abigen!(NFTrout, "src/nftrout/abi.json");
 
 #[derive(Clone, Debug)]
 pub struct TroutToken {

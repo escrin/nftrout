@@ -56,7 +56,7 @@ async fn index_tokens(
             .map(Ok::<_, anyhow::Error>)
             .map_ok(|TokenId { token_id, .. }| async move {
                 let cid = nftrout_client.token_cid(token_id).await?;
-                let meta = ipfs_client.fetch_dag_node(&cid).await?;
+                let meta = ipfs_client.dag_get(&cid).await?;
                 Ok(TroutToken { cid, meta })
             })
             .try_buffer_unordered(concurrency.unwrap_or(25))

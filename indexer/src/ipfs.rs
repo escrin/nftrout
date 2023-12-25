@@ -41,13 +41,13 @@ impl Client {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub async fn fetch_dag_node(&self, cid: &Cid) -> Result<TroutMetadata, Error> {
+    pub async fn dag_get(&self, cid: &Cid) -> Result<TroutMetadata, Error> {
         self.json_rpc("dag/get", [&cid.0]).await
     }
 
     #[tracing::instrument(level = "trace")]
-    pub async fn fetch_content(&self, cid: &Cid) -> Result<reqwest::Response, Error> {
-        self.rpc("get", [&cid.0]).await
+    pub async fn cat(&self, cid: &Cid) -> Result<reqwest::Response, Error> {
+        self.rpc("cat", [&cid.0]).await
     }
 
     #[tracing::instrument(level = "trace")]
