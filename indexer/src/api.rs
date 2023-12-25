@@ -70,7 +70,7 @@ async fn get_trout_image(
             None => return Ok(Err(StatusCode::NOT_FOUND)),
         };
 
-    let res = ipfs.cat(&image_cid).await?;
+    let res = ipfs.cat(&image_cid, Some("trout.svg")).await?;
     Ok(Ok(Response::builder()
         .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
         .status(res.status().as_u16())

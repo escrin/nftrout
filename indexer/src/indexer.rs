@@ -1,6 +1,6 @@
 use anyhow::Result;
 use futures::{StreamExt, TryStreamExt as _};
-use tracing::{debug_span, info, Instrument as _};
+use tracing::{debug, debug_span, error, instrument, Instrument as _};
 
 use crate::{
     db::Db,
@@ -10,7 +10,7 @@ use crate::{
 
 const BATCH_SIZE: usize = 50;
 
-#[tracing::instrument(level = "info", skip_all)]
+#[instrument(skip_all)]
 pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) -> Result<()> {
     let total_supply = nftrout_client.total_supply().await?;
     let chain_id = nftrout_client.chain_id().await?;
@@ -22,7 +22,7 @@ pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &
     })?;
 
     let ids_to_index = (latest_known_token_id + 1)..=total_supply;
-    info!(
+    debug!(
         reindex_count = ids_to_reindex.len(),
         new_index_count = (total_supply - latest_known_token_id),
         "indexing"
@@ -38,12 +38,12 @@ pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &
         None,
     )
     .await?;
-    info!("finished indexing");
+    debug!("finished indexing");
 
     Ok(())
 }
 
-#[tracing::instrument(skip_all)]
+#[instrument(skip_all)]
 async fn index_tokens(
     mut tokens: impl Iterator<Item = TokenId>,
     nftrout_client: &NFTroutClient,
@@ -82,7 +82,7 @@ async fn index_tokens(
                         Ok(())
                     })
                     .await
-                    .map_err(|e| tracing::error!("failed to pin: {e}"))
+                    .map_err(|e| error!("failed to pin: {e}"))
                     .ok();
             }
             .instrument(pin_span),

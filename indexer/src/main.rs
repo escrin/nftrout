@@ -11,7 +11,14 @@ use tracing::info;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_target(true);
+    if cfg!(not(debug_assertions)) {
+        subscriber.json().with_ansi(false).init();
+    } else {
+        subscriber.without_time().init();
+    }
 
     let cfg = config::Config::builder().add_source(config::Environment::with_prefix("NFT"));
     let cfg: conf::Config = match std::env::args().nth(1) {

@@ -20,6 +20,19 @@ impl From<Cid> for String {
     }
 }
 
+impl std::fmt::Display for Cid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::ops::Deref for Cid {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Client {
     endpoint: Arc<url::Url>,
@@ -40,20 +53,26 @@ impl Client {
         }
     }
 
-    #[tracing::instrument(level = "trace")]
     pub async fn dag_get(&self, cid: &Cid) -> Result<TroutMetadata, Error> {
-        self.json_rpc("dag/get", [&cid.0]).await
+        trace!(cid = %cid, "dag/get");
+        self.json_rpc("dag/get", [&*cid]).await
     }
 
-    #[tracing::instrument(level = "trace")]
-    pub async fn cat(&self, cid: &Cid) -> Result<reqwest::Response, Error> {
-        self.rpc("cat", [&cid.0]).await
+    pub async fn cat(&self, cid: &Cid, path: Option<&str>) -> Result<reqwest::Response, Error> {
+        trace!(cid = %cid, path = ?path, "cat");
+        self.rpc(
+            "cat",
+            [&match path {
+                Some(p) => std::borrow::Cow::Owned(format!("{cid}/{p}")),
+                None => std::borrow::Cow::Borrowed(cid.as_ref()),
+            }],
+        )
+        .await
     }
 
-    #[tracing::instrument(level = "trace")]
     pub async fn pin(&self, cid: &Cid) -> Result<(), Error> {
-        trace!(cid = cid.0, "pinning");
-        self.json_rpc::<1, serde::de::IgnoredAny>("pin/add", [&cid.0])
+        trace!(cid = %cid, "pinning");
+        self.json_rpc::<1, serde::de::IgnoredAny>("pin/add", [&cid])
             .await?;
         Ok(())
     }
