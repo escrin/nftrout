@@ -1,3 +1,5 @@
+use std::net::{Ipv4Addr, SocketAddrV4};
+
 use axum::{
     body::Body,
     extract::{Path, State},
@@ -32,8 +34,8 @@ impl IntoResponse for Error {
     }
 }
 
-pub async fn serve(db: crate::db::Db, ipfs: crate::ipfs::Client) {
-    let bind_addr = "0.0.0.0:3474";
+pub async fn serve(db: crate::db::Db, ipfs: crate::ipfs::Client, port: u16) {
+    let bind_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
     let listener = tokio::net::TcpListener::bind(bind_addr).await.unwrap();
     axum::serve(listener, make_router(AppState { db, ipfs }))
         .await

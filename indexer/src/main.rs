@@ -51,5 +51,5 @@ async fn main() {
         }
     });
 
-    api::serve(db, ipfs).await
+    api::serve(db, ipfs, cfg.api_port).await
 }

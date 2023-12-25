@@ -7,6 +7,9 @@ use serde::{
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
+    #[serde(default = "default_api_port")]
+    pub api_port: u16,
+
     #[serde(
         deserialize_with = "deserialize_url",
         default = "default_ipfs_endpoint"
@@ -46,6 +49,10 @@ fn deserialize_url<'de, D: Deserializer<'de>>(d: D) -> Result<url::Url, D::Error
 
 fn deserialize_seconds<'de, D: Deserializer<'de>>(d: D) -> Result<Duration, D::Error> {
     Ok(Duration::from_secs(<u64>::deserialize(d)?))
+}
+
+fn default_api_port() -> u16 {
+    3474
 }
 
 fn default_chain() -> Chain {
