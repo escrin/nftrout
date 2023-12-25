@@ -49,6 +49,11 @@ fn make_router(state: AppState) -> Router {
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
+            tower_http::compression::CompressionLayer::new()
+                .br(true)
+                .gzip(true),
+        )
+        .layer(
             cors::CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])
                 .allow_origin(cors::Any),
