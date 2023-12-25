@@ -20,7 +20,9 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 0.45);
-const imageUrl = computed(() => `https://nftstorage.link/ipfs/${props.trout.cid}/image/trout.svg`);
+const imageUrl = computed(
+  () => `https://nftrout-api.escrin.org/trout/${props.trout.chainId}/${props.trout.id}/image.svg`,
+);
 const w = computed(() => 500 * scale.value + 2);
 
 function formatFee(fee: bigint): string {

@@ -7,8 +7,6 @@ export enum Network {
   Unknown = 0,
   SapphireTestnet = 0x5aff,
   SapphireMainnet = 0x5afe,
-  Hyperspace = 3141,
-  Filecoin = 314,
   Local = 1337,
   Hardhat = 31337,
 }
@@ -30,8 +28,6 @@ export function networkName(network?: Network): string {
   if (network === Network.Hardhat) return 'Hardhat Network';
   if (network === Network.SapphireTestnet) return 'Sapphire Testnet';
   if (network === Network.SapphireMainnet) return 'Sapphire Mainnet';
-  if (network === Network.Hyperspace) return 'FIL Hyperspace';
-  if (network === Network.Filecoin) return 'FIL Mainnet';
   return 'Unknown Network';
 }
 
@@ -52,7 +48,6 @@ export const useEthereumStore = defineStore('ethereum', () => {
   );
 
   const currency = computed(() => {
-    if (network.value === Network.Filecoin || network.value === Network.Hyperspace) return 'FIL';
     if (network.value === Network.Local || network.value === Network.Hardhat) return 'TEST';
     if (network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet)
       return 'ROSE';
@@ -61,7 +56,10 @@ export const useEthereumStore = defineStore('ethereum', () => {
 
   async function connect() {
     const eth = await detectEthereumProvider();
-    if (eth === null) throw new Error('no provider detected'); // TODO: catch error
+    if (eth === null) {
+      console.warn('no eth provider detected');
+      return;
+    }
     const s = await new ethers.BrowserProvider(eth as any).getSigner();
     await s.provider.send('eth_requestAccounts', []);
 

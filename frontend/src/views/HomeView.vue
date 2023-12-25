@@ -268,9 +268,8 @@ function hideIntro() {
           <li
             ><span
               >Connect your browser wallet to
-              <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> or
-              <a href="https://chainlist.org/chain/314" target="_blank">Filecoin</a> and ensure that
-              it is funded.
+              <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> and ensure that it is
+              funded.
             </span></li
           >
           <li>Click any two trout to initiate a breeding transaction.</li>
