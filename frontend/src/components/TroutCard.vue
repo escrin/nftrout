@@ -21,7 +21,7 @@ const props = defineProps<{
 }>();
 const scale = computed(() => props.scale ?? 0.45);
 const imageUrl = computed(
-  () => `https://nftrout-api.escrin.org/trout/${props.trout.chainId}/${props.trout.id}/image.svg`,
+  () => `https://api.nftrout.com/trout/${props.trout.chainId}/${props.trout.id}/image.svg`,
 );
 const w = computed(() => 500 * scale.value + 2);
 
