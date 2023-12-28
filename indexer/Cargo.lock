@@ -2014,6 +2014,7 @@ dependencies = [
  "config",
  "ethers",
  "futures",
+ "rand",
  "reqwest",
  "rusqlite",
  "serde",

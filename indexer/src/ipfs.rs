@@ -4,19 +4,30 @@ use tracing::trace;
 
 use crate::nftrout::TroutMetadata;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(from = "String", into = "String")]
 pub struct Cid(pub String);
 
 impl Cid {
     pub fn join(self, sub: &str) -> Self {
-        Self(self.0 + sub)
+        let cid = self.0;
+        Self(match (cid.ends_with('/'), sub.starts_with('/')) {
+            (true, true) => cid + &sub[1..],
+            (true, false) | (false, true) => cid + sub,
+            (false, false) => cid + "/" + sub,
+        })
     }
 }
 
 impl From<String> for Cid {
     fn from(cid: String) -> Self {
         Self(cid)
+    }
+}
+
+impl From<&str> for Cid {
+    fn from(cid: &str) -> Self {
+        Self(cid.into())
     }
 }
 
@@ -121,5 +132,34 @@ impl From<reqwest::Error> for Error {
             source,
             message: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cid_join() {
+        assert_eq!(
+            Cid::from("bafyab").join("cd/ef").to_string(),
+            "bafyab/cd/ef"
+        );
+        assert_eq!(
+            Cid::from("bafyab").join("cd/ef/").to_string(),
+            "bafyab/cd/ef/"
+        );
+        assert_eq!(
+            Cid::from("bafyab").join("/cd/ef").to_string(),
+            "bafyab/cd/ef"
+        );
+        assert_eq!(
+            Cid::from("bafyab/").join("cd/ef").to_string(),
+            "bafyab/cd/ef"
+        );
+        assert_eq!(
+            Cid::from("bafyab/").join("/cd/ef").to_string(),
+            "bafyab/cd/ef"
+        );
     }
 }

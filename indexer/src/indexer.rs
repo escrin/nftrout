@@ -6,7 +6,7 @@ use tracing::{debug, error, instrument, warn};
 use crate::{
     db::Db,
     ipfs::Client as IpfsClient,
-    nftrout::{Client as NFTroutClient, TokenId, TroutToken},
+    nftrout::{Client as NFTroutClient, TroutId, TroutToken},
 };
 
 const INDEX_BATCH_SIZE: usize = 50;
@@ -33,7 +33,7 @@ pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &
         ids_to_reindex
             .into_iter()
             .chain(ids_to_index)
-            .map(|token_id| TokenId { chain_id, token_id }),
+            .map(|token_id| TroutId { chain_id, token_id }),
         nftrout_client,
         ipfs_client,
         db,
@@ -44,13 +44,10 @@ pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &
     .ok();
     debug!("finished indexing");
 
-    timeout(
-        Duration::from_secs(5 * 60),
-        pin_cids(ipfs_client, db, None),
-    )
-    .await
-    .map_err(|_| warn!("pinning timed out"))
-    .unwrap_or(Ok(()))?;
+    timeout(Duration::from_secs(5 * 60), pin_cids(ipfs_client, db, None))
+        .await
+        .map_err(|_| warn!("pinning timed out"))
+        .unwrap_or(Ok(()))?;
 
     Ok(())
 }
@@ -87,7 +84,7 @@ async fn pin_cids(ipfs_client: &IpfsClient, db: &Db, concurrency: Option<usize>)
 
 #[instrument(skip_all)]
 async fn index_tokens(
-    mut tokens: impl Iterator<Item = TokenId>,
+    mut tokens: impl Iterator<Item = TroutId>,
     nftrout_client: &NFTroutClient,
     ipfs_client: &IpfsClient,
     db: &Db,
@@ -96,7 +93,7 @@ async fn index_tokens(
     loop {
         let tokens = futures::stream::iter(tokens.by_ref().take(INDEX_BATCH_SIZE))
             .map(Ok::<_, anyhow::Error>)
-            .map_ok(|TokenId { token_id, .. }| async move {
+            .map_ok(|TroutId { token_id, .. }| async move {
                 let cid = nftrout_client.token_cid(token_id).await?;
                 let meta = ipfs_client.dag_get(&cid).await?;
                 Ok(TroutToken { cid, meta })

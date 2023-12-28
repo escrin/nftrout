@@ -10,7 +10,7 @@ use axum::{
 };
 use tower_http::cors;
 
-use crate::nftrout::TokenId;
+use crate::nftrout::{ChainId, TokenId, TroutId};
 
 #[derive(Clone)]
 struct AppState {
@@ -66,11 +66,11 @@ async fn root() -> StatusCode {
 }
 
 async fn get_trout_image(
-    Path((chain_id, token_id)): Path<(u64, u64)>,
+    Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
     State(AppState { db, ipfs }): State<AppState>,
 ) -> Result<Result<Response, StatusCode>, Error> {
     let image_cid =
-        match db.with_conn(|conn| conn.token_cid(TokenId { chain_id, token_id }, None))? {
+        match db.with_conn(|conn| conn.token_cid(&TroutId { chain_id, token_id }, None))? {
             Some(cid) => cid.join("image/trout.svg"),
             None => return Ok(Err(StatusCode::NOT_FOUND)),
         };

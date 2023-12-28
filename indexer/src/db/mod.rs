@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
-use rusqlite::{params, Row};
+use rusqlite::OptionalExtension as _;
 use tracing::{debug, warn};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{TokenId, TroutToken},
+    nftrout::{ChainId, TokenId, TroutId, TroutToken},
 };
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Clone)]
 pub struct Db {
@@ -14,15 +17,26 @@ pub struct Db {
 }
 
 impl Db {
-    pub fn open(connstr: impl Into<String>) -> Result<Self, Error> {
+    pub fn open(connstr: String) -> Result<Self, Error> {
         let this = Self {
-            connstr: Arc::new(connstr.into()),
+            connstr: Arc::new(connstr),
         };
         this.with_conn(|mut conn| {
             conn.0.pragma_update(None, "journal_mode", "WAL")?;
             conn.migrate(Self::migrations())
         })?;
         Ok(this)
+    }
+
+    #[cfg(test)]
+    pub fn open_in_memory() -> Result<Self, Error> {
+        let mut rng = rand::thread_rng();
+        let db_name = (0..7)
+            .map(|_| rand::Rng::sample(&mut rng, rand::distributions::Alphanumeric) as char)
+            .collect::<String>();
+        let connstr = format!("file:{db_name}?mode=memory&cache=shared");
+        Box::leak(Box::new(rusqlite::Connection::open(&connstr)?));
+        Self::open(connstr)
     }
 
     pub fn with_conn<T>(
@@ -76,21 +90,21 @@ impl DbConnection {
 }
 
 impl DbConnection {
-    pub fn latest_known_token_id(&self, chain_id: u64) -> Result<Option<u64>, Error> {
+    pub fn latest_known_token_id(&self, chain_id: ChainId) -> Result<Option<TokenId>, Error> {
         self.0
             .query_row(
                 "SELECT MAX(self_id) FROM tokens WHERE self_chain = ?",
                 [chain_id],
-                |row| row.get::<_, Option<u64>>(0),
+                |row| row.get::<_, Option<TokenId>>(0),
             )
             .map_err(Into::into)
     }
 
-    pub fn outdated_token_ids(&self, chain_id: u64) -> Result<Vec<u64>, Error> {
+    pub fn outdated_token_ids(&self, chain_id: ChainId) -> Result<Vec<TokenId>, Error> {
         self.0
             .prepare("SELECT self_id FROM tokens WHERE self_chain = ? AND version < ? LIMIT 1000")?
             .query_map([chain_id, crate::nftrout::CURRENT_VERSION], |row| {
-                row.get::<_, u64>(0)
+                row.get::<_, TokenId>(0)
             })?
             .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
@@ -98,7 +112,7 @@ impl DbConnection {
 
     pub fn unpinned_cids(&self) -> Result<Vec<Cid>, Error> {
         self.0
-            .prepare("SELECT cid FROM generations WHERE pinned = 0 AND pin_fails < 5")?
+            .prepare("SELECT cid FROM generations WHERE pinned = 0 AND pin_fails < 10")?
             .query_map([], |row| row.get::<_, String>(0).map(Into::into))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
@@ -106,37 +120,26 @@ impl DbConnection {
 
     pub fn token_cid(
         &self,
-        TokenId { chain_id, token_id }: TokenId,
-        ord: Option<u64>,
+        TroutId { chain_id, token_id }: &TroutId,
+        ord: Option<u32>,
     ) -> Result<Option<Cid>, Error> {
-        let mapper = |row: &Row| row.get::<_, Option<String>>(0).map(|s| s.map(Into::into));
-        if let Some(ord) = ord {
-            self.0.query_row(
+        self.0
+            .query_row(
                 r#"
-                SELECT generations.image_cid FROM generations
-                  JOIN tokens ON tokens.rowid = generations.token_id
-                 WHERE tokens.chain_id = ? AND tokens.self_id = ? AND generations.ord = ?
+                SELECT generations.cid FROM generations
+                JOIN tokens ON tokens.id = generations.token
+                WHERE tokens.self_chain = ?
+                AND tokens.self_id = ?
+                AND generations.ord = coalesce(
+                        ?,
+                        (SELECT MAX(ord) FROM generations WHERE generations.token = tokens.id)
+                    )
                 "#,
-                [chain_id, token_id, ord],
-                mapper,
+                (chain_id, token_id, ord),
+                |row| row.get::<_, String>(0).map(Into::into),
             )
-        } else {
-            self.0.query_row(
-                r#"
-                SELECT generations.image_cid FROM generations
-                  JOIN tokens ON tokens.rowid = generations.token_id
-                 WHERE tokens.chain_id = ?
-                   AND tokens.self_id = ?
-                   AND generations.ord = (
-                         SELECT MAX(ord) FROM generations
-                          WHERE generations.token_id = tokens.rowid
-                       )
-                "#,
-                [chain_id, token_id],
-                mapper,
-            )
-        }
-        .map_err(Into::into)
+            .optional()
+            .map_err(Into::into)
     }
 }
 
@@ -165,25 +168,21 @@ impl DbConnection {
             )?;
             for token in tokens {
                 let props = &token.meta.properties;
-                let token_rowid = token_inserter.insert(params![
+                let token_rowid = token_inserter.insert((
                     props.self_id.chain_id,
                     props.self_id.token_id,
                     props.version,
-                    token.meta.name,
+                    &token.meta.name,
                     props.attributes.genesis,
                     props.attributes.santa,
                     props.left.map(|token_id| token_id.chain_id),
                     props.left.map(|token_id| token_id.token_id),
                     props.right.map(|token_id| token_id.chain_id),
                     props.right.map(|token_id| token_id.token_id),
-                ])?;
-                generation_inserter.insert(params![
-                    token_rowid,
-                    props.generations.len(),
-                    &*token.cid,
-                ])?;
+                ))?;
+                generation_inserter.insert((token_rowid, props.generations.len(), &*token.cid))?;
                 for (ord, generation) in props.generations.iter().enumerate() {
-                    generation_inserter.insert(params![token_rowid, ord, &**generation])?;
+                    generation_inserter.insert((token_rowid, ord, &**generation))?;
                 }
             }
             Ok(())

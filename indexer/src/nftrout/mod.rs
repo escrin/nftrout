@@ -7,7 +7,7 @@ use ethers::{
 
 use crate::ipfs::Cid;
 
-pub const CURRENT_VERSION: u64 = 3;
+pub const CURRENT_VERSION: u32 = 3;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -16,7 +16,7 @@ pub enum Error {
     #[error("provider error: {0}")]
     Provider(#[from] ethers::providers::ProviderError),
     #[error("token {0} did not have a URI")]
-    NoUri(u64),
+    NoUri(TokenId),
 }
 
 ethers::contract::abigen!(NFTrout, "src/nftrout/abi.json");
@@ -49,12 +49,12 @@ fn deserialized_slash_cid<'de, D: serde::de::Deserializer<'de>>(d: D) -> Result<
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct TroutProperties {
-    pub version: u64,
+    pub version: TokenVersion,
     pub generations: Vec<Cid>,
-    pub left: Option<TokenId>,
-    pub right: Option<TokenId>,
+    pub left: Option<TroutId>,
+    pub right: Option<TroutId>,
     #[serde(rename = "self")]
-    pub self_id: TokenId,
+    pub self_id: TroutId,
     pub attributes: TroutAttributes,
 }
 
@@ -64,12 +64,16 @@ pub struct TroutAttributes {
     pub santa: bool,
 }
 
+pub type ChainId = u32;
+pub type TokenId = u32;
+pub type TokenVersion = u32;
+
 #[derive(Clone, Copy, Debug, serde::Deserialize)]
-pub struct TokenId {
+pub struct TroutId {
     #[serde(rename = "chainId")]
-    pub chain_id: u64,
+    pub chain_id: ChainId,
     #[serde(rename = "tokenId")]
-    pub token_id: u64,
+    pub token_id: TokenId,
 }
 
 #[derive(Clone)]
@@ -113,11 +117,11 @@ impl Client {
         }
     }
 
-    pub async fn total_supply(&self) -> Result<u64, Error> {
-        Ok(self.inner.total_supply().call().await?.low_u64())
+    pub async fn total_supply(&self) -> Result<u32, Error> {
+        Ok(self.inner.total_supply().call().await?.low_u32())
     }
 
-    pub async fn token_cid(&self, token_id: u64) -> Result<Cid, Error> {
+    pub async fn token_cid(&self, token_id: TokenId) -> Result<Cid, Error> {
         let uri = self.inner.token_uri(token_id.into()).call().await?;
         let cid = uri.strip_prefix("ipfs://").expect("not IPFS uri");
         if cid.is_empty() {
@@ -126,7 +130,7 @@ impl Client {
         Ok(cid.to_string().into())
     }
 
-    pub async fn chain_id(&self) -> Result<u64, Error> {
-        Ok(self.provider.get_chainid().await?.low_u64())
+    pub async fn chain_id(&self) -> Result<ChainId, Error> {
+        Ok(self.provider.get_chainid().await?.low_u32())
     }
 }

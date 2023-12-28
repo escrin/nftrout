@@ -33,9 +33,7 @@ async fn main() {
 
     info!(config = ?cfg, "loaded config");
 
-    let _memdb = (cfg.db_path.starts_with("file::memory:?cache=shared"))
-        .then(|| rusqlite::Connection::open(&cfg.db_path).unwrap());
-    let db = db::Db::open(&cfg.db_path).unwrap();
+    let db = db::Db::open(cfg.db_path).unwrap();
     let ipfs = ipfs::Client::new(cfg.ipfs_endpoint);
 
     let indexer_db = db.clone();
