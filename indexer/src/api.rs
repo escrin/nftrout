@@ -70,12 +70,12 @@ async fn get_trout_image(
     State(AppState { db, ipfs }): State<AppState>,
 ) -> Result<Result<Response, StatusCode>, Error> {
     let image_cid =
-        match db.with_conn(|conn| conn.token_image_cid(TokenId { chain_id, token_id }))? {
-            Some(cid) => cid,
+        match db.with_conn(|conn| conn.token_cid(TokenId { chain_id, token_id }, None))? {
+            Some(cid) => cid.join("image/trout.svg"),
             None => return Ok(Err(StatusCode::NOT_FOUND)),
         };
 
-    let res = ipfs.cat(&image_cid, Some("trout.svg")).await?;
+    let res = ipfs.cat(&image_cid).await?;
     Ok(Ok(Response::builder()
         .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
         .status(res.status().as_u16())

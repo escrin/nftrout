@@ -64,7 +64,7 @@ fn default_ipfs_endpoint() -> url::Url {
 }
 
 fn default_reindex_interval() -> Duration {
-    Duration::from_secs(1 * 60)
+    Duration::from_secs(60)
 }
 
 fn default_db_path() -> String {

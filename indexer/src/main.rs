@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![feature(iter_partition_in_place)]
 
 mod api;
 mod conf;
@@ -39,7 +40,7 @@ async fn main() {
 
     let indexer_db = db.clone();
     let indexer_ipfs = ipfs.clone();
-    tokio::task::spawn(async move {
+    let indexer_task = async move {
         let nftrout = match cfg.chain {
             conf::Chain::SapphireMainnet => nftrout::Client::sapphire_mainnet(),
             conf::Chain::SapphireTestnet => nftrout::Client::sapphire_testnet(),
@@ -56,7 +57,9 @@ async fn main() {
             };
             tokio::time::sleep(timeout).await;
         }
-    });
+    };
 
-    api::serve(db, ipfs, cfg.api_port).await
+    let api_task = api::serve(db, ipfs, cfg.api_port);
+
+    tokio::join!(indexer_task, api_task);
 }

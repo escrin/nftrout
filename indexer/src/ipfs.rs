@@ -8,6 +8,12 @@ use crate::nftrout::TroutMetadata;
 #[serde(from = "String", into = "String")]
 pub struct Cid(pub String);
 
+impl Cid {
+    pub fn join(self, sub: &str) -> Self {
+        Self(self.0 + sub)
+    }
+}
+
 impl From<String> for Cid {
     fn from(cid: String) -> Self {
         Self(cid)
@@ -55,19 +61,12 @@ impl Client {
 
     pub async fn dag_get(&self, cid: &Cid) -> Result<TroutMetadata, Error> {
         trace!(cid = %cid, "dag/get");
-        self.json_rpc("dag/get", [&*cid]).await
+        self.json_rpc("dag/get", [cid]).await
     }
 
-    pub async fn cat(&self, cid: &Cid, path: Option<&str>) -> Result<reqwest::Response, Error> {
-        trace!(cid = %cid, path = ?path, "cat");
-        self.rpc(
-            "cat",
-            [&match path {
-                Some(p) => std::borrow::Cow::Owned(format!("{cid}/{p}")),
-                None => std::borrow::Cow::Borrowed(cid.as_ref()),
-            }],
-        )
-        .await
+    pub async fn cat(&self, cid: &Cid) -> Result<reqwest::Response, Error> {
+        trace!(cid = %cid, "cat");
+        self.rpc("cat", [cid]).await
     }
 
     pub async fn pin(&self, cid: &Cid) -> Result<(), Error> {
@@ -82,12 +81,15 @@ impl Client {
         method: &'static str,
         args: [&str; N],
     ) -> Result<T, Error> {
-        Ok(self
-            .rpc(method, args)
-            .await?
-            .error_for_status()?
-            .json()
-            .await?)
+        let res = self.rpc(method, args).await?;
+        if res.status().is_success() {
+            Ok(res.json().await?)
+        } else {
+            Err(Error::Http {
+                source: res.error_for_status_ref().unwrap_err(),
+                message: Some(res.text().await?),
+            })
+        }
     }
 
     async fn rpc<const N: usize>(
@@ -106,6 +108,18 @@ impl Client {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("http error: {0}")]
-    Http(#[from] reqwest::Error),
+    #[error("http error: {source} {}", message.as_deref().unwrap_or_default())]
+    Http {
+        source: reqwest::Error,
+        message: Option<String>,
+    },
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(source: reqwest::Error) -> Self {
+        Self::Http {
+            source,
+            message: None,
+        }
+    }
 }

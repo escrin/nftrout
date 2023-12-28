@@ -1,6 +1,7 @@
 use anyhow::Result;
-use futures::{StreamExt, TryStreamExt as _};
-use tracing::{debug, debug_span, error, instrument, Instrument as _};
+use futures::{StreamExt, TryStreamExt};
+use tokio::time::{timeout, Duration};
+use tracing::{debug, error, instrument, warn};
 
 use crate::{
     db::Db,
@@ -8,7 +9,8 @@ use crate::{
     nftrout::{Client as NFTroutClient, TokenId, TroutToken},
 };
 
-const BATCH_SIZE: usize = 50;
+const INDEX_BATCH_SIZE: usize = 50;
+const PIN_BATCH_SIZE: usize = 50;
 
 #[instrument(skip_all)]
 pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) -> Result<()> {
@@ -37,9 +39,49 @@ pub async fn run(nftrout_client: &NFTroutClient, ipfs_client: &IpfsClient, db: &
         db,
         None,
     )
-    .await?;
+    .await
+    .map_err(|e| error!("indexing failed: {e}"))
+    .ok();
     debug!("finished indexing");
 
+    timeout(
+        Duration::from_secs(5 * 60),
+        pin_cids(ipfs_client, db, None),
+    )
+    .await
+    .map_err(|_| warn!("pinning timed out"))
+    .unwrap_or(Ok(()))?;
+
+    Ok(())
+}
+
+#[instrument(skip_all)]
+async fn pin_cids(ipfs_client: &IpfsClient, db: &Db, concurrency: Option<usize>) -> Result<()> {
+    let cids_to_pin = db.with_conn(|conn| conn.unpinned_cids())?;
+    debug!(count = cids_to_pin.len(), "pinning cids");
+    let concurrency = concurrency.unwrap_or(PIN_BATCH_SIZE);
+    futures::stream::iter(cids_to_pin)
+        .map(|cid| async move {
+            match timeout(Duration::from_secs(60), ipfs_client.pin(&cid)).await {
+                Err(_) => warn!("failed to pin {cid}: timed out"),
+                Ok(Err(e)) => warn!("failed to pin {cid}: {e}"),
+                Ok(Ok(_)) => return Ok(cid),
+            }
+            Err(cid)
+        })
+        .buffer_unordered(concurrency)
+        .ready_chunks(concurrency)
+        .map(Ok::<_, anyhow::Error>)
+        .try_for_each(|mut cids| async move {
+            let pp = cids.iter_mut().partition_in_place(|c| c.is_ok());
+            Ok(db.with_conn(|mut conn| {
+                conn.mark_pinned(cids[..pp].iter().map(|c| c.as_ref().unwrap()))?;
+                conn.mark_pin_failed(cids[pp..].iter().map(|c| c.as_ref().unwrap_err()))?;
+                Ok(())
+            })?)
+        })
+        .await?;
+    debug!("finished pinning");
     Ok(())
 }
 
@@ -52,7 +94,7 @@ async fn index_tokens(
     concurrency: Option<usize>,
 ) -> Result<()> {
     loop {
-        let tokens = futures::stream::iter(tokens.by_ref().take(BATCH_SIZE))
+        let tokens = futures::stream::iter(tokens.by_ref().take(INDEX_BATCH_SIZE))
             .map(Ok::<_, anyhow::Error>)
             .map_ok(|TokenId { token_id, .. }| async move {
                 let cid = nftrout_client.token_cid(token_id).await?;
@@ -67,28 +109,7 @@ async fn index_tokens(
             break;
         }
 
-        let pin_client = ipfs_client.clone();
-        let cids = tokens
-            .iter()
-            .flat_map(|token| [token.cid.clone(), token.meta.image.clone()])
-            .collect::<Vec<_>>();
-        let pin_span = debug_span!("pin_span", count = cids.len());
-        tokio::task::spawn(
-            async move {
-                futures::stream::iter(cids.iter())
-                    .map(Ok::<_, anyhow::Error>)
-                    .try_for_each_concurrent(5, |cid| async {
-                        pin_client.pin(cid).await?;
-                        Ok(())
-                    })
-                    .await
-                    .map_err(|e| error!("failed to pin: {e}"))
-                    .ok();
-            }
-            .instrument(pin_span),
-        );
-
-        db.with_conn(|conn| conn.insert_tokens(&tokens))?;
+        db.with_conn(|mut conn| conn.insert_tokens(&tokens))?;
     }
     Ok(())
 }
