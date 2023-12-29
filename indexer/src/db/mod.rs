@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use ethers::types::{Address, U256};
 use rusqlite::OptionalExtension as _;
 use tracing::{debug, warn};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{ChainId, TokenId, TroutId, TroutToken},
+    nftrout::{ChainId, TokenId, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION},
 };
 
 #[cfg(test)]
@@ -21,10 +22,7 @@ impl Db {
         let this = Self {
             connstr: Arc::new(connstr),
         };
-        this.with_conn(|mut conn| {
-            conn.0.pragma_update(None, "journal_mode", "WAL")?;
-            conn.migrate(Self::migrations())
-        })?;
+        this.with_tx(|tx| tx.migrate(Self::migrations()))?;
         Ok(this)
     }
 
@@ -39,11 +37,12 @@ impl Db {
         Self::open(connstr)
     }
 
-    pub fn with_conn<T>(
-        &self,
-        f: impl FnOnce(DbConnection) -> Result<T, Error>,
-    ) -> Result<T, Error> {
-        f(DbConnection(rusqlite::Connection::open(&*self.connstr)?))
+    pub fn with_conn<T>(&self, f: impl FnOnce(Connection) -> Result<T, Error>) -> Result<T, Error> {
+        f(Connection(&rusqlite::Connection::open(&*self.connstr)?))
+    }
+
+    pub fn with_tx<T>(&self, f: impl FnOnce(Transaction) -> Result<T, Error>) -> Result<T, Error> {
+        self.with_conn(|mut conn| conn.with_tx(f))
     }
 
     const fn migrations() -> &'static [&'static str] {
@@ -51,45 +50,66 @@ impl Db {
     }
 }
 
-pub struct DbConnection(rusqlite::Connection);
+pub struct Connection<'a>(&'a rusqlite::Connection);
 
-impl DbConnection {
-    fn migrate(&mut self, migrations: &[&str]) -> Result<(), Error> {
-        static USER_VERSION: &str = "user_version";
-        self.tx(|tx| {
-            let version =
-                tx.pragma_query_value(None, USER_VERSION, |row| row.get::<_, u32>(0))? as usize;
-            debug!(
-                current_version = version,
-                latest_version = migrations.len(),
-                "DbConnection::migrate"
-            );
-            if version >= migrations.len() {
-                if version > migrations.len() {
-                    warn!("databse version unexpectedly high?");
-                }
-                return Ok(());
-            }
-            for migration in migrations.iter().skip(version) {
-                tx.execute_batch(migration)?;
-            }
-            tx.pragma_update(None, USER_VERSION, migrations.len())?;
-            Ok(())
-        })
-    }
-
-    fn tx<T>(
+impl Connection<'_> {
+    pub fn with_tx<T>(
         &mut self,
-        f: impl FnOnce(&rusqlite::Transaction) -> Result<T, Error>,
+        f: impl FnOnce(Transaction) -> Result<T, Error>,
     ) -> Result<T, Error> {
-        let tx = self.0.transaction()?;
-        let res = f(&tx)?;
+        let tx = self.0.unchecked_transaction()?;
+        let res = f(Transaction(Connection(&tx)))?;
         tx.commit()?;
         Ok(res)
     }
 }
 
-impl DbConnection {
+pub struct Transaction<'a>(Connection<'a>);
+
+impl<'a> std::ops::Deref for Transaction<'a> {
+    type Target = Connection<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Transaction<'_> {
+    fn migrate(&self, migrations: &[&str]) -> Result<(), Error> {
+        let tx = &self.0 .0;
+        static USER_VERSION: &str = "user_version";
+        let version =
+            tx.pragma_query_value(None, USER_VERSION, |row| row.get::<_, u32>(0))? as usize;
+        debug!(
+            current_version = version,
+            latest_version = migrations.len(),
+            "DbConnection::migrate"
+        );
+        if version >= migrations.len() {
+            if version > migrations.len() {
+                warn!("databse version unexpectedly high?");
+            }
+            return Ok(());
+        }
+        for migration in migrations.iter().skip(version) {
+            tx.execute_batch(migration)?;
+        }
+        tx.pragma_update(None, USER_VERSION, migrations.len())?;
+        Ok(())
+    }
+}
+
+impl Connection<'_> {
+    pub fn last_seen_block(&self, chain_id: ChainId) -> Result<Option<u64>, Error> {
+        self.0
+            .query_row(
+                "SELECT block FROM progress WHERE chain = ?",
+                [chain_id],
+                |row| row.get::<_, i64>(0).map(|i| i as u64),
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
     pub fn latest_known_token_id(&self, chain_id: ChainId) -> Result<Option<TokenId>, Error> {
         self.0
             .query_row(
@@ -141,78 +161,135 @@ impl DbConnection {
             .optional()
             .map_err(Into::into)
     }
-}
 
-impl DbConnection {
-    pub fn insert_tokens(&mut self, tokens: &[TroutToken]) -> Result<(), Error> {
-        self.tx(|tx| {
-            let mut token_inserter = tx.prepare_cached(
-                r#"
-                INSERT INTO tokens (
-                    self_chain, self_id,
-                    version, name,
-                    is_genesis, is_santa,
-                    left_parent_chain, left_parent_id,
-                    right_parent_chain, right_parent_id
-                ) VALUES (
-                    ?, ?,
-                    ?, ?,
-                    ?, ?,
-                    ?, ?,
-                    ?, ?
-                )
+    pub fn set_last_seen_block(&self, chain: ChainId, block: u64) -> Result<(), Error> {
+        let changes = self.0.execute(
+            "INSERT INTO progress (chain, block) VALUES(?1, ?2)
+             ON CONFLICT DO UPDATE set block = ?2",
+            (chain, block),
+        )?;
+        debug_assert_eq!(changes, 1);
+        Ok(())
+    }
+
+    pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {
+        let mut token_inserter = self.0.prepare_cached(
+            r#"
+            INSERT INTO tokens (
+                self_chain, self_id,
+                version, name,
+                owner, fee,
+                is_genesis, is_santa,
+                left_parent_chain, left_parent_id,
+                right_parent_chain, right_parent_id
+            ) VALUES (
+            ?, ?,
+            ?, ?,
+            ?, ?,
+            ?, ?,
+            ?, ?,
+            ?, ?
+            )
             "#,
-            )?;
-            let mut generation_inserter = tx.prepare_cached(
-                r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
-            )?;
-            for token in tokens {
-                let props = &token.meta.properties;
-                let token_rowid = token_inserter.insert((
-                    props.self_id.chain_id,
-                    props.self_id.token_id,
-                    props.version,
-                    &token.meta.name,
-                    props.attributes.genesis,
-                    props.attributes.santa,
-                    props.left.map(|token_id| token_id.chain_id),
-                    props.left.map(|token_id| token_id.token_id),
-                    props.right.map(|token_id| token_id.chain_id),
-                    props.right.map(|token_id| token_id.token_id),
-                ))?;
-                generation_inserter.insert((token_rowid, props.generations.len(), &*token.cid))?;
-                for (ord, generation) in props.generations.iter().enumerate() {
-                    generation_inserter.insert((token_rowid, ord, &**generation))?;
-                }
+        )?;
+        let mut generation_inserter = self.0.prepare_cached(
+            r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
+        )?;
+        for token in tokens {
+            let props = &token.meta.properties;
+            let token_rowid = token_inserter.insert((
+                props.self_id.chain_id,
+                props.self_id.token_id,
+                props.version,
+                &token.meta.name,
+                token.owner.to_string(),
+                token.fee.to_string(),
+                props.attributes.genesis,
+                props.attributes.santa,
+                props.left.map(|token_id| token_id.chain_id),
+                props.left.map(|token_id| token_id.token_id),
+                props.right.map(|token_id| token_id.chain_id),
+                props.right.map(|token_id| token_id.token_id),
+            ))?;
+            generation_inserter.insert((token_rowid, props.generations.len(), &*token.cid))?;
+            for (ord, generation) in props.generations.iter().enumerate() {
+                generation_inserter.insert((token_rowid, ord, &**generation))?;
             }
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
-    pub fn mark_pinned<'a>(&mut self, cids: impl Iterator<Item = &'a Cid>) -> Result<(), Error> {
-        self.tx(|tx| {
-            let mut updater =
-                tx.prepare_cached(r#"UPDATE generations SET pinned = 1 WHERE cid = ?"#)?;
-            for cid in cids {
-                updater.execute([&**cid])?;
-            }
-            Ok(())
-        })
-    }
-
-    pub fn mark_pin_failed<'a>(
-        &mut self,
-        cids: impl Iterator<Item = &'a Cid>,
+    pub fn update_tokens(
+        &self,
+        tokens: impl Iterator<Item = &(Cid, TroutMetadata)>,
     ) -> Result<(), Error> {
-        self.tx(|tx| {
-            let mut updater = tx.prepare_cached(
-                r#"UPDATE generations SET pin_fails = pin_fails + 1 WHERE cid = ?"#,
-            )?;
-            for cid in cids {
-                updater.execute([&**cid])?;
+        let mut token_updater = self.0.prepare_cached(
+            r#"UPDATE tokens SET version = ? WHERE self_chain = ? AND self_id = ?"#,
+        )?;
+        let mut generation_inserter = self.0.prepare_cached(
+            r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
+        )?;
+        for (cid, meta) in tokens {
+            let props = &meta.properties;
+            let token_rowid = token_updater.execute((
+                CURRENT_VERSION,
+                props.self_id.chain_id,
+                props.self_id.token_id,
+            ))?;
+            generation_inserter.insert((token_rowid, props.generations.len(), &**cid))?;
+            for (ord, generation) in props.generations.iter().enumerate() {
+                generation_inserter.insert((token_rowid, ord, &**generation))?;
             }
-            Ok(())
-        })
+        }
+        Ok(())
+    }
+
+    pub fn update_fees(
+        &self,
+        chain_id: ChainId,
+        tokens: impl Iterator<Item = (TokenId, U256)>,
+    ) -> Result<(), Error> {
+        let mut fee_updater = self
+            .0
+            .prepare_cached(r#"UPDATE tokens SET fee = ? WHERE self_chain = ? AND self_id = ?"#)?;
+        for (token_id, fee) in tokens {
+            fee_updater.execute((fee.to_string(), chain_id, token_id))?;
+        }
+        Ok(())
+    }
+
+    pub fn update_owners(
+        &self,
+        chain: ChainId,
+        token_owners: impl Iterator<Item = (TokenId, Address)>,
+    ) -> Result<(), Error> {
+        let mut updater = self.0.prepare_cached(
+            r#"UPDATE tokens SET owner = ? WHERE self_chain = ? AND self_id = ?"#,
+        )?;
+        for (token_id, owner) in token_owners {
+            updater.execute((owner.to_string(), chain, token_id))?;
+        }
+        Ok(())
+    }
+
+    pub fn mark_pinned<'a>(&self, cids: impl Iterator<Item = &'a Cid>) -> Result<(), Error> {
+        let mut updater = self
+            .0
+            .prepare_cached(r#"UPDATE generations SET pinned = 1 WHERE cid = ?"#)?;
+        for cid in cids {
+            updater.execute([&**cid])?;
+        }
+        Ok(())
+    }
+
+    pub fn mark_pin_failed<'a>(&self, cids: impl Iterator<Item = &'a Cid>) -> Result<(), Error> {
+        let mut updater = self
+            .0
+            .prepare_cached(r#"UPDATE generations SET pin_fails = pin_fails + 1 WHERE cid = ?"#)?;
+        for cid in cids {
+            updater.execute([&**cid])?;
+        }
+        Ok(())
     }
 }
 

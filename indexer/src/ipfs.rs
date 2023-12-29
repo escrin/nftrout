@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use tracing::trace;
 
-use crate::nftrout::TroutMetadata;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(from = "String", into = "String")]
 pub struct Cid(pub String);
 
@@ -70,9 +68,17 @@ impl Client {
         }
     }
 
-    pub async fn dag_get(&self, cid: &Cid) -> Result<TroutMetadata, Error> {
+    pub async fn dag_get<T: serde::de::DeserializeOwned>(&self, cid: &Cid) -> Result<T, Error> {
         trace!(cid = %cid, "dag/get");
         self.json_rpc("dag/get", [cid]).await
+    }
+
+    pub async fn dag_get_and_pin<T: serde::de::DeserializeOwned>(
+        &self,
+        cid: &Cid,
+    ) -> Result<T, Error> {
+        let (out, _) = tokio::try_join!(self.dag_get(cid), self.pin(cid),)?;
+        Ok(out)
     }
 
     pub async fn cat(&self, cid: &Cid) -> Result<reqwest::Response, Error> {

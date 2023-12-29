@@ -1,5 +1,9 @@
 #![forbid(unsafe_code)]
-#![feature(iter_partition_in_place)]
+#![feature(
+    anonymous_lifetime_in_impl_trait,
+    entry_insert,
+    iter_partition_in_place
+)]
 
 mod api;
 mod conf;
@@ -7,6 +11,7 @@ mod db;
 mod indexer;
 mod ipfs;
 mod nftrout;
+mod utils;
 
 use tracing::info;
 
@@ -38,24 +43,12 @@ async fn main() {
 
     let indexer_db = db.clone();
     let indexer_ipfs = ipfs.clone();
-    let indexer_task = async move {
-        let nftrout = match cfg.chain {
-            conf::Chain::SapphireMainnet => nftrout::Client::sapphire_mainnet(),
-            conf::Chain::SapphireTestnet => nftrout::Client::sapphire_testnet(),
-            conf::Chain::Local => nftrout::Client::local(),
-        };
-        let _conn = rusqlite::Connection::open("").unwrap();
-        loop {
-            let timeout = match indexer::run(&nftrout, &indexer_ipfs, &indexer_db).await {
-                Ok(()) => cfg.reindex_interval,
-                Err(e) => {
-                    tracing::error!("indexer task exited with error: {e}");
-                    std::time::Duration::from_secs(30)
-                }
-            };
-            tokio::time::sleep(timeout).await;
-        }
+    let nftrout = match cfg.chain {
+        conf::Chain::SapphireMainnet => nftrout::Client::sapphire_mainnet(),
+        conf::Chain::SapphireTestnet => nftrout::Client::sapphire_testnet(),
+        conf::Chain::Local => nftrout::Client::local(),
     };
+    let indexer_task = indexer::run(&nftrout, &indexer_ipfs, &indexer_db);
 
     let api_task = api::serve(db, ipfs, cfg.api_port);
 
