@@ -37,17 +37,19 @@ fn test_token() -> TroutToken {
                 },
             },
         },
+        fee: rand::random::<Option<u128>>().map(|v| v.into()),
+        owner: rand::random(),
     }
 }
 
 #[test]
 fn token_cid() {
     let db = Db::open_in_memory().unwrap();
-    db.with_conn(|mut conn| {
+    db.with_conn(|conn| {
         let tt1 = test_token();
         let tt2 = test_token();
 
-        conn.insert_tokens(&[tt1.clone(), tt2.clone()])?;
+        conn.insert_tokens([tt1.clone(), tt2.clone()].iter())?;
 
         let tt1_cid_latest = conn.token_cid(&tt1.meta.properties.self_id, None)?;
         assert_eq!(tt1_cid_latest.unwrap(), tt1.cid);
@@ -68,9 +70,10 @@ fn token_cid() {
 #[test]
 fn duplicate_token() {
     let db = Db::open_in_memory().unwrap();
-    db.with_conn(|mut conn| {
+    db.with_conn(|conn| {
         let token = test_token();
-        conn.insert_tokens(&[token.clone(), token]).unwrap_err();
+        conn.insert_tokens([token.clone(), token].iter())
+            .unwrap_err();
         Ok(())
     })
     .unwrap();

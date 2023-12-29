@@ -7,6 +7,7 @@ use ethers::{
     types::{Address, Filter, Log, ValueOrArray, U256},
 };
 use futures::{future::BoxFuture, FutureExt as _, Stream};
+use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 use tracing::{error, trace, warn};
 
@@ -29,12 +30,12 @@ pub enum Error {
 
 ethers::contract::abigen!(NFTrout, "src/nftrout/abi.json");
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TroutToken {
     pub cid: Cid,
     pub meta: TroutMetadata,
     pub owner: Address,
-    pub fee: U256,
+    pub fee: Option<U256>,
 }
 
 impl TroutToken {
@@ -53,7 +54,15 @@ impl TroutToken {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+/// The details of a token that are necessary for the UI.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TokenOwnership {
+    pub id: TokenId,
+    pub owner: Address,
+    pub fee: Option<U256>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TroutMetadata {
     pub description: String,
     #[serde(deserialize_with = "deserialized_slash_cid")]
@@ -73,7 +82,7 @@ fn deserialized_slash_cid<'de, D: serde::de::Deserializer<'de>>(d: D) -> Result<
     Ok(<Slashed as serde::Deserialize>::deserialize(d)?.value)
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TroutProperties {
     pub version: TokenVersion,
     pub generations: Vec<Cid>,
@@ -84,7 +93,7 @@ pub struct TroutProperties {
     pub attributes: TroutAttributes,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TroutAttributes {
     pub genesis: bool,
     pub santa: bool,
@@ -94,7 +103,7 @@ pub type ChainId = u32;
 pub type TokenId = u32;
 pub type TokenVersion = u32;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TroutId {
     #[serde(rename = "chainId")]
     pub chain_id: ChainId,

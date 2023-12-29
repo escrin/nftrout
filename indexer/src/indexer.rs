@@ -45,7 +45,6 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
     };
 
     // Start watching blocks for real-time updates
-
     let events_fut = nftrout
         .events_from(last_seen_block)
         .buffered(25)
@@ -56,6 +55,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
     unreachable!("contract event stream broke");
 }
 
+#[instrument(skip_all)]
 async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency: Option<usize>) {
     let chain_id = nftrout.chain_id();
     let total_supply = retry(|| nftrout.total_supply()).await;
@@ -66,9 +66,7 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
     for i in (1..=total_supply).step_by(concurrency) {
         let batch = i..(i + concurrency as u32).min(total_supply + 1);
         let owners = retry(|| nftrout.owners(batch.clone())).await;
-        let fees = batch
-            .clone()
-            .map(|i| studs.get(&i).copied().unwrap_or_default());
+        let fees = batch.clone().map(|i| studs.get(&i).copied());
         db.with_tx(|tx| {
             tx.update_fees(chain_id, batch.clone().zip(fees))?;
             tx.update_owners(chain_id, batch.zip(owners))?;
@@ -78,28 +76,32 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
     }
 }
 
+#[instrument(skip_all)]
 async fn process_token_events<const N: usize>(
     nftrout: &NFTroutClient,
     ipfs_client: &IpfsClient,
     db: &Db,
     batch: Vec<smallvec::SmallVec<[Event; N]>>,
 ) {
+    let chain_id = nftrout.chain_id();
     let mut processed_block = 0;
     let mut new_tokens: HashMap<TokenId, TroutToken> = HashMap::new();
     let mut ownership_changes: HashMap<TokenId, Address> = HashMap::new();
     let mut cid_changes: HashMap<TokenId, (Cid, TroutMetadata)> = HashMap::new();
-    let mut fee_changes: HashMap<TokenId, U256> = HashMap::new();
+    let mut fee_changes: HashMap<TokenId, Option<U256>> = HashMap::new();
     for event in batch.into_iter().flatten() {
         match event {
             Event::Listed { id, fee } => {
-                fee_changes.insert(id, fee);
+                fee_changes.insert(id, Some(fee));
                 debug!(id = id, "listed token")
             }
             Event::Delisted { id } => {
                 fee_changes
                     .entry(id)
-                    .and_modify(|v| debug_assert!(*v != U256::zero()))
-                    .insert_entry(U256::zero());
+                    .and_modify(|v| {
+                        debug_assert!(v.is_some() && v.as_ref().unwrap().ge(&U256::zero()))
+                    })
+                    .insert_entry(None);
                 debug!(id = id, "delisted token")
             }
             Event::Spawned { id, to } => {
@@ -108,7 +110,7 @@ async fn process_token_events<const N: usize>(
                     TroutToken::pending(
                         to,
                         TroutId {
-                            chain_id: nftrout.chain_id(),
+                            chain_id,
                             token_id: id,
                         },
                     ),
@@ -153,9 +155,9 @@ async fn process_token_events<const N: usize>(
     db.with_tx(|tx| {
         tx.insert_tokens(new_tokens.values())?;
         tx.update_tokens(cid_changes.values())?;
-        tx.update_fees(nftrout.chain_id(), fee_changes.into_iter())?;
-        tx.update_owners(nftrout.chain_id(), ownership_changes.into_iter())?;
-        tx.set_last_seen_block(nftrout.chain_id(), processed_block)?;
+        tx.update_fees(chain_id, fee_changes.into_iter())?;
+        tx.update_owners(chain_id, ownership_changes.into_iter())?;
+        tx.set_last_seen_block(chain_id, processed_block)?;
         Ok(())
     })
     .unwrap();
@@ -212,9 +214,7 @@ async fn index_new_tokens(
     for i in ((latest_known_token_id + 1)..=total_supply).step_by(concurrency) {
         let batch = i..(i + concurrency as u32).min(total_supply + 1);
         let owners = retry(|| nftrout.owners(batch.clone())).await;
-        let fees = batch
-            .clone()
-            .map(|i| studs.get(&i).copied().unwrap_or_default());
+        let fees = batch.clone().map(|i| studs.get(&i).copied());
         let tokens = futures::stream::iter(batch.zip(owners).zip(fees))
             .map(|((token_id, owner), fee)| async move {
                 let cid = retry(|| nftrout.token_cid(token_id)).await;

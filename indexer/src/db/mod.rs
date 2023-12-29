@@ -6,7 +6,9 @@ use tracing::{debug, warn};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{ChainId, TokenId, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION},
+    nftrout::{
+        ChainId, TokenId, TokenOwnership, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION,
+    },
 };
 
 #[cfg(test)]
@@ -162,6 +164,22 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
+    pub fn list_token_ownership(&self, chain_id: ChainId) -> Result<Vec<TokenOwnership>, Error> {
+        self.0
+            .prepare("SELECT self_id, owner, fee FROM tokens WHERE self_chain = ?")?
+            .query_map([chain_id], |row| {
+                Ok(TokenOwnership {
+                    id: row.get("self_id")?,
+                    owner: row.get::<_, String>("owner")?.parse().unwrap(),
+                    fee: row
+                        .get::<_, Option<String>>("fee")?
+                        .map(|f| f.parse().unwrap()),
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
+    }
+
     pub fn set_last_seen_block(&self, chain: ChainId, block: u64) -> Result<(), Error> {
         let changes = self.0.execute(
             "INSERT INTO progress (chain, block) VALUES(?1, ?2)
@@ -202,8 +220,8 @@ impl Connection<'_> {
                 props.self_id.token_id,
                 props.version,
                 &token.meta.name,
-                token.owner.to_string(),
-                token.fee.to_string(),
+                format!("{:#x}", token.owner),
+                token.fee.map(|f| format!("{f:#x}")),
                 props.attributes.genesis,
                 props.attributes.santa,
                 props.left.map(|token_id| token_id.chain_id),
@@ -247,13 +265,13 @@ impl Connection<'_> {
     pub fn update_fees(
         &self,
         chain_id: ChainId,
-        tokens: impl Iterator<Item = (TokenId, U256)>,
+        tokens: impl Iterator<Item = (TokenId, Option<U256>)>,
     ) -> Result<(), Error> {
         let mut fee_updater = self
             .0
             .prepare_cached(r#"UPDATE tokens SET fee = ? WHERE self_chain = ? AND self_id = ?"#)?;
         for (token_id, fee) in tokens {
-            fee_updater.execute((fee.to_string(), chain_id, token_id))?;
+            fee_updater.execute((fee.map(|f| format!("{f:x}")), chain_id, token_id))?;
         }
         Ok(())
     }
@@ -267,7 +285,7 @@ impl Connection<'_> {
             r#"UPDATE tokens SET owner = ? WHERE self_chain = ? AND self_id = ?"#,
         )?;
         for (token_id, owner) in token_owners {
-            updater.execute((owner.to_string(), chain, token_id))?;
+            updater.execute((format!("{owner:x}"), chain, token_id))?;
         }
         Ok(())
     }

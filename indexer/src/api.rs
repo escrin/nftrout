@@ -2,15 +2,15 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use axum::{
     body::Body,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
-    Router,
+    Json, Router,
 };
 use tower_http::cors;
 
-use crate::nftrout::{ChainId, TokenId, TroutId};
+use crate::nftrout::{ChainId, TokenId, TokenOwnership, TroutId};
 
 #[derive(Clone)]
 struct AppState {
@@ -45,7 +45,7 @@ pub async fn serve(db: crate::db::Db, ipfs: crate::ipfs::Client, port: u16) {
 fn make_router(state: AppState) -> Router {
     Router::new()
         .route("/", get(root))
-        // .route("/trout/:chain/:id/metadata.json", get(get_trout_meta))
+        .route("/trout/:chain/", get(list_chain_trout))
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
@@ -80,4 +80,23 @@ async fn get_trout_image(
         .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
         .status(res.status().as_u16())
         .body(Body::from_stream(res.bytes_stream()))?))
+}
+
+async fn list_chain_trout(
+    Path(chain_id): Path<ChainId>,
+    Query(_qp): Query<ListTroutQuery>,
+    State(AppState { db, .. }): State<AppState>,
+) -> Result<Json<ListTroutResponse>, Error> {
+    Ok(Json(ListTroutResponse {
+        result: db.with_conn(|conn| conn.list_token_ownership(chain_id))?,
+    }))
+}
+
+#[derive(Clone, Copy, Debug, Default, serde::Deserialize)]
+#[serde(default)]
+struct ListTroutQuery {}
+
+#[derive(Clone, Debug, Default, serde::Serialize)]
+struct ListTroutResponse {
+    result: Vec<TokenOwnership>,
 }
