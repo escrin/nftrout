@@ -20,8 +20,10 @@
     "@escrin/nftrout-evm": "workspace:^",
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
+    "@wagmi/core": "^1.4.12",
     "ethers": "^6.9.0",
     "pinia": "^2.1.7",
+    "viem": "^1.21.1",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
   },

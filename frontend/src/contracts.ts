@@ -9,18 +9,18 @@ import sapphireMainnet from '@escrin/nftrout-evm/deployments/sapphire-mainnet';
 
 import { Network, useEthereumStore } from './stores/ethereum';
 
-export function useNFTrout(): ComputedRef<NFTrout | undefined> {
+export function useNFTrout(): ComputedRef<NFTrout> {
   const eth = useEthereumStore();
   return computed(() => {
-    const deployment: string | undefined =
+    let deployment: string | undefined =
       eth.network === Network.SapphireTestnet
         ? sapphireTestnet.address
         : eth.network === Network.SapphireMainnet
           ? sapphireMainnet.address
           : undefined;
     if (!deployment) {
-      console.error('no deployment for network', eth.network);
-      return;
+      console.error(`no nftrout deployment for network: ${eth.network}`);
+      deployment = sapphireMainnet.address;
     }
     return NFTroutFactory.connect(
       deployment,
@@ -28,9 +28,3 @@ export function useNFTrout(): ComputedRef<NFTrout | undefined> {
     );
   });
 }
-
-// export function sapphireWrap(nftrout: NFTrout): NFTrout {
-//   const eth = useEthereumStore();
-//   if (eth.network !== Network.SapphireMainnet) return nftrout;
-//   return nftrout.connect(sapphire.wrap((eth.signer as any) ?? eth.provider));
-// }

@@ -34,10 +34,8 @@ export function networkName(network?: Network): string {
 export const useEthereumStore = defineStore('ethereum', () => {
   const signer = shallowRef<ethers.Signer | undefined>(undefined);
   const env = (import.meta as any).env;
-  const provider = shallowRef<ethers.Provider>(
-    new ethers.JsonRpcProvider(env.VITE_WEB3_GW_URL),
-  );
-  const network = ref<number>(env.VITE_CHAIN_ID);
+  const provider = shallowRef<ethers.Provider>(new ethers.JsonRpcProvider(env.VITE_WEB3_GW_URL));
+  const network = ref<number>(parseInt(env.VITE_CHAIN_ID, 10));
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
 
@@ -51,7 +49,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     if (network.value === Network.Local || network.value === Network.Hardhat) return 'TEST';
     if (network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet)
       return 'ROSE';
-    return '三';
+    return 'ROSE';
   });
 
   async function connect() {

@@ -1,122 +1,22 @@
 <script setup lang="ts">
 import { ethers } from 'ethers';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-
-import type { NFTrout } from '@escrin/nftrout-evm';
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
 import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
-import { Network, useEthereumStore } from '../stores/ethereum';
-import type { Trout } from '../trouts';
-import { troutCid } from '../trouts';
+import { useEthereumStore } from '../stores/ethereum';
+import { useTroutStore } from '../stores/nftrout';
 
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
+const troutStore = useTroutStore();
 
-type BlockTag = number | string;
+onMounted(async () => await troutStore.fetchTrout());
 
-const troutSorter = (a: Trout, b: Trout) => Number(a.id - b.id);
+const pendingTrout = reactive(new Set<number>());
 
-const trouts = reactive<Record<string, Trout>>({});
-const myTrouts = computed(() => {
-  const ts = Object.values(trouts).filter((t) => t.cid && (t.owned ?? false));
-  ts.sort(troutSorter);
-  return ts;
-});
-const notMyBreedableTrouts = computed(() => {
-  const ts = Object.values(trouts).filter((t) => t.cid && !t.owned && t.fee !== undefined);
-  ts.sort(troutSorter);
-  return ts;
-});
-const loadingMyTrouts = ref(true);
-const loadingBreedable = ref(true);
-
-const pendingTrout = reactive(new Set<string>());
-
-async function fetchMyTrouts(nftrout: NFTrout, blockTag: number): Promise<void> {
-  loadingMyTrouts.value = true;
-  if (!eth.address) return;
-  const troutIds = await nftrout.tokensOfOwner(eth.address!, { blockTag });
-  const chainId = eth.network;
-  await Promise.all(
-    troutIds.map(async (id) => {
-      const key = ethers.toBeHex(id);
-      const cid = await troutCid(nftrout, id, blockTag);
-      if (!cid) watchPendingTroutCid(key);
-      if (trouts[key] === undefined) {
-        trouts[key] = {
-          chainId,
-          id,
-          key,
-          owned: true,
-          cid,
-        };
-      } else {
-        trouts[key].owned = true;
-      }
-    }),
-  );
-  loadingMyTrouts.value = false;
-}
-
-async function fetchBreedableTrouts(nftrout: NFTrout, blockTag: BlockTag): Promise<void> {
-  loadingBreedable.value = true;
-  const batchSize = 100;
-  for (let offset = 0; ; offset += batchSize) {
-    let studs: NFTrout.StudStructOutput[] = [];
-    try {
-      studs = await nftrout.getStuds(offset, batchSize, {
-        blockTag,
-      });
-    } catch (e: any) {
-      console.error('failed to fetch studs', e);
-      break;
-    }
-    await Promise.all(
-      studs.map(async ({ tokenId, fee }) => {
-        const key = ethers.toBeHex(tokenId);
-        const cid = await troutCid(nftrout, tokenId);
-        if (!cid) {
-          watchPendingTroutCid(key);
-          return;
-        }
-        if (trouts[key] === undefined) {
-          trouts[key] = {
-            chainId: eth.network,
-            id: tokenId,
-            key,
-            fee,
-            cid,
-            owned: false,
-          };
-        } else {
-          trouts[key].fee = fee;
-        }
-      }),
-    );
-    if (studs.length < batchSize) break;
-  }
-  loadingBreedable.value = false;
-}
-
-function watchPendingTroutCid(troutId: string) {
-  const wait = 3 * 60 * 1000;
-  pendingTrout.add(troutId);
-  async function watcher() {
-    if (!nftrout.value) return;
-    const cid = await troutCid(nftrout.value, ethers.getBigInt(troutId));
-    if (cid) {
-      trouts[troutId].cid = cid;
-      pendingTrout.delete(troutId);
-      return;
-    }
-    setTimeout(watcher, wait);
-  }
-  setTimeout(watcher, wait);
-}
-
-const selectedTrouts = ref<string[]>([]);
-function isSelected(troutId: string): boolean {
+const selectedTrouts = ref<number[]>([]);
+function isSelected(troutId: number): boolean {
   for (const selId of selectedTrouts.value) {
     if (selId === troutId) return true;
   }
@@ -125,12 +25,13 @@ function isSelected(troutId: string): boolean {
 
 const isBreeding = ref(false);
 
-async function troutSelected(troutId: string) {
+async function troutSelected(troutId: number) {
   if (isBreeding.value) return;
   if (isSelected(troutId)) {
     selectedTrouts.value = selectedTrouts.value.filter((tid) => tid !== troutId);
     return;
   }
+  await eth.connect();
   selectedTrouts.value.push(troutId);
   if (selectedTrouts.value.length < 2) return;
   isBreeding.value = true;
@@ -157,15 +58,6 @@ async function troutSelected(troutId: string) {
       }
     }
     if (!newTokenId) throw new Error('breeding did not create new token');
-    const key = ethers.toBeHex(newTokenId);
-    watchPendingTroutCid(key);
-    trouts[key] = {
-      id: newTokenId,
-      chainId: eth.network,
-      key,
-      cid: '',
-      owned: true,
-    };
   } finally {
     selectedTrouts.value.splice(0, selectedTrouts.value.length);
     isBreeding.value = false;
@@ -184,20 +76,12 @@ async function checkEarnings() {
 }
 
 watch(eth, async (eth) => {
-  const { number: latestBlock } = (await eth.provider.getBlock('latest'))!;
-  const blockTag = latestBlock - (eth.network === Network.SapphireMainnet ? 2 : 0);
   if (eth.address) {
     clearTimeout(earningsPollerId);
     earningsPollerId = setTimeout(checkEarnings, eth.address ? 30 * 1000 : 1_000);
   }
-  await Promise.all([
-    fetchBreedableTrouts(nftrout.value!, blockTag),
-    fetchMyTrouts(nftrout.value!, blockTag),
-    checkEarnings(),
-  ]);
+  await Promise.all([troutStore.fetchTrout(), checkEarnings()]);
 });
-
-onMounted(() => eth.connect());
 
 onBeforeUnmount(() => {
   clearInterval(earningsPollerId);
@@ -343,7 +227,7 @@ function hideIntro() {
       <div class="my-2">
         <p
           v-if="pendingTrout.size > 0"
-          class="text-center px-3 py-2 font-medium bg-blue-200 border-2 border-blue-700 inline-block mx-auto rounded-md"
+          class="text-center px-3 py-2 font-medium text-white bg-blue-800 border-2 border-blue-700 inline-block mx-auto rounded-md"
         >
           You have {{ pendingTrout.size }} trout currently incubating.
           <span v-if="isBreeding">
@@ -353,12 +237,12 @@ function hideIntro() {
         </p>
       </div>
       <ul class="flex flex-row flex-wrap">
-        <li class="mx-auto my-5" v-for="trout in myTrouts" :key="trout.key">
+        <li class="mx-auto my-5" v-for="trout in troutStore.ownedTrout" :key="trout.id">
           <TroutCard
-            @selected="() => troutSelected(trout.key)"
-            @feeUpdated="(fee: bigint) => (trouts[trout.key].fee = fee)"
+            @selected="() => troutSelected(trout.id)"
+            @feeUpdated="(fee: bigint) => troutStore.updateFee(trout.id, fee)"
             :trout="trout"
-            :selected="isSelected(trout.key)"
+            :selected="isSelected(trout.id)"
             :selectable="!isBreeding"
             :editable="selectedTrouts.length == 1"
           />
@@ -369,11 +253,11 @@ function hideIntro() {
     <section>
       <h2>Trout Farm 🎏</h2>
       <ul class="flex flex-row flex-wrap">
-        <li class="mx-auto m-5" v-for="trout in notMyBreedableTrouts" :key="trout.key">
+        <li class="mx-auto m-5" v-for="trout in troutStore.farmedTrout" :key="trout.id">
           <TroutCard
-            @selected="() => troutSelected(trout.key)"
+            @selected="() => troutSelected(trout.id)"
             :trout="trout"
-            :selected="isSelected(trout.key)"
+            :selected="isSelected(trout.id)"
             :selectable="!isBreeding"
           />
         </li>

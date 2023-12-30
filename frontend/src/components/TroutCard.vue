@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { computed, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
-import type { Trout } from '../trouts';
+import type { Trout } from '../stores/nftrout';
 import { useEthereumStore } from '../stores/ethereum';
 
 const eth = useEthereumStore();
@@ -20,9 +20,6 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 0.45);
-const imageUrl = computed(
-  () => `https://api.nftrout.com/trout/${props.trout.chainId}/${props.trout.id}/image.svg`,
-);
 const w = computed(() => 500 * scale.value + 2);
 
 function formatFee(fee: bigint): string {
@@ -41,6 +38,7 @@ async function zlistTrout(e: Event) {
   e.preventDefault();
   isListing.value = true;
   try {
+    await eth.connect();
     if (props.trout.fee && !fee.value) await delistTrout();
     else if (props.trout.fee !== feeBig.value) await listTrout();
     emit('feeUpdated', feeBig.value);
@@ -75,7 +73,7 @@ async function delistTrout() {
       @click="$emit('selected')"
       class="bg-contain bg-no-repeat bg-cover rounded-sm"
       :style="{
-        'background-image': `url('${imageUrl}')`,
+        'background-image': `url('${trout.imageUrl}')`,
         width: `${w}px`,
         height: `${300 * scale + 4}px`,
         cursor: selectable ? 'pointer' : 'default',
