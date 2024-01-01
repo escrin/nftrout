@@ -4,7 +4,7 @@ use async_stream::stream;
 use ethers::{
     contract::EthLogDecode as _,
     providers::{Http, Middleware, Provider},
-    types::{Address, Filter, Log, ValueOrArray, U256},
+    types::{Address, Filter, Log, ValueOrArray, U256, BlockId, BlockNumber},
 };
 use futures::{future::BoxFuture, FutureExt as _, Stream};
 use serde::{Deserialize, Serialize};
@@ -117,6 +117,7 @@ pub struct Client {
     chain: ChainId,
     inner: NFTrout<Provider<Http>>,
     provider: Arc<Provider<Http>>,
+    block: BlockId
 }
 
 impl Client {
@@ -156,17 +157,26 @@ impl Client {
             addr,
             inner: NFTrout::new(addr, provider.clone()),
             provider,
+            block: BlockNumber::Finalized.into()
+        }
+    }
+
+    pub fn at_block(&self, block: u64) -> Self {
+        Self {
+            block: BlockNumber::Number(block.into()).into(),
+            ..self.clone()
         }
     }
 
     pub async fn total_supply(&self) -> Result<TokenId, Error> {
-        Ok(self.inner.total_supply().call().await?.low_u32())
+        Ok(self.inner.total_supply().block(self.block).call().await?.low_u32())
     }
 
     pub async fn studs(&self) -> Result<HashMap<TokenId, U256>, Error> {
         Ok(self
             .inner
             .get_studs(0.into(), U256::max_value())
+            .block(self.block)
             .call()
             .await?
             .into_iter()
@@ -175,7 +185,7 @@ impl Client {
     }
 
     pub async fn token_cid(&self, token_id: TokenId) -> Result<Cid, Error> {
-        let uri = self.inner.token_uri(token_id.into()).call().await?;
+        let uri = self.inner.token_uri(token_id.into()).block(self.block).call().await?;
         let cid = uri.strip_prefix("ipfs://").expect("not IPFS uri");
         if cid.is_empty() {
             return Err(Error::NoUri(token_id));
@@ -190,6 +200,7 @@ impl Client {
         Ok(self
             .inner
             .explicit_ownerships_of(token_ids.map(U256::from).collect())
+            .block(self.block)
             .call()
             .await?
             .into_iter()
@@ -201,7 +212,7 @@ impl Client {
         self.chain
     }
 
-    pub async fn current_block(&self) -> Result<u64, Error> {
+    pub async fn latest_block(&self) -> Result<u64, Error> {
         Ok(self.provider.get_block_number().await?.as_u64())
     }
 

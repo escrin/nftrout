@@ -101,17 +101,6 @@ impl Transaction<'_> {
 }
 
 impl Connection<'_> {
-    pub fn last_seen_block(&self, chain_id: ChainId) -> Result<Option<u64>, Error> {
-        self.0
-            .query_row(
-                "SELECT block FROM progress WHERE chain = ?",
-                [chain_id],
-                |row| row.get::<_, i64>(0).map(|i| i as u64),
-            )
-            .optional()
-            .map_err(Into::into)
-    }
-
     pub fn latest_known_token_id(&self, chain_id: ChainId) -> Result<Option<TokenId>, Error> {
         self.0
             .query_row(
@@ -201,12 +190,12 @@ impl Connection<'_> {
                 left_parent_chain, left_parent_id,
                 right_parent_chain, right_parent_id
             ) VALUES (
-            ?, ?,
-            ?, ?,
-            ?, ?,
-            ?, ?,
-            ?, ?,
-            ?, ?
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?
             )
             "#,
         )?;

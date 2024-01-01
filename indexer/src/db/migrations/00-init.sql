@@ -1,9 +1,3 @@
-CREATE TABLE progress (
-  id INTEGER PRIMARY KEY,
-  chain INTEGER UNIQUE,
-  block INTEGER NOT NULL
-);
-
 CREATE TABLE tokens (
   id INTEGER PRIMARY KEY,
 
@@ -13,7 +7,7 @@ CREATE TABLE tokens (
   self_chain INTEGER NOT NULL,
   self_id    INTEGER NOT NULL,
 
-  version INTEGER NOT NULL CHECK(version > 0),
+  version INTEGER NOT NULL,
 
   name TEXT NOT NULL,
 

@@ -19,21 +19,13 @@ const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 #[instrument(skip_all)]
 pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
-    let chain_id = nftrout.chain_id();
-    let last_seen_block = match db.with_conn(|conn| conn.last_seen_block(chain_id)).unwrap() {
-        Some(n) => n,
-        None => {
-            let current_block = retry(|| nftrout.current_block()).await;
-            db.with_conn(|conn| conn.set_last_seen_block(chain_id, current_block))
-                .unwrap();
-            current_block
-        }
-    };
-
     // Quickly index new and changed token metadata
-    index_ownership_and_fees(nftrout, db, None).await;
-    index_new_tokens(nftrout, ipfs_client, db, None).await;
-    index_new_versions(nftrout, ipfs_client, db, None).await;
+    let start_block = retry(|| nftrout.latest_block()).await;
+    let past_nftrout = nftrout.at_block(start_block);
+    debug!("starting initial index from {start_block}");
+    index_ownership_and_fees(&past_nftrout, db, None).await;
+    index_new_tokens(&past_nftrout, ipfs_client, db, None).await;
+    index_new_versions(&past_nftrout, ipfs_client, db, None).await;
 
     let pin_fut = async {
         if timeout(PINNING_TIMEOUT, pin_cids(ipfs_client, db, None))
@@ -46,7 +38,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
 
     // Start watching blocks for real-time updates
     let events_fut = nftrout
-        .events_from(last_seen_block)
+        .events_from(start_block + 1)
         .buffered(25)
         .chunks(1) // set higher for greater throughput, but higher latency
         .for_each(|batch| process_token_events(nftrout, ipfs_client, db, batch));
