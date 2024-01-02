@@ -180,7 +180,7 @@ impl Connection<'_> {
     pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
             r#"
-            INSERT OR IGNORE INTO tokens (
+            INSERT INTO tokens (
                 self_chain, self_id,
                 version, name,
                 owner, fee,
@@ -205,6 +205,7 @@ impl Connection<'_> {
             "#,
         )?;
         for token in tokens {
+            debug_assert!(!token.meta.name.is_empty());
             let props = &token.meta.properties;
             let token_rowid = token_inserter.insert((
                 props.self_id.chain_id,

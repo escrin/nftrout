@@ -36,22 +36,6 @@ pub struct TroutToken {
     pub fee: Option<U256>,
 }
 
-impl TroutToken {
-    pub fn pending(owner: Address, id: TroutId) -> Self {
-        TroutToken {
-            owner,
-            meta: TroutMetadata {
-                properties: TroutProperties {
-                    self_id: id,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            ..Default::default()
-        }
-    }
-}
-
 /// The details of a token that are necessary for the UI.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenOwnership {

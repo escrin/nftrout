@@ -8,7 +8,7 @@ use tracing::{debug, instrument, warn};
 use crate::{
     db::Db,
     ipfs::{Cid, Client as IpfsClient},
-    nftrout::{Client as NFTroutClient, Event, TokenId, TroutId, TroutMetadata, TroutToken},
+    nftrout::{Client as NFTroutClient, Event, TokenId, TroutMetadata, TroutToken},
     utils::retry,
 };
 
@@ -87,7 +87,6 @@ async fn process_token_events<const N: usize>(
 ) {
     let chain_id = nftrout.chain_id();
     let mut processed_block = 0;
-    let mut new_tokens: HashMap<TokenId, TroutToken> = HashMap::new();
     let mut ownership_changes: HashMap<TokenId, Address> = HashMap::new();
     let mut cid_changes: HashMap<TokenId, (Cid, TroutMetadata)> = HashMap::new();
     let mut fee_changes: HashMap<TokenId, Option<U256>> = HashMap::new();
@@ -106,21 +105,7 @@ async fn process_token_events<const N: usize>(
                     .insert_entry(None);
                 debug!(id = id, "delisted token")
             }
-            Event::Spawned { id, to } => {
-                new_tokens.insert(
-                    id,
-                    TroutToken::pending(
-                        to,
-                        TroutId {
-                            chain_id,
-                            token_id: id,
-                        },
-                    ),
-                );
-                debug_assert!(!ownership_changes.contains_key(&id));
-                ownership_changes.insert(id, to);
-                debug!(id = id, "spawned token")
-            }
+            Event::Spawned { .. } => {}
             Event::Incubated { id } => {
                 match timeout(
                     IPFS_TIMEOUT,
@@ -155,9 +140,6 @@ async fn process_token_events<const N: usize>(
         }
     }
     db.with_tx(|tx| {
-        if !new_tokens.is_empty() {
-            tx.insert_tokens(new_tokens.values()).unwrap();
-        }
         if !cid_changes.is_empty() {
             tx.update_tokens(cid_changes.values()).unwrap();
         }
