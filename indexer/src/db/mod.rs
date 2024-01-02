@@ -180,7 +180,7 @@ impl Connection<'_> {
     pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
             r#"
-            INSERT INTO tokens (
+            INSERT OR IGNORE INTO tokens (
                 self_chain, self_id,
                 version, name,
                 owner, fee,
@@ -198,7 +198,11 @@ impl Connection<'_> {
             "#,
         )?;
         let mut generation_inserter = self.0.prepare_cached(
-            r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
+            r#"
+            INSERT INTO generations (token, ord, cid)
+            VALUES (?, ?, ?)
+            ON CONFLICT (token, ord) DO NOTHING
+            "#,
         )?;
         for token in tokens {
             let props = &token.meta.properties;
@@ -216,9 +220,10 @@ impl Connection<'_> {
                 props.right.map(|token_id| token_id.chain_id),
                 props.right.map(|token_id| token_id.token_id),
             ))?;
-            generation_inserter.insert((token_rowid, props.generations.len(), &*token.cid))?;
+            generation_inserter.execute((token_rowid, props.generations.len(), &*token.cid))?;
             for (ord, generation) in props.generations.iter().enumerate() {
-                generation_inserter.insert((token_rowid, ord, &**generation))?;
+                debug_assert!(!generation.is_empty());
+                generation_inserter.execute((token_rowid, ord, &**generation))?;
             }
         }
         Ok(())
@@ -241,9 +246,9 @@ impl Connection<'_> {
                 props.self_id.chain_id,
                 props.self_id.token_id,
             ))?;
-            generation_inserter.insert((token_rowid, props.generations.len(), &**cid))?;
+            generation_inserter.execute((token_rowid, props.generations.len(), &**cid))?;
             for (ord, generation) in props.generations.iter().enumerate() {
-                generation_inserter.insert((token_rowid, ord, &**generation))?;
+                generation_inserter.execute((token_rowid, ord, &**generation))?;
             }
         }
         Ok(())

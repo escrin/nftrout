@@ -30,7 +30,7 @@ CREATE INDEX ix_tokens_owner ON tokens (owner);
 
 CREATE TABLE generations (
   token INTEGER NOT NULL REFERENCES tokens(id),
-  ord INTEGER NOT NULL CHECK(ord >= 0),
+  ord INTEGER NOT NULL DEFAULT 0 CHECK(ord >= 0),
   cid TEXT NOT NULL UNIQUE,
   pinned BOOLEAN NOT NULL DEFAULT 0 CHECK(pinned = 0 OR pinned = 1),
   pin_fails INTEGER NOT NULL DEFAULT 0
