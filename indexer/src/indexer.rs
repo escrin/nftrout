@@ -115,7 +115,7 @@ async fn process_token_events<const N: usize>(
                 match timeout(
                     IPFS_TIMEOUT,
                     retry(|| async {
-                        let cid = nftrout.token_cid(id).await?;
+                        let cid = nftrout.token_cid(id).await?.expect("incubated has cid");
                         let meta = ipfs_client.dag_get_and_pin(&cid).await?;
                         Ok::<_, anyhow::Error>((cid, meta))
                     }),
@@ -244,10 +244,10 @@ async fn index_new_versions(
         .min(u32::max_value() as usize);
     for batch in ids_to_reindex.chunks(concurrency) {
         let tokens = futures::stream::iter(batch.iter().copied())
-            .map(|token_id| async move {
-                let cid = retry(|| nftrout.token_cid(token_id)).await;
+            .filter_map(|token_id| async move {
+                let cid = retry(|| nftrout.token_cid(token_id)).await?;
                 let meta = retry(|| ipfs_client.dag_get(&cid)).await;
-                (cid, meta)
+                Some(futures::future::ready((cid, meta)))
             })
             .buffer_unordered(concurrency)
             .collect::<Vec<_>>()

@@ -24,8 +24,6 @@ pub enum Error {
     Contract(#[from] ethers::contract::ContractError<Provider<Http>>),
     #[error("provider error: {0}")]
     Provider(#[from] ethers::providers::ProviderError),
-    #[error("token {0} did not have a URI")]
-    NoUri(TokenId),
 }
 
 ethers::contract::abigen!(NFTrout, "src/nftrout/abi.json");
@@ -184,13 +182,13 @@ impl Client {
             .collect())
     }
 
-    pub async fn token_cid(&self, token_id: TokenId) -> Result<Cid, Error> {
+    pub async fn token_cid(&self, token_id: TokenId) -> Result<Option<Cid>, Error> {
         let uri = self.inner.token_uri(token_id.into()).block(self.block).call().await?;
         let cid = uri.strip_prefix("ipfs://").expect("not IPFS uri");
         if cid.is_empty() {
-            return Err(Error::NoUri(token_id));
+            return Ok(None)
         }
-        Ok(cid.to_string().into())
+        Ok(Some(cid.to_string().into()))
     }
 
     pub async fn owners(
