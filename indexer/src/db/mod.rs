@@ -111,6 +111,14 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
+    pub fn token_ids(&self, chain_id: ChainId) -> Result<Vec<TokenId>, Error> {
+        self.0
+            .prepare("SELECT self_id FROM tokens WHERE self_chain = ? ORDER BY self_id ASC")?
+            .query_map([chain_id], |row| row.get::<_, TokenId>(0))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
+    }
+
     pub fn outdated_token_ids(&self, chain_id: ChainId) -> Result<Vec<TokenId>, Error> {
         self.0
             .prepare("SELECT self_id FROM tokens WHERE self_chain = ? AND version < ? LIMIT 1000")?
@@ -167,16 +175,6 @@ impl Connection<'_> {
             })?
             .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
-    }
-
-    pub fn set_last_seen_block(&self, chain: ChainId, block: u64) -> Result<(), Error> {
-        let changes = self.0.execute(
-            "INSERT INTO progress (chain, block) VALUES(?1, ?2)
-             ON CONFLICT DO UPDATE set block = ?2",
-            (chain, block),
-        )?;
-        debug_assert_eq!(changes, 1);
-        Ok(())
     }
 
     pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {

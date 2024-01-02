@@ -43,6 +43,6 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, thiserror::Error)]
+#[derive(Clone, Copy, Debug, Default, thiserror::Error)]
 #[error("retries exceeded")]
 pub struct RetriesExceeded;
