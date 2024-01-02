@@ -139,7 +139,7 @@ impl Client {
             addr,
             inner: NFTrout::new(addr, provider.clone()),
             provider,
-            block: BlockNumber::Finalized.into(),
+            block: BlockNumber::Latest.into(),
         }
     }
 
@@ -276,16 +276,16 @@ impl Client {
             NFTroutEvents::DelistedFilter(f) => Event::Delisted {
                 id: f.token_id.as_u32(),
             },
-            NFTroutEvents::IncubatedFilter(f) => Event::Incubated {
-                id: f.token_id.as_u32(),
+            NFTroutEvents::SpawnedFilter(f) => Event::Spawned {
+                id: f.child.as_u32(),
             },
+            NFTroutEvents::IncubatedFilter(_) => unreachable!("not emitted"),
             NFTroutEvents::ListedFilter(f) => Event::Listed {
                 id: f.token_id.as_u32(),
                 fee: f.fee,
             },
             NFTroutEvents::TransferFilter(f) if f.from.is_zero() => Event::Spawned {
                 id: f.token_id.as_u32(),
-                to: f.to,
             },
             NFTroutEvents::TransferFilter(f) => Event::Transfer {
                 id: f.token_id.as_u32(),
@@ -308,10 +308,6 @@ pub enum Event {
         id: TokenId,
     },
     Spawned {
-        id: TokenId,
-        to: Address,
-    },
-    Incubated {
         id: TokenId,
     },
     Transfer {

@@ -73,14 +73,6 @@ impl Client {
         self.json_rpc("dag/get", [cid]).await
     }
 
-    pub async fn dag_get_and_pin<T: serde::de::DeserializeOwned>(
-        &self,
-        cid: &Cid,
-    ) -> Result<T, Error> {
-        let (out, _) = tokio::try_join!(self.dag_get(cid), self.pin(cid),)?;
-        Ok(out)
-    }
-
     pub async fn cat(&self, cid: &Cid) -> Result<reqwest::Response, Error> {
         trace!(cid = %cid, "cat");
         self.rpc("cat", [cid]).await

@@ -7,8 +7,8 @@ use tracing::{debug, instrument, warn};
 
 use crate::{
     db::Db,
-    ipfs::{Cid, Client as IpfsClient},
-    nftrout::{Client as NFTroutClient, Event, TokenId, TroutMetadata, TroutToken},
+    ipfs::Client as IpfsClient,
+    nftrout::{Client as NFTroutClient, Event, TokenId, TroutToken},
     utils::retry,
 };
 
@@ -21,28 +21,34 @@ const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
     // Quickly index new and changed token metadata
     let start_block = retry(|| nftrout.latest_block()).await;
-    let past_nftrout = nftrout.at_block(start_block);
-    debug!("starting initial index from {start_block}");
-    index_ownership_and_fees(&past_nftrout, db, None).await;
-    index_new_tokens(&past_nftrout, ipfs_client, db, None).await;
-    index_new_versions(&past_nftrout, ipfs_client, db, None).await;
+    {
+        let past_nftrout = nftrout.at_block(start_block);
+        debug!("starting initial index from {start_block}");
+        index_ownership_and_fees(&past_nftrout, db, None).await;
+        index_new_tokens(&past_nftrout, ipfs_client, db, None).await;
+        index_new_versions(&past_nftrout, ipfs_client, db, None).await;
+    }
 
     let pin_fut = async {
         loop {
+            debug!("pinning unpinned CIDs");
             if timeout(PINNING_TIMEOUT, pin_cids(ipfs_client, db, None))
                 .await
                 .is_err()
             {
                 warn!("pinning timed out");
             }
-            sleep(Duration::from_secs(5 * 60)).await;
+            sleep(Duration::from_secs(60)).await;
         }
     };
 
-    let retry_skipped_fut = async {
+    let reindex_fut = async {
         loop {
-            index_skipped_tokens(&past_nftrout, ipfs_client, db, None).await;
-            sleep(Duration::from_secs(5 * 60)).await;
+            debug!("(re-)indexing new & skipped tokens");
+            let new_fut = index_new_tokens(nftrout, ipfs_client, db, None);
+            let skipped_fut = index_skipped_tokens(nftrout, ipfs_client, db, None);
+            tokio::join!(new_fut, skipped_fut);
+            sleep(Duration::from_secs(30)).await;
         }
     };
 
@@ -51,9 +57,9 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
         .events_from(start_block + 1)
         .buffered(25)
         .chunks(1) // set higher for greater throughput, but higher latency
-        .for_each(|batch| process_token_events(nftrout, ipfs_client, db, batch));
+        .for_each(|batch| process_token_events(nftrout, db, batch));
 
-    tokio::join!(events_fut, pin_fut, retry_skipped_fut);
+    tokio::join!(events_fut, pin_fut, reindex_fut);
     unreachable!("contract event stream broke");
 }
 
@@ -81,14 +87,12 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
 #[instrument(skip_all)]
 async fn process_token_events<const N: usize>(
     nftrout: &NFTroutClient,
-    ipfs_client: &IpfsClient,
     db: &Db,
     batch: Vec<smallvec::SmallVec<[Event; N]>>,
 ) {
     let chain_id = nftrout.chain_id();
     let mut processed_block = 0;
     let mut ownership_changes: HashMap<TokenId, Address> = HashMap::new();
-    let mut cid_changes: HashMap<TokenId, (Cid, TroutMetadata)> = HashMap::new();
     let mut fee_changes: HashMap<TokenId, Option<U256>> = HashMap::new();
     for event in batch.into_iter().flatten() {
         match event {
@@ -105,26 +109,7 @@ async fn process_token_events<const N: usize>(
                     .insert_entry(None);
                 debug!(id = id, "delisted token")
             }
-            Event::Spawned { .. } => {}
-            Event::Incubated { id } => {
-                match timeout(
-                    IPFS_TIMEOUT,
-                    retry(|| async {
-                        let cid = nftrout.token_cid(id).await?.expect("incubated has cid");
-                        let meta = ipfs_client.dag_get_and_pin(&cid).await?;
-                        Ok::<_, anyhow::Error>((cid, meta))
-                    }),
-                )
-                .await
-                {
-                    Ok(change) => cid_changes.insert(id, change),
-                    Err(e) => {
-                        warn!("failed to index incubated token {id}: {e}");
-                        continue;
-                    }
-                };
-                debug!(id = id, "incubated token")
-            }
+            Event::Spawned { id } => debug!(id = id, "created token"),
             Event::Transfer { id, from, to } => {
                 ownership_changes
                     .entry(id)
@@ -140,9 +125,6 @@ async fn process_token_events<const N: usize>(
         }
     }
     db.with_tx(|tx| {
-        if !cid_changes.is_empty() {
-            tx.update_tokens(cid_changes.values()).unwrap();
-        }
         if !fee_changes.is_empty() {
             tx.update_fees(chain_id, fee_changes.into_iter()).unwrap();
         }
