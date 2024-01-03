@@ -48,6 +48,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
             let new_fut = index_new_tokens(nftrout, ipfs_client, db, None);
             let skipped_fut = index_skipped_tokens(nftrout, ipfs_client, db, None);
             tokio::join!(new_fut, skipped_fut);
+            debug!("indexed new & skipped tokens");
             sleep(Duration::from_secs(30)).await;
         }
     };

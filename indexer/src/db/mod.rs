@@ -198,11 +198,7 @@ impl Connection<'_> {
             "#,
         )?;
         let mut generation_inserter = self.0.prepare_cached(
-            r#"
-            INSERT INTO generations (token, ord, cid)
-            VALUES (?, ?, ?)
-            ON CONFLICT (token, ord) DO NOTHING
-            "#,
+            r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
         )?;
         for token in tokens {
             debug_assert!(!token.meta.name.is_empty());
@@ -212,8 +208,8 @@ impl Connection<'_> {
                 props.self_id.token_id,
                 props.version,
                 &token.meta.name,
-                format!("{:#x}", token.owner),
-                token.fee.map(|f| format!("{f:#x}")),
+                addr_to_hex(&token.owner),
+                token.fee.as_ref().map(u256_to_hex),
                 props.attributes.genesis,
                 props.attributes.santa,
                 props.left.map(|token_id| token_id.chain_id),
@@ -264,7 +260,7 @@ impl Connection<'_> {
             .0
             .prepare_cached(r#"UPDATE tokens SET fee = ? WHERE self_chain = ? AND self_id = ?"#)?;
         for (token_id, fee) in tokens {
-            fee_updater.execute((fee.map(|f| format!("{f:x}")), chain_id, token_id))?;
+            fee_updater.execute((fee.as_ref().map(u256_to_hex), chain_id, token_id))?;
         }
         Ok(())
     }
@@ -302,6 +298,14 @@ impl Connection<'_> {
         }
         Ok(())
     }
+}
+
+fn u256_to_hex(big: &U256) -> String {
+    format!("{big:#x}")
+}
+
+fn addr_to_hex(addr: &Address) -> String {
+    format!("{addr:#x}")
 }
 
 #[derive(Debug, thiserror::Error)]
