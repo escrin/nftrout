@@ -27,6 +27,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
         index_ownership_and_fees(&past_nftrout, db, None).await;
         index_new_tokens(&past_nftrout, ipfs_client, db, None).await;
         index_new_versions(&past_nftrout, ipfs_client, db, None).await;
+        debug!("finished initial index from {start_block}");
     }
 
     let pin_fut = async {
@@ -54,6 +55,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
     };
 
     // Start watching blocks for real-time updates
+    debug!("watching events stream");
     let events_fut = nftrout
         .events_from(start_block + 1)
         .buffered(25)
