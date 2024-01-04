@@ -13,12 +13,13 @@ export type Trout = {
   imageUrl: string;
   fee?: bigint;
   parents?: [TroutId, TroutId];
+  pending: boolean;
 };
 
 export type TroutId = {
   chainId: ChainId;
   tokenId: TokenId;
-}
+};
 
 export type ChainId = number;
 export type TokenId = number;
@@ -41,14 +42,21 @@ async function retry<T>(f: () => Promise<T>, tries = 3, delay = 1000): Promise<T
 async function fetchIndexedTrout(chainId: number): Promise<Trout[]> {
   return retry(async () => {
     const res = (await (await fetch(`${INDEXER_URL}/trout/${chainId}/`)).json()) as {
-      result: Array<{ id: number; owner: Address; fee?: Hash; parents: [TroutId, TroutId] }>;
+      result: Array<{
+        id: number;
+        owner: Address;
+        fee?: Hash;
+        parents: [TroutId, TroutId];
+        pending?: true;
+      }>;
     };
-    const trout = res.result.map(({ id, owner, fee, parents }) => ({
+    const trout = res.result.map(({ id, owner, fee, parents, pending }) => ({
       id,
       owner,
       imageUrl: `${INDEXER_URL}/trout/${chainId}/${id}/image.svg`,
       fee: fee ? hexToBigInt(fee) : undefined,
       parents,
+      pending: pending === true,
     }));
     if (trout.length === 0) throw new Error('no indexed trout');
     return trout;
@@ -74,6 +82,7 @@ async function fetchWeb3Trout(nftrout: NFTrout): Promise<Trout[]> {
   const trout: Map<number, Trout> = new Map();
 
   const imageUrls: Map<number, string> = new Map();
+  const pendings: Set<number> = new Set();
   const batchSize = 50;
   for (let i = 1; i <= supply; i += batchSize) {
     const batch: number[] = [];
@@ -83,18 +92,22 @@ async function fetchWeb3Trout(nftrout: NFTrout): Promise<Trout[]> {
     }
     const urls = await Promise.allSettled(
       batch.map(
-        (id): Promise<[number, string]> =>
+        (id): Promise<[number, string | undefined]> =>
           retry(async () => {
             const uri = await nftrout.tokenURI(id);
             const cid = uri.replace('ipfs://', '');
-            return [id, `https://${cid}.ipfs.nftstorage.link/image/trout.svg`];
+            return [id, cid ? `https://${cid}.ipfs.nftstorage.link/image/trout.svg` : undefined];
           }),
       ),
     );
     for (const result of urls) {
       if (result.status === 'rejected') continue;
-      const [id, url] = result.value;
-      imageUrls.set(id, url);
+      const [id, maybeUrl] = result.value;
+      if (maybeUrl) {
+        imageUrls.set(id, maybeUrl);
+      } else {
+        pendings.add(id);
+      }
     }
   }
 
@@ -103,6 +116,7 @@ async function fetchWeb3Trout(nftrout: NFTrout): Promise<Trout[]> {
       id,
       imageUrl: imageUrls.get(id) ?? '',
       owner: addr as Address,
+      pending: pendings.has(id),
     });
   }
   for (const { tokenId, fee } of studs) {
@@ -120,8 +134,8 @@ export const useTroutStore = defineStore('nftrout', () => {
 
   const eth = useEthereumStore();
   const nftrout = useNFTrout();
+  const localPendingCount = ref(0);
 
-  // const eth
   const fetchTrout = async () => {
     let tokens: Array<Trout> = [];
     try {
@@ -133,6 +147,7 @@ export const useTroutStore = defineStore('nftrout', () => {
       mode.value = 'decentralized';
     }
     trout.value = Object.fromEntries(tokens.map((t) => [t.id, t]));
+    localPendingCount.value = 0;
     isLoaded.value = true;
   };
 
@@ -140,14 +155,33 @@ export const useTroutStore = defineStore('nftrout', () => {
     trout.value[troutId].fee = fee;
   };
 
+  const isWallet = (addr: string) => addr.toLowerCase() === eth.address?.toLowerCase();
+
   const ownedTrout = computed(() =>
-    Object.values(trout.value).filter(
-      ({ owner }) => owner.toLowerCase() === eth.address?.toLowerCase(),
-    ),
+    Object.values(trout.value).filter(({ owner, pending }) => isWallet(owner) && !pending),
   );
   const farmedTrout = computed(() =>
     Object.values(trout.value).filter(({ fee }) => (fee ?? 0n) > 0n),
   );
+  const indexedPendingCount = computed(() =>
+    Object.values(trout.value).reduce(
+      (count, { owner, pending }) => (isWallet(owner) && pending ? count + 1 : count),
+      0,
+    ),
+  );
+  const pendingCount = computed(() => indexedPendingCount.value + localPendingCount.value);
 
-  return { trout, ownedTrout, farmedTrout, fetchTrout, isLoaded, updateFee, mode };
+  const incLocalPendingCount = () => (localPendingCount.value += 1);
+
+  return {
+    trout,
+    ownedTrout,
+    farmedTrout,
+    fetchTrout,
+    isLoaded,
+    updateFee,
+    mode,
+    pendingCount,
+    incLocalPendingCount,
+  };
 });

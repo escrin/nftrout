@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ethers } from 'ethers';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
@@ -11,8 +11,6 @@ import { useTroutStore } from '../stores/nftrout';
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
 const troutStore = useTroutStore();
-
-const pendingTrout = reactive(new Set<number>());
 
 const selectedTrouts = ref<number[]>([]);
 function isSelected(troutId: number): boolean {
@@ -57,6 +55,7 @@ async function troutSelected(troutId: number) {
       }
     }
     if (!newTokenId) throw new Error('breeding did not create new token');
+    troutStore.incLocalPendingCount();
   } finally {
     selectedTrouts.value.splice(0, selectedTrouts.value.length);
     isBreeding.value = false;
@@ -87,6 +86,8 @@ let troutPollerId: ReturnType<typeof setInterval>;
 onMounted(async () => {
   await troutStore.fetchTrout();
   troutPollerId = setInterval(async () => troutStore.fetchTrout(), 30 * 1000);
+
+  if (window.localStorage.hasConnected) await eth.connect();
 });
 
 onBeforeUnmount(() => {
@@ -356,10 +357,10 @@ const sorter = computed(() => {
       </div>
       <div class="my-2">
         <p
-          v-if="pendingTrout.size > 0"
+          v-if="troutStore.pendingCount > 0"
           class="text-center px-3 py-2 font-medium text-white bg-blue-800 border-2 border-blue-700 inline-block mx-auto rounded-md"
         >
-          You have {{ pendingTrout.size }} trout currently incubating.
+          You have {{ troutStore.pendingCount }} trout currently incubating.
           <span v-if="isBreeding">
             <br />
             A pair is currently breeding.

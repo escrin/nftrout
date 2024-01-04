@@ -88,6 +88,7 @@ export const useEthereumStore = defineStore('ethereum', () => {
     });
     eth.on('connect', () => (status.value = ConnectionStatus.Connected));
     eth.on('disconnect', () => (status.value = ConnectionStatus.Disconnected));
+    window.localStorage.hasConnected = true;
   }
 
   async function switchNetwork(network: Network) {
