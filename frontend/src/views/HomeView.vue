@@ -138,7 +138,7 @@ function hideIntro() {
         <p class="padded !mt-0">
           NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because
           trout genes are secret and known only to the game itself. Since nobody knows the genes,
-          each trout is unpredictable and cannot be spontaneously generated, just like a real trout.
+          each trout is unpredictable and unique, just like a real trout.
         </p>
         <p class="padded">
           NFTrout is a tech demo of the
