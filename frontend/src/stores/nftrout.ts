@@ -10,9 +10,18 @@ import { useEthereumStore } from './ethereum';
 export type Trout = {
   id: number;
   owner: Address;
-  fee?: bigint;
   imageUrl: string;
+  fee?: bigint;
+  parents?: [TroutId, TroutId];
 };
+
+export type TroutId = {
+  chainId: ChainId;
+  tokenId: TokenId;
+}
+
+export type ChainId = number;
+export type TokenId = number;
 
 const INDEXER_URL = (import.meta as any).env.VITE_INDEXER_URL;
 
@@ -32,13 +41,14 @@ async function retry<T>(f: () => Promise<T>, tries = 3, delay = 1000): Promise<T
 async function fetchIndexedTrout(chainId: number): Promise<Trout[]> {
   return retry(async () => {
     const res = (await (await fetch(`${INDEXER_URL}/trout/${chainId}/`)).json()) as {
-      result: Array<{ id: number; owner: Address; fee?: Hash }>;
+      result: Array<{ id: number; owner: Address; fee?: Hash; parents: [TroutId, TroutId] }>;
     };
-    const trout = res.result.map(({ id, owner, fee }) => ({
+    const trout = res.result.map(({ id, owner, fee, parents }) => ({
       id,
-      imageUrl: `${INDEXER_URL}/trout/${chainId}/${id}/image.svg`,
       owner,
+      imageUrl: `${INDEXER_URL}/trout/${chainId}/${id}/image.svg`,
       fee: fee ? hexToBigInt(fee) : undefined,
+      parents,
     }));
     if (trout.length === 0) throw new Error('no indexed trout');
     return trout;
@@ -104,6 +114,7 @@ async function fetchWeb3Trout(nftrout: NFTrout): Promise<Trout[]> {
 
 export const useTroutStore = defineStore('nftrout', () => {
   const isLoaded = ref(false);
+  const mode = ref<'indexed' | 'decentralized'>('indexed');
 
   const trout = ref<Record<number, Trout>>({});
 
@@ -115,9 +126,11 @@ export const useTroutStore = defineStore('nftrout', () => {
     let tokens: Array<Trout> = [];
     try {
       tokens = await fetchIndexedTrout(eth.network);
+      mode.value = 'indexed';
     } catch (e: any) {
       console.warn('failed to fetch indexed trout:', e);
       tokens = await fetchWeb3Trout(nftrout.value);
+      mode.value = 'decentralized';
     }
     trout.value = Object.fromEntries(tokens.map((t) => [t.id, t]));
     isLoaded.value = true;
@@ -136,5 +149,5 @@ export const useTroutStore = defineStore('nftrout', () => {
     Object.values(trout.value).filter(({ fee }) => (fee ?? 0n) > 0n),
   );
 
-  return { ownedTrout, farmedTrout, fetchTrout, isLoaded, updateFee };
+  return { trout, ownedTrout, farmedTrout, fetchTrout, isLoaded, updateFee, mode };
 });

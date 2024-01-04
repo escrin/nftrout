@@ -5,14 +5,12 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
-import type { Trout } from '../stores/nftrout';
+import type { TokenId, Trout } from '../stores/nftrout';
 import { useTroutStore } from '../stores/nftrout';
 
 const eth = useEthereumStore();
 const nftrout = useNFTrout();
 const troutStore = useTroutStore();
-
-onMounted(async () => await troutStore.fetchTrout());
 
 const pendingTrout = reactive(new Set<number>());
 
@@ -79,13 +77,21 @@ async function checkEarnings() {
 watch(eth, async (eth) => {
   if (eth.address) {
     clearTimeout(earningsPollerId);
-    earningsPollerId = setTimeout(checkEarnings, eth.address ? 30 * 1000 : 1_000);
+    earningsPollerId = setInterval(checkEarnings, eth.address ? 30 * 1000 : 1_000);
   }
   await Promise.all([troutStore.fetchTrout(), checkEarnings()]);
 });
 
+let troutPollerId: ReturnType<typeof setInterval>;
+
+onMounted(async () => {
+  await troutStore.fetchTrout();
+  troutPollerId = setInterval(async () => troutStore.fetchTrout(), 30 * 1000);
+});
+
 onBeforeUnmount(() => {
   clearInterval(earningsPollerId);
+  clearInterval(troutPollerId);
 });
 
 const isWithdrawing = ref(false);
@@ -132,36 +138,86 @@ const hideIntro = () => toggleIntro(false);
 const showIntro = () => toggleIntro(true);
 
 type Sorters = Record<
-  string,
+  'id' | 'fee' | 'popularity' | 'inbreeding',
   {
+    available: boolean;
     name: string;
-    compare: (a: Trout, b: Trout) => number;
+    makeComparator: () => (a: Trout, b: Trout) => number;
   }
 >;
 
 const sorters: Sorters = {
   id: {
+    available: true,
     name: 'Birthday',
-    compare: (a, b) => a.id - b.id,
+    makeComparator: () => (a, b) => a.id - b.id,
   },
   fee: {
+    available: true,
     name: 'Stud Fee',
-    compare: ({ fee: afee = 0n }, { fee: bfee = 0n }) => (afee > bfee ? 1 : afee < bfee ? -1 : 0),
+    makeComparator:
+      () =>
+      ({ fee: afee = 0n }, { fee: bfee = 0n }) =>
+        afee > bfee ? 1 : afee < bfee ? -1 : 0,
   },
-  // popularity: {
-  //   name: 'Popularity',
-  //   compare: (a, b) => 0,
-  // },
-  // inbreedng: {
-  //   name: 'Inbreeding',
-  //   compare: (a, b) => 0,
-  // },
+  popularity: {
+    available: troutStore.mode === 'indexed',
+    name: 'Popularity',
+    makeComparator: () => {
+      const breedCount = new Map<number, number>();
+      for (const { parents } of Object.values(troutStore.trout)) {
+        if (!parents) continue;
+        const [l, r] = parents;
+        if (l.chainId === eth.network) {
+          breedCount.set(l.tokenId, (breedCount.get(l.tokenId) ?? 0) + 1);
+        }
+        if (r.chainId === eth.network) {
+          breedCount.set(r.tokenId, (breedCount.get(r.tokenId) ?? 0) + 1);
+        }
+      }
+      return (a, b) => (breedCount.get(a.id) ?? 0) - (breedCount.get(b.id) ?? 0);
+    },
+  },
+  inbreeding: {
+    available: troutStore.mode === 'indexed',
+    name: 'Inbreeding',
+    makeComparator: () => {
+      const cois = calculateCois(troutStore.trout);
+      return (a, b) => (cois.get(a.id) ?? 0) - (cois.get(b.id) ?? 0);
+    },
+  },
 };
+
+function calculateCois(trout: Record<TokenId, Trout>): Map<TokenId, number> {
+  const cois = new Map<TokenId, number>();
+
+  const calculateCoi = (troutId: TokenId): number => {
+    const fish = trout[troutId];
+    if (!fish.parents) return 0;
+
+    const [parent1, parent2] = fish.parents;
+    if (cois.has(troutId)) return cois.get(troutId)!;
+
+    const fA = trout[parent1.tokenId].parents ? calculateCoi(parent1.tokenId) : 0;
+    const fB = trout[parent2.tokenId].parents ? calculateCoi(parent2.tokenId) : 0;
+
+    const distance = 1; // I the parents are direct parents, the distance is 1
+    const coi = 0.5 ** distance * (1 + fA + fB);
+
+    cois.set(troutId, coi);
+    return coi;
+  };
+
+  Object.values(trout).forEach(({ id }) => calculateCoi(id));
+
+  return cois;
+}
 
 const sortOption = ref<keyof Sorters>('id');
 const sortDirection = ref<'asc' | 'desc'>('asc');
 const sorter = computed(() => {
-  const { compare } = sorters[sortOption.value];
+  const sorter = sorters[sortOption.value];
+  const compare = sorter.makeComparator();
   return sortDirection.value === 'asc' ? compare : (a: Trout, b: Trout) => -compare(a, b);
 });
 </script>
@@ -242,7 +298,11 @@ const sorter = computed(() => {
       <div class="me-1">
         Sort by:
         <select v-model="sortOption" class="bg-transparent">
-          <option v-for="[field, sort] in Object.entries(sorters)" :key="field" :value="field">
+          <option
+            v-for="[field, sort] in Object.entries(sorters).filter(([_, s]) => s.available)"
+            :key="field"
+            :value="field"
+          >
             {{ sort.name }}
           </option>
         </select>
