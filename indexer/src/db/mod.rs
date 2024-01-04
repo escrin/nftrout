@@ -6,9 +6,7 @@ use tracing::{debug, warn};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{
-        ChainId, TokenId, TokenOwnership, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION,
-    },
+    nftrout::{ChainId, TokenForUi, TokenId, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION},
 };
 
 #[cfg(test)]
@@ -161,16 +159,43 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
-    pub fn list_token_ownership(&self, chain_id: ChainId) -> Result<Vec<TokenOwnership>, Error> {
+    pub fn list_token_ownership(&self, chain_id: ChainId) -> Result<Vec<TokenForUi>, Error> {
         self.0
-            .prepare("SELECT self_id, owner, fee FROM tokens WHERE self_chain = ?")?
+            .prepare(
+                r#"
+                SELECT self_id,
+                       owner,
+                       fee,
+                       left_parent_chain,
+                       left_parent_id,
+                       right_parent_chain,
+                       left_parent_id,
+                       right_parent_id
+                  FROM tokens
+                 WHERE self_chain = ?
+                "#,
+            )?
             .query_map([chain_id], |row| {
-                Ok(TokenOwnership {
+                macro_rules! get_parent {
+                    ($side:literal) => {
+                        row.get::<_, Option<ChainId>>(concat!($side, "_parent_chain"))?
+                            .map(|chain_id| {
+                                let token_id =
+                                    row.get::<_, TokenId>(concat!($side, "_parent_id"))?;
+                                Ok::<_, rusqlite::Error>(TroutId { chain_id, token_id })
+                            })
+                            .transpose()?
+                    };
+                }
+                let left_parent = get_parent!("left");
+                let right_parent = get_parent!("right");
+                Ok(TokenForUi {
                     id: row.get("self_id")?,
                     owner: row.get::<_, String>("owner")?.parse().unwrap(),
                     fee: row
                         .get::<_, Option<String>>("fee")?
                         .map(|f| f.parse().unwrap()),
+                    parents: left_parent.zip(right_parent),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()

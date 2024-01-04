@@ -38,10 +38,11 @@ pub struct TroutToken {
 
 /// The details of a token that are necessary for the UI.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TokenOwnership {
+pub struct TokenForUi {
     pub id: TokenId,
     pub owner: Address,
     pub fee: Option<U256>,
+    pub parents: Option<(TroutId, TroutId)>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

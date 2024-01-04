@@ -10,7 +10,7 @@ use axum::{
 };
 use tower_http::cors;
 
-use crate::nftrout::{ChainId, TokenId, TokenOwnership, TroutId};
+use crate::nftrout::{ChainId, TokenForUi, TokenId, TroutId};
 
 #[derive(Clone)]
 struct AppState {
@@ -98,5 +98,5 @@ struct ListTroutQuery {}
 
 #[derive(Clone, Debug, Default, serde::Serialize)]
 struct ListTroutResponse {
-    result: Vec<TokenOwnership>,
+    result: Vec<TokenForUi>,
 }

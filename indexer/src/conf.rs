@@ -49,7 +49,7 @@ impl std::fmt::Debug for Config {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize)]
-#[serde(rename = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub enum Chain {
     SapphireMainnet,
     SapphireTestnet,
