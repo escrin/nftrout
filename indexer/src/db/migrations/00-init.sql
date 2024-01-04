@@ -17,9 +17,7 @@ CREATE TABLE tokens (
   left_parent_chain  INTEGER,
   left_parent_id     INTEGER,
   right_parent_chain INTEGER,
-  right_parent_id    INTEGER,
-
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  right_parent_id    INTEGER
 );
 
 CREATE UNIQUE INDEX ix_tokens_self ON tokens (self_chain, self_id);

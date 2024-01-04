@@ -88,7 +88,7 @@ async fn list_chain_trout(
     State(AppState { db, .. }): State<AppState>,
 ) -> Result<Json<ListTroutResponse>, Error> {
     Ok(Json(ListTroutResponse {
-        result: db.with_conn(|conn| conn.list_token_ownership(chain_id))?,
+        result: db.with_conn(|conn| conn.list_tokens_for_ui(chain_id))?,
     }))
 }
 

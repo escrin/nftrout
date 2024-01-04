@@ -6,7 +6,10 @@ use tracing::{debug, warn};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{ChainId, TokenForUi, TokenId, TroutId, TroutMetadata, TroutToken, CURRENT_VERSION},
+    nftrout::{
+        ChainId, PendingToken, TokenForUi, TokenId, TroutId, TroutMetadata, TroutToken,
+        CURRENT_VERSION,
+    },
 };
 
 #[cfg(test)]
@@ -46,7 +49,10 @@ impl Db {
     }
 
     const fn migrations() -> &'static [&'static str] {
-        &[include_str!("./migrations/00-init.sql")]
+        &[
+            include_str!("./migrations/00-init.sql"),
+            include_str!("./migrations/01-pending.sql"),
+        ]
     }
 }
 
@@ -159,7 +165,7 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
-    pub fn list_token_ownership(&self, chain_id: ChainId) -> Result<Vec<TokenForUi>, Error> {
+    pub fn list_tokens_for_ui(&self, chain_id: ChainId) -> Result<Vec<TokenForUi>, Error> {
         self.0
             .prepare(
                 r#"
@@ -170,9 +176,22 @@ impl Connection<'_> {
                        left_parent_id,
                        right_parent_chain,
                        left_parent_id,
-                       right_parent_id
+                       right_parent_id,
+                       0 as pending
                   FROM tokens
-                 WHERE self_chain = ?
+                 UNION ALL
+                SELECT self_id,
+                       owner,
+                       NULL as fee,
+                       left_parent_chain,
+                       left_parent_id,
+                       right_parent_chain,
+                       left_parent_id,
+                       right_parent_id,
+                       1 as pending
+                  FROM pending_tokens
+                 WHERE self_chain = ?1
+                 ORDER BY self_id
                 "#,
             )?
             .query_map([chain_id], |row| {
@@ -196,6 +215,7 @@ impl Connection<'_> {
                         .get::<_, Option<String>>("fee")?
                         .map(|f| f.parse().unwrap()),
                     parents: left_parent.zip(right_parent),
+                    pending: row.get("pending")?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()
@@ -247,6 +267,41 @@ impl Connection<'_> {
                 debug_assert!(!generation.is_empty());
                 generation_inserter.execute((token_rowid, ord, &**generation))?;
             }
+        }
+        Ok(())
+    }
+
+    pub fn insert_pending_tokens(
+        &self,
+        chain_id: ChainId,
+        pending_tokens: impl Iterator<Item = (TokenId, PendingToken)>,
+    ) -> Result<(), Error> {
+        let mut token_inserter = self.0.prepare_cached(
+            r#"
+            INSERT INTO pending_tokens (
+                self_chain, self_id,
+                left_parent_chain, left_parent_id,
+                right_parent_chain, right_parent_id,
+                owner
+            )
+            VALUES (
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?
+            )
+            "#,
+        )?;
+        for (token_id, token) in pending_tokens {
+            token_inserter.insert((
+                chain_id,
+                token_id,
+                token.parents.as_ref().map(|(l, _)| l.chain_id),
+                token.parents.as_ref().map(|(l, _)| l.token_id),
+                token.parents.as_ref().map(|(_, r)| r.chain_id),
+                token.parents.as_ref().map(|(_, r)| r.token_id),
+                addr_to_hex(&token.owner),
+            ))?;
         }
         Ok(())
     }

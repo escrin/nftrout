@@ -4,7 +4,7 @@ use async_stream::stream;
 use ethers::{
     contract::EthLogDecode as _,
     providers::{Http, Middleware, Provider},
-    types::{Address, BlockId, BlockNumber, Filter, Log, ValueOrArray, U256},
+    types::{Address, BlockNumber, Filter, Log, ValueOrArray, U256},
 };
 use futures::{future::BoxFuture, FutureExt as _, Stream};
 use serde::{Deserialize, Serialize};
@@ -36,13 +36,27 @@ pub struct TroutToken {
     pub fee: Option<U256>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingToken {
+    pub id: TokenId,
+    pub owner: Address,
+    pub parents: Option<(TroutId, TroutId)>,
+}
+
 /// The details of a token that are necessary for the UI.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenForUi {
     pub id: TokenId,
     pub owner: Address,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fee: Option<U256>,
     pub parents: Option<(TroutId, TroutId)>,
+    #[serde(skip_serializing_if = "is_false")]
+    pub pending: bool,
+}
+
+fn is_false(tf: &bool) -> bool {
+    !tf
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -100,7 +114,7 @@ pub struct Client {
     chain: ChainId,
     inner: NFTrout<Provider<Http>>,
     provider: Arc<Provider<Http>>,
-    block: BlockId,
+    block: BlockNumber,
 }
 
 impl Client {
@@ -140,13 +154,13 @@ impl Client {
             addr,
             inner: NFTrout::new(addr, provider.clone()),
             provider,
-            block: BlockNumber::Latest.into(),
+            block: BlockNumber::Latest,
         }
     }
 
     pub fn at_block(&self, block: u64) -> Self {
         Self {
-            block: BlockNumber::Number(block.into()).into(),
+            block: BlockNumber::Number(block.into()),
             ..self.clone()
         }
     }
@@ -279,14 +293,13 @@ impl Client {
             },
             NFTroutEvents::SpawnedFilter(f) => Event::Spawned {
                 id: f.child.as_u32(),
+                left: f.left.as_u32(),
+                right: f.right.as_u32(),
             },
             NFTroutEvents::IncubatedFilter(_) => unreachable!("not emitted"),
             NFTroutEvents::ListedFilter(f) => Event::Listed {
                 id: f.token_id.as_u32(),
                 fee: f.fee,
-            },
-            NFTroutEvents::TransferFilter(f) if f.from.is_zero() => Event::Spawned {
-                id: f.token_id.as_u32(),
             },
             NFTroutEvents::TransferFilter(f) => Event::Transfer {
                 id: f.token_id.as_u32(),
@@ -310,6 +323,8 @@ pub enum Event {
     },
     Spawned {
         id: TokenId,
+        left: TokenId,
+        right: TokenId,
     },
     Transfer {
         id: TokenId,

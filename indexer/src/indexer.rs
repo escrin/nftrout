@@ -8,7 +8,7 @@ use tracing::{debug, instrument, warn};
 use crate::{
     db::Db,
     ipfs::Client as IpfsClient,
-    nftrout::{Client as NFTroutClient, Event, TokenId, TroutToken},
+    nftrout::{Client as NFTroutClient, Event, PendingToken, TokenId, TroutId, TroutToken},
     utils::retry,
 };
 
@@ -96,6 +96,7 @@ async fn process_token_events<const N: usize>(
     let chain_id = nftrout.chain_id();
     let mut processed_block = 0;
     let mut ownership_changes: HashMap<TokenId, Address> = HashMap::new();
+    let mut pending_tokens: HashMap<TokenId, PendingToken> = HashMap::new();
     let mut fee_changes: HashMap<TokenId, Option<U256>> = HashMap::new();
     for event in batch.into_iter().flatten() {
         match event {
@@ -112,13 +113,30 @@ async fn process_token_events<const N: usize>(
                     .insert_entry(None);
                 debug!(id = id, "delisted token")
             }
-            Event::Spawned { id } => debug!(id = id, "created token"),
+            Event::Spawned { id, left, right } => {
+                let pending = pending_tokens.entry(id).or_default();
+                let to_trout_id = |token_id| TroutId { chain_id, token_id };
+                pending.parents = if left != 0 {
+                    debug_assert!(right != 0);
+                    Some((to_trout_id(left), to_trout_id(right)))
+                } else {
+                    debug_assert!(right == 0);
+                    None
+                };
+                debug!(id = id, left = left, right = right, "spawned token");
+            }
             Event::Transfer { id, from, to } => {
-                ownership_changes
-                    .entry(id)
-                    .and_modify(|v| debug_assert_eq!(*v, from))
-                    .insert_entry(to);
-                debug!(id = id, to = %to, "transferred token")
+                if from.is_zero() {
+                    let pending = pending_tokens.entry(id).or_default();
+                    pending.owner = to;
+                    debug!(id = id, to = %to, "created token");
+                } else {
+                    ownership_changes
+                        .entry(id)
+                        .and_modify(|v| debug_assert_eq!(*v, from))
+                        .insert_entry(to);
+                    debug!(id = id, to = %to, "transferred token")
+                }
             }
             Event::ProcessedBlock(block) => {
                 debug!(block = block, "processed block");
@@ -127,6 +145,9 @@ async fn process_token_events<const N: usize>(
             }
         }
     }
+    if fee_changes.is_empty() && ownership_changes.is_empty() && pending_tokens.is_empty() {
+        return;
+    }
     db.with_tx(|tx| {
         if !fee_changes.is_empty() {
             tx.update_fees(chain_id, fee_changes.into_iter()).unwrap();
@@ -134,6 +155,11 @@ async fn process_token_events<const N: usize>(
         if !ownership_changes.is_empty() {
             tx.update_owners(chain_id, ownership_changes.into_iter())
                 .unwrap();
+        }
+        if !pending_tokens.is_empty() {
+            debug_assert!(pending_tokens.values().all(|t| !t.owner.is_zero()));
+            tx.insert_pending_tokens(chain_id, pending_tokens.into_iter())
+                .unwrap()
         }
         Ok(())
     })
