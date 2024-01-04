@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ethers } from 'ethers';
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
 import TroutCard from '../components/TroutCard.vue';
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
+import type { Trout } from '../stores/nftrout';
 import { useTroutStore } from '../stores/nftrout';
 
 const eth = useEthereumStore();
@@ -123,11 +124,46 @@ async function donateEarnings() {
 }
 
 const hidingIntro = ref<boolean>(!!(window.localStorage.hideIntro ?? false));
-
-function hideIntro() {
-  hidingIntro.value = true;
-  window.localStorage.hideIntro = true;
+function toggleIntro(vis: boolean) {
+  hidingIntro.value = !vis;
+  window.localStorage.hideIntro = !vis;
 }
+const hideIntro = () => toggleIntro(false);
+const showIntro = () => toggleIntro(true);
+
+type Sorters = Record<
+  string,
+  {
+    name: string;
+    compare: (a: Trout, b: Trout) => number;
+  }
+>;
+
+const sorters: Sorters = {
+  id: {
+    name: 'Birthday',
+    compare: (a, b) => a.id - b.id,
+  },
+  fee: {
+    name: 'Stud Fee',
+    compare: ({ fee: afee = 0n }, { fee: bfee = 0n }) => (afee > bfee ? 1 : afee < bfee ? -1 : 0),
+  },
+  // popularity: {
+  //   name: 'Popularity',
+  //   compare: (a, b) => 0,
+  // },
+  // inbreedng: {
+  //   name: 'Inbreeding',
+  //   compare: (a, b) => 0,
+  // },
+};
+
+const sortOption = ref<keyof Sorters>('id');
+const sortDirection = ref<'asc' | 'desc'>('asc');
+const sorter = computed(() => {
+  const { compare } = sorters[sortOption.value];
+  return sortDirection.value === 'asc' ? compare : (a: Trout, b: Trout) => -compare(a, b);
+});
 </script>
 
 <template>
@@ -192,6 +228,40 @@ function hideIntro() {
         Hide Introduction
       </button>
     </section>
+    <button
+      v-if="hidingIntro"
+      @click="showIntro"
+      class="bg-gray-600 px-2 py-1 my-6 rounded-md text-white mx-auto block opacity-70 text-sm"
+    >
+      Show Introduction
+    </button>
+
+    <div
+      class="flex text-center px-4 py-2 mt-14 mb-4 font-medium text-white border-2 border-gray-800 bg-gray-600 w-fit mx-auto rounded-md b"
+    >
+      <div class="me-1">
+        Sort by:
+        <select v-model="sortOption" class="bg-transparent">
+          <option v-for="[field, sort] in Object.entries(sorters)" :key="field" :value="field">
+            {{ sort.name }}
+          </option>
+        </select>
+      </div>
+      <div
+        class="ms-1 cursor-pointer"
+        v-if="sortDirection == 'desc'"
+        @click="sortDirection = 'asc'"
+      >
+        ↓
+      </div>
+      <div
+        class="ms-1 cursor-pointer"
+        v-if="sortDirection == 'asc'"
+        @click="sortDirection = 'desc'"
+      >
+        ↑
+      </div>
+    </div>
 
     <section>
       <h2>Owned Trout 🎣</h2>
@@ -237,7 +307,11 @@ function hideIntro() {
         </p>
       </div>
       <ul class="flex flex-row flex-wrap">
-        <li class="mx-auto my-5" v-for="trout in troutStore.ownedTrout" :key="trout.id">
+        <li
+          class="mx-auto my-5"
+          v-for="trout in [...troutStore.ownedTrout].sort(sorter)"
+          :key="trout.id"
+        >
           <TroutCard
             @selected="() => troutSelected(trout.id)"
             @feeUpdated="(fee: bigint) => troutStore.updateFee(trout.id, fee)"
@@ -253,7 +327,11 @@ function hideIntro() {
     <section>
       <h2>Trout Farm 🎏</h2>
       <ul class="flex flex-row flex-wrap">
-        <li class="mx-auto m-5" v-for="trout in troutStore.farmedTrout" :key="trout.id">
+        <li
+          class="mx-auto m-5"
+          v-for="trout in [...troutStore.farmedTrout].sort(sorter)"
+          :key="trout.id"
+        >
           <TroutCard
             @selected="() => troutSelected(trout.id)"
             :trout="trout"
