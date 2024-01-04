@@ -5,7 +5,7 @@ use serde::{
     Deserialize,
 };
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Config {
     #[serde(default = "default_api_port")]
     pub api_port: u16,
@@ -29,6 +29,25 @@ pub struct Config {
     pub chain: Chain,
 }
 
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Self {
+            api_port,
+            ipfs_endpoint,
+            db_path,
+            reindex_interval,
+            chain,
+        } = self;
+        f.debug_struct("Config")
+            .field("api_port", api_port)
+            .field("ipfs_endpoint", &ipfs_endpoint.to_string())
+            .field("db_path", db_path)
+            .field("reindex_interval", reindex_interval)
+            .field("chain", chain)
+            .finish()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename = "kebab-case")]
 pub enum Chain {
@@ -39,7 +58,7 @@ pub enum Chain {
 
 fn deserialize_url<'de, D: Deserializer<'de>>(d: D) -> Result<url::Url, D::Error> {
     let url_str = String::deserialize(d)?;
-    let url_str = if url_str.ends_with('/') {
+    let url_str = if !url_str.ends_with('/') {
         format!("{url_str}/")
     } else {
         url_str
@@ -60,7 +79,7 @@ fn default_chain() -> Chain {
 }
 
 fn default_ipfs_endpoint() -> url::Url {
-    "http://localhost:5001/api/v0/".parse().unwrap()
+    "http://127.0.0.1:5001/api/v0/".parse().unwrap()
 }
 
 fn default_reindex_interval() -> Duration {
