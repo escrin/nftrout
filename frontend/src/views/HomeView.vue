@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import TroutCard from '../components/TroutCard.vue';
+import TroutModal from '../components/TroutModal.vue';
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
 import type { TokenId, Trout } from '../stores/nftrout';
@@ -75,10 +76,10 @@ async function checkEarnings() {
 
 watch(eth, async (eth) => {
   if (eth.address) {
-    clearTimeout(earningsPollerId);
-    earningsPollerId = setInterval(checkEarnings, eth.address ? 30 * 1000 : 1_000);
+    clearInterval(earningsPollerId);
+    // earningsPollerId = setInterval(checkEarnings, eth.address ? 30 * 1000 : 1_000);
   }
-  await Promise.all([troutStore.fetchTrout(), checkEarnings()]);
+  await Promise.allSettled([troutStore.fetchTrout(), checkEarnings()]);
 });
 
 let troutPollerId: ReturnType<typeof setInterval>;
@@ -221,193 +222,206 @@ const sorter = computed(() => {
   const compare = sorter.makeComparator();
   return sortDirection.value === 'asc' ? compare : (a: Trout, b: Trout) => -compare(a, b);
 });
+
+const menuTroutId = ref<TokenId | undefined>();
+
+async function troutContext(troutId: number) {
+  await eth.connect();
+  menuTroutId.value = troutId;
+}
 </script>
 
 <template>
-  <main class="m-auto md:w-2/3 sm:w-4/5">
-    <section class="flex flex-col" v-if="!hidingIntro">
-      <h2>Introduction 🏞️</h2>
-      <div class="p-5 backdropped inline-block mx-auto">
-        <p class="padded !mt-0">
-          NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because
-          trout genes are secret and known only to the game itself. Since nobody knows the genes,
-          each trout is unpredictable and unique, just like a real trout.
-        </p>
-        <p class="padded">
-          NFTrout is a tech demo of the
-          <a href="https://escrin.org" target="_blank">Escrin</a> autonomous computing network. You
-          can connect with our mission of making secure computing accessible to all on
-          <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
-          <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
-        </p>
-        <h3>How to Play</h3>
-        <ol class="max-w-prose list-decimal text-left m-auto list-inside padded">
-          <li
-            ><span
-              >Connect your browser wallet to
-              <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> and ensure that it is
-              funded.
-            </span></li
+  <div>
+    <main class="m-auto md:w-2/3 sm:w-4/5">
+      <section class="flex flex-col" v-if="!hidingIntro">
+        <h2>Introduction 🏞️</h2>
+        <div class="p-5 blur-bg inline-block mx-auto">
+          <p class="padded !mt-0">
+            NFTrout is an <i>autonomous</i> trout NFT breeding game. NFTrout is autonomous because
+            trout genes are secret and known only to the game itself. Since nobody knows the genes,
+            each trout is unpredictable and unique, just like a real trout.
+          </p>
+          <p class="padded">
+            NFTrout is a tech demo of the
+            <a href="https://escrin.org" target="_blank">Escrin</a> autonomous computing network.
+            You can connect with our mission of making secure computing accessible to all on
+            <a href="https://discord.gg/KpNYB2F42a" target="_blank">Discord</a> or
+            <a href="https://twitter.com/EnshrineCC" target="_blank">Twitter</a>.
+          </p>
+          <h3>How to Play</h3>
+          <ol class="max-w-prose list-decimal text-left m-auto list-inside padded">
+            <li
+              ><span
+                >Connect your browser wallet to
+                <a href="https://chainlist.org/chain/23294">Oasis Sapphire</a> and ensure that it is
+                funded.
+              </span></li
+            >
+            <li>Click any two trout to initiate a breeding transaction.</li>
+            <li>Send the tx to begin incubating your trout and join the TROUT community.</li>
+            <li
+              >Your new trout will incubate for a while. Longer incubation is associated with
+              rarity.</li
+            >
+            <li
+              >The baby trout appear under "Owned Trout". Owned trout can be farmed for
+              breeding.</li
+            >
+          </ol>
+          <h3>Tips</h3>
+          <ul class="max-w-prose list-disc text-left m-auto list-inside padded">
+            <li>Long-term NFTrout holders get special perks within the community.</li>
+            <li>NFTrout does not collect any of your personal data.</li>
+            <li>
+              <span
+                >This service is provided under the terms of the
+                <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
+                <a href="https://github.com/escrin/escrin" target="_blank">Here's</a>
+                the
+                <a
+                  href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
+                  target="_blank"
+                  >code</a
+                >.
+              </span>
+            </li>
+          </ul>
+        </div>
+        <button
+          @click="hideIntro"
+          class="bg-blue-600 px-2 py-1 my-6 rounded-md text-white mx-auto block"
+        >
+          Hide Introduction
+        </button>
+      </section>
+      <button
+        v-if="hidingIntro"
+        @click="showIntro"
+        class="bg-gray-600 px-2 py-1 my-6 rounded-md text-white mx-auto block opacity-70 text-sm"
+      >
+        Show Introduction
+      </button>
+
+      <div
+        class="flex text-center px-4 py-2 mt-14 mb-4 font-medium text-gray-800 border-2 border-gray-800 bg-gray-200 w-fit mx-auto rounded-md b"
+      >
+        <div class="me-1">
+          Sort by:
+          <select v-model="sortOption" class="bg-transparent">
+            <option
+              v-for="[field, sort] in Object.entries(sorters).filter(([_, s]) => s.available)"
+              :key="field"
+              :value="field"
+            >
+              {{ sort.name }}
+            </option>
+          </select>
+        </div>
+        <div
+          class="ms-1 cursor-pointer"
+          v-if="sortDirection == 'desc'"
+          @click="sortDirection = 'asc'"
+        >
+          ↓
+        </div>
+        <div
+          class="ms-1 cursor-pointer"
+          v-if="sortDirection == 'asc'"
+          @click="sortDirection = 'desc'"
+        >
+          ↑
+        </div>
+      </div>
+
+      <section>
+        <h2>Owned Trout 🎣</h2>
+        <div class="my-2 flex flex-col">
+          <form
+            v-if="earnings !== 0n"
+            @submit.prevent="withdrawEarnings"
+            class="cashout-form border-yellow-400 bg-yellow-100"
           >
-          <li>Click any two trout to initiate a breeding transaction.</li>
-          <li>Send the tx to begin incubating your trout and join the TROUT community.</li>
-          <li
-            >Your new trout will incubate for a while. Longer incubation is associated with
-            rarity.</li
+            You have <span class="text-green-800">{{ ethers.formatEther(earnings) }}</span
+            >&nbsp;{{ eth.currency }}
+            <span v-if="isWithdrawing"> being withdrawn now. </span>
+            <template v-else>
+              available to
+              <button class="bg-green-500 px-2 py-1 rounded-md text-white">withdraw</button>
+            </template>
+          </form>
+          <form
+            v-if="suggestedDonation !== 0n"
+            @submit.prevent="donateEarnings"
+            class="cashout-form border-sky-400 bg-sky-100"
           >
-          <li
-            >The baby trout appear under "Owned Trout". Owned trout can be farmed for breeding.</li
+            <span v-if="isDonating || false"> Thank you for donating ❤️! </span>
+            <template v-else>
+              Would you like to
+              <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
+              your <span>{{ ethers.formatEther(suggestedDonation) }}</span
+              >&nbsp;{{ eth.currency }}
+              earnings?
+            </template>
+          </form>
+        </div>
+        <div class="my-2">
+          <p
+            v-if="troutStore.pendingCount > 0"
+            class="text-center px-3 py-2 font-medium text-white bg-blue-800 border-2 border-blue-700 inline-block mx-auto rounded-md"
           >
-        </ol>
-        <h3>Tips</h3>
-        <ul class="max-w-prose list-disc text-left m-auto list-inside padded">
-          <li>Long-term NFTrout holders get special perks within the community.</li>
-          <li>NFTrout does not collect any of your personal data.</li>
-          <li>
-            <span
-              >This service is provided under the terms of the
-              <a href="https://en.wikipedia.org/wiki/MIT_License" target="_blank">MIT License</a>.
-              <a href="https://github.com/escrin/escrin" target="_blank">Here's</a>
-              the
-              <a
-                href="https://github.com/escrin/nftrout/blob/main/evm/contracts/NFTrout.sol"
-                target="_blank"
-                >code</a
-              >.
+            You have {{ troutStore.pendingCount }} trout currently incubating.
+            <span v-if="isBreeding">
+              <br />
+              A pair is currently breeding.
             </span>
+          </p>
+        </div>
+        <ul class="flex flex-row flex-wrap">
+          <li
+            class="mx-auto my-5"
+            v-for="trout in [...troutStore.ownedTrout].sort(sorter)"
+            :key="trout.id"
+          >
+            <TroutCard
+              @selected="() => troutSelected(trout.id)"
+              @feeUpdated="(fee: bigint) => troutStore.updateFee(trout.id, fee)"
+              @menu="() => troutContext(trout.id)"
+              :trout="trout"
+              :selected="isSelected(trout.id)"
+              :selectable="!isBreeding"
+              :editable="selectedTrouts.length == 1"
+            />
           </li>
         </ul>
-      </div>
-      <button
-        @click="hideIntro"
-        class="bg-blue-600 px-2 py-1 my-6 rounded-md text-white mx-auto block"
-      >
-        Hide Introduction
-      </button>
-    </section>
-    <button
-      v-if="hidingIntro"
-      @click="showIntro"
-      class="bg-gray-600 px-2 py-1 my-6 rounded-md text-white mx-auto block opacity-70 text-sm"
-    >
-      Show Introduction
-    </button>
+      </section>
 
-    <div
-      class="flex text-center px-4 py-2 mt-14 mb-4 font-medium text-gray-800 border-2 border-gray-800 bg-gray-200 w-fit mx-auto rounded-md b"
-    >
-      <div class="me-1">
-        Sort by:
-        <select v-model="sortOption" class="bg-transparent">
-          <option
-            v-for="[field, sort] in Object.entries(sorters).filter(([_, s]) => s.available)"
-            :key="field"
-            :value="field"
+      <section>
+        <h2>Trout Farm 🎏</h2>
+        <ul class="flex flex-row flex-wrap">
+          <li
+            class="mx-auto m-5"
+            v-for="trout in [...troutStore.farmedTrout].sort(sorter)"
+            :key="trout.id"
           >
-            {{ sort.name }}
-          </option>
-        </select>
-      </div>
-      <div
-        class="ms-1 cursor-pointer"
-        v-if="sortDirection == 'desc'"
-        @click="sortDirection = 'asc'"
-      >
-        ↓
-      </div>
-      <div
-        class="ms-1 cursor-pointer"
-        v-if="sortDirection == 'asc'"
-        @click="sortDirection = 'desc'"
-      >
-        ↑
-      </div>
-    </div>
-
-    <section>
-      <h2>Owned Trout 🎣</h2>
-      <div class="my-2 flex flex-col">
-        <form
-          v-if="earnings !== 0n"
-          @submit.prevent="withdrawEarnings"
-          class="cashout-form border-yellow-400 bg-yellow-100"
-        >
-          You have <span class="text-green-800">{{ ethers.formatEther(earnings) }}</span
-          >&nbsp;{{ eth.currency }}
-          <span v-if="isWithdrawing"> being withdrawn now. </span>
-          <template v-else>
-            available to
-            <button class="bg-green-500 px-2 py-1 rounded-md text-white">withdraw</button>
-          </template>
-        </form>
-        <form
-          v-if="suggestedDonation !== 0n"
-          @submit.prevent="donateEarnings"
-          class="cashout-form border-sky-400 bg-sky-100"
-        >
-          <span v-if="isDonating || false"> Thank you for donating ❤️! </span>
-          <template v-else>
-            Would you like to
-            <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
-            your <span>{{ ethers.formatEther(suggestedDonation) }}</span
-            >&nbsp;{{ eth.currency }}
-            earnings?
-          </template>
-        </form>
-      </div>
-      <div class="my-2">
-        <p
-          v-if="troutStore.pendingCount > 0"
-          class="text-center px-3 py-2 font-medium text-white bg-blue-800 border-2 border-blue-700 inline-block mx-auto rounded-md"
-        >
-          You have {{ troutStore.pendingCount }} trout currently incubating.
-          <span v-if="isBreeding">
-            <br />
-            A pair is currently breeding.
-          </span>
-        </p>
-      </div>
-      <ul class="flex flex-row flex-wrap">
-        <li
-          class="mx-auto my-5"
-          v-for="trout in [...troutStore.ownedTrout].sort(sorter)"
-          :key="trout.id"
-        >
-          <TroutCard
-            @selected="() => troutSelected(trout.id)"
-            @feeUpdated="(fee: bigint) => troutStore.updateFee(trout.id, fee)"
-            :trout="trout"
-            :selected="isSelected(trout.id)"
-            :selectable="!isBreeding"
-            :editable="selectedTrouts.length == 1"
-          />
-        </li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Trout Farm 🎏</h2>
-      <ul class="flex flex-row flex-wrap">
-        <li
-          class="mx-auto m-5"
-          v-for="trout in [...troutStore.farmedTrout].sort(sorter)"
-          :key="trout.id"
-        >
-          <TroutCard
-            @selected="() => troutSelected(trout.id)"
-            :trout="trout"
-            :selected="isSelected(trout.id)"
-            :selectable="!isBreeding"
-          />
-        </li>
-      </ul>
-    </section>
-  </main>
+            <TroutCard
+              @selected="() => troutSelected(trout.id)"
+              @menu="() => troutContext(trout.id)"
+              :trout="trout"
+              :selected="isSelected(trout.id)"
+              :selectable="!isBreeding"
+            />
+          </li>
+        </ul>
+      </section>
+    </main>
+    <TroutModal :showingTrout="menuTroutId" @close="menuTroutId = undefined" />
+  </div>
 </template>
 
 <style scoped lang="postcss">
 input {
-  @apply block my-4 p-1 mx-auto text-3xl text-center border border-gray-400 rounded-md;
+  @apply p-1 border border-gray-400 rounded-md;
 }
 
 section {
@@ -415,7 +429,7 @@ section {
 }
 
 h2 {
-  @apply font-bold text-2xl mt-8 mb-4 text-center inline-block mx-auto px-5 py-2 backdropped;
+  @apply font-bold text-2xl mt-8 mb-4 text-center inline-block mx-auto px-5 py-2 blur-bg rounded-lg;
 }
 
 h3 {
@@ -438,7 +452,7 @@ a {
   @apply text-center px-3 py-2 font-medium border-2 mx-auto rounded-md text-gray-900 my-2;
 }
 
-.backdropped {
-  @apply bg-sky-950/40 backdrop-blur-sm rounded-lg;
+.blur-bg {
+  @apply bg-sky-950/40 backdrop-blur-sm;
 }
 </style>

@@ -10,7 +10,7 @@ const eth = useEthereumStore();
 
 const nftrout = useNFTrout();
 
-const emit = defineEmits(['feeUpdated', 'selected']); // TODO: use pinia store
+const emit = defineEmits(['feeUpdated', 'selected', 'menu']); // TODO: use pinia store
 
 const props = defineProps<{
   trout: Trout;
@@ -18,6 +18,7 @@ const props = defineProps<{
   selected?: boolean;
   selectable?: boolean;
   editable?: boolean;
+  context?: boolean;
 }>();
 const scale = computed(() => props.scale ?? 0.45);
 const w = computed(() => 500 * scale.value + 2);
@@ -68,7 +69,11 @@ async function delistTrout() {
 </script>
 
 <template>
-  <div class="bg-white border-gray-600 border-4 rounded-md" :class="{ selected: props.selected }">
+  <div
+    class="bg-white border-gray-600 border-4 rounded-md"
+    :class="{ selected: props.selected, context }"
+    @contextmenu.prevent.stop="() => emit('menu')"
+  >
     <div
       @click="$emit('selected')"
       class="bg-contain bg-no-repeat bg-cover rounded-sm"
@@ -130,6 +135,10 @@ async function delistTrout() {
 <style lang="postcss" scoped>
 .selected {
   @apply border-rose-500;
+}
+
+.context {
+  @apply border-purple-500;
 }
 
 fieldset legend {
