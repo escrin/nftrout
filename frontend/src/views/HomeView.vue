@@ -294,7 +294,7 @@ const sorter = computed(() => {
     </button>
 
     <div
-      class="flex text-center px-4 py-2 mt-14 mb-4 font-medium text-white border-2 border-gray-800 bg-gray-600 w-fit mx-auto rounded-md b"
+      class="flex text-center px-4 py-2 mt-14 mb-4 font-medium text-gray-800 border-2 border-gray-800 bg-gray-200 w-fit mx-auto rounded-md b"
     >
       <div class="me-1">
         Sort by:
