@@ -76,20 +76,22 @@ async function delistTrout() {
   >
     <div
       @click="$emit('selected')"
-      class="bg-contain bg-no-repeat bg-cover rounded-sm"
+      class="relative rounded-sm"
       :style="{
-        'background-image': `url('${trout.imageUrl}')`,
+        cursor: selectable ? 'pointer' : 'default',
         width: `${w}px`,
         height: `${300 * scale + 4}px`,
-        cursor: selectable ? 'pointer' : 'default',
       }"
     >
-      <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
-        <span>{{ formatFee(props.trout.fee) }} {{ eth.currency }}</span>
-      </p>
-      <p class="fishhead float-left">
-        <span class="pl-1">#{{ props.trout.id }}</span>
-      </p>
+      <img loading="lazy" :src="trout.imageUrl" class="absolute w-full h-full" />
+      <div class="relative z-10">
+        <p v-if="props.trout.fee !== undefined" class="fishhead float-right">
+          <span>{{ formatFee(props.trout.fee) }} {{ eth.currency }}</span>
+        </p>
+        <p class="fishhead float-left">
+          <span class="pl-1">#{{ props.trout.id }}</span>
+        </p>
+      </div>
     </div>
     <form
       v-if="props.editable && selected"
