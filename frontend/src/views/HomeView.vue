@@ -108,7 +108,7 @@ async function withdrawEarnings() {
     console.log('withdrawing', tx);
     const receipt = await tx.wait();
     if (receipt?.status !== 1) throw new Error('withdraw failed');
-    suggestedDonation.value = earnings.value;
+    suggestedDonation.value = earnings.value / 10n;
     earnings.value = 0n;
   } finally {
     isWithdrawing.value = false;
@@ -366,13 +366,12 @@ async function troutContext(troutId: number) {
             @submit.prevent="donateEarnings"
             class="cashout-form border-sky-400 bg-sky-100"
           >
-            <span v-if="isDonating || false"> Thank you for donating ❤️! </span>
+            <span v-if="isDonating"> Thank you for donating ❤️! </span>
             <template v-else>
               Would you like to
               <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
-              your <span>{{ ethers.formatEther(suggestedDonation) }}</span
-              >&nbsp;{{ eth.currency }}
-              earnings?
+              10% (<span>{{ ethers.formatEther(suggestedDonation) }}</span
+              >&nbsp;{{ eth.currency }})?
             </template>
           </form>
         </div>
