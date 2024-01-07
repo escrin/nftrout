@@ -17,7 +17,7 @@
     "format": "npm-run-all format:**"
   },
   "dependencies": {
-    "@escrin/nftrout-evm": "workspace:^",
+    "@escrin/nftrout-evm": "file:nftrout-evm.tgz",
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
     "@wagmi/core": "^1.4.12",

@@ -3,17 +3,5 @@
   "proseWrap": "always",
   "singleQuote": true,
   "trailingComma": "all",
-  "htmlWhitespaceSensitivity": "strict",
-  "overrides": [
-    {
-      "files": "*.sol",
-      "options": {
-        "printWidth": 100,
-        "tabWidth": 4,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": false,
-      }
-    }
-  ]
+  "htmlWhitespaceSensitivity": "strict"
 }
