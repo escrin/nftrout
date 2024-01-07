@@ -371,7 +371,8 @@ async function troutContext(troutId: number) {
               Would you like to
               <button class="bg-sky-800 px-2 py-1 rounded-md text-white">donate</button>
               10% (<span>{{ ethers.formatEther(suggestedDonation) }}</span
-              >&nbsp;{{ eth.currency }})?
+              >&nbsp;{{ eth.currency }}) to
+              <a href="https://www.tu.org/" target="_blank">trout conservation</a>?
             </template>
           </form>
         </div>
