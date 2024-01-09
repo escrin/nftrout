@@ -2,14 +2,11 @@ use std::sync::Arc;
 
 use ethers::types::{Address, U256};
 use rusqlite::OptionalExtension as _;
-use tracing::{debug, warn};
+use tracing::debug;
 
 use crate::{
     ipfs::Cid,
-    nftrout::{
-        ChainId, PendingToken, TokenForUi, TokenId, TroutId, TroutMetadata, TroutToken,
-        CURRENT_VERSION,
-    },
+    nftrout::{ChainId, PendingToken, TokenForUi, TokenId, TroutId, TroutToken},
 };
 
 #[cfg(test)]
@@ -49,10 +46,7 @@ impl Db {
     }
 
     const fn migrations() -> &'static [&'static str] {
-        &[
-            include_str!("./migrations/00-init.sql"),
-            include_str!("./migrations/01-pending.sql"),
-        ]
+        &[include_str!("./migrations/00-init.sql")]
     }
 }
 
@@ -80,7 +74,7 @@ impl<'a> std::ops::Deref for Transaction<'a> {
 }
 
 impl Transaction<'_> {
-    fn migrate(&self, migrations: &[&str]) -> Result<(), Error> {
+    fn migrate(&self, migrations: &[&str]) -> Result<usize, Error> {
         let tx = &self.0 .0;
         static USER_VERSION: &str = "user_version";
         let version =
@@ -92,15 +86,15 @@ impl Transaction<'_> {
         );
         if version >= migrations.len() {
             if version > migrations.len() {
-                warn!("databse version unexpectedly high?");
+                panic!("databse version unexpectedly high?");
             }
-            return Ok(());
+            return Ok(version);
         }
         for migration in migrations.iter().skip(version) {
             tx.execute_batch(migration)?;
         }
         tx.pragma_update(None, USER_VERSION, migrations.len())?;
-        Ok(())
+        Ok(version)
     }
 }
 
@@ -123,9 +117,38 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
+    pub fn needs_coi_analysis(&self) -> Result<Vec<TroutId>, Error> {
+        self.0
+            .prepare(
+                r#"
+                SELECT self_chain, self_id
+                  FROM tokens
+                  JOIN analysis
+                    ON analysis.token = tokens.id
+                 WHERE coi = -1
+                "#,
+            )?
+            .query_map([], |row| {
+                Ok(TroutId {
+                    chain_id: row.get(0)?,
+                    token_id: row.get(1)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
+    }
+
     pub fn outdated_token_ids(&self, chain_id: ChainId) -> Result<Vec<TokenId>, Error> {
         self.0
-            .prepare("SELECT self_id FROM tokens WHERE self_chain = ? AND version < ? LIMIT 1000")?
+            .prepare(
+                r#"
+                SELECT tokens.self_id
+                  FROM tokens
+                  LEFT JOIN metadata ON metadata.token = tokens.id
+                 WHERE tokens.self_chain = ?
+                   AND (metadata.version IS NULL OR metadata.version < ?)
+                "#,
+            )?
             .query_map([chain_id, crate::nftrout::CURRENT_VERSION], |row| {
                 row.get::<_, TokenId>(0)
             })?
@@ -165,36 +188,30 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
-    pub fn list_tokens_for_ui(&self, chain_id: ChainId) -> Result<Vec<TokenForUi>, Error> {
+    pub fn list_tokens_for_ui(
+        &self,
+        chain_id: impl Into<Option<ChainId>>,
+    ) -> Result<Vec<TokenForUi>, Error> {
         self.0
             .prepare(
                 r#"
-                SELECT self_id,
-                       owner,
-                       fee,
-                       left_parent_chain,
-                       left_parent_id,
-                       right_parent_chain,
-                       left_parent_id,
-                       right_parent_id,
-                       0 as pending
+                SELECT tokens.self_id,
+                       tokens.owner,
+                       analysis.coi,
+                       metadata.left_parent_chain,
+                       metadata.left_parent_id,
+                       metadata.right_parent_chain,
+                       metadata.right_parent_id,
+                       metadata.fee,
+                       metadata.version IS NULL as pending
                   FROM tokens
-                 UNION ALL
-                SELECT self_id,
-                       owner,
-                       NULL as fee,
-                       left_parent_chain,
-                       left_parent_id,
-                       right_parent_chain,
-                       left_parent_id,
-                       right_parent_id,
-                       1 as pending
-                  FROM pending_tokens
-                 WHERE self_chain = ?1
-                 ORDER BY self_id
+                  LEFT JOIN metadata ON metadata.token = tokens.id
+                  JOIN analysis ON analysis.token = tokens.id
+                 WHERE iif(?1, tokens.self_chain = ?1, 1)
+                 ORDER BY tokens.self_id ASC
                 "#,
             )?
-            .query_map([chain_id], |row| {
+            .query_map([chain_id.into()], |row| {
                 macro_rules! get_parent {
                     ($side:literal) => {
                         row.get::<_, Option<ChainId>>(concat!($side, "_parent_chain"))?
@@ -210,6 +227,7 @@ impl Connection<'_> {
                 let right_parent = get_parent!("right");
                 Ok(TokenForUi {
                     id: row.get("self_id")?,
+                    coi: row.get("coi")?,
                     owner: row.get::<_, String>("owner")?.parse().unwrap(),
                     fee: row
                         .get::<_, Option<String>>("fee")?
@@ -224,36 +242,52 @@ impl Connection<'_> {
 
     pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
+            r#"INSERT OR IGNORE INTO tokens (self_chain, self_id, owner) VALUES (?, ?, ?)"#,
+        )?;
+        let mut select_token_rowid = self
+            .0
+            .prepare_cached(r#"SELECT id FROM tokens WHERE self_chain = ? AND self_id = ?"#)?;
+        let mut metadata_inserter = self.0.prepare_cached(
             r#"
-            INSERT INTO tokens (
-                self_chain, self_id,
+            INSERT INTO metadata (
+                token,
                 version, name,
-                owner, fee,
+                fee,
                 is_genesis, is_santa,
                 left_parent_chain, left_parent_id,
                 right_parent_chain, right_parent_id
             ) VALUES (
+                ?,
                 ?, ?,
-                ?, ?,
-                ?, ?,
+                ?,
                 ?, ?,
                 ?, ?,
                 ?, ?
             )
             "#,
         )?;
+        let mut analysis_inserter = self
+            .0
+            .prepare_cached(r#"INSERT INTO analysis (token, coi) VALUES (?, ?)"#)?;
         let mut generation_inserter = self.0.prepare_cached(
             r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
         )?;
         for token in tokens {
             debug_assert!(!token.meta.name.is_empty());
             let props = &token.meta.properties;
-            let token_rowid = token_inserter.insert((
+            token_inserter.execute((
                 props.self_id.chain_id,
                 props.self_id.token_id,
+                addr_to_hex(&token.owner),
+            ))?;
+            let token_rowid: i64 = select_token_rowid
+                .query_row([props.self_id.chain_id, props.self_id.token_id], |row| {
+                    row.get(0)
+                })?;
+            metadata_inserter.insert((
+                token_rowid,
                 props.version,
                 &token.meta.name,
-                addr_to_hex(&token.owner),
                 token.fee.as_ref().map(u256_to_hex),
                 props.attributes.genesis,
                 props.attributes.santa,
@@ -262,6 +296,7 @@ impl Connection<'_> {
                 props.right.map(|token_id| token_id.chain_id),
                 props.right.map(|token_id| token_id.token_id),
             ))?;
+            analysis_inserter.insert((token_rowid, token.coi))?;
             generation_inserter.execute((token_rowid, props.generations.len(), &*token.cid))?;
             for (ord, generation) in props.generations.iter().enumerate() {
                 debug_assert!(!generation.is_empty());
@@ -277,56 +312,24 @@ impl Connection<'_> {
         pending_tokens: impl Iterator<Item = (TokenId, PendingToken)>,
     ) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
-            r#"
-            INSERT INTO pending_tokens (
-                self_chain, self_id,
-                left_parent_chain, left_parent_id,
-                right_parent_chain, right_parent_id,
-                owner
-            )
-            VALUES (
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?
-            )
-            "#,
+            r#"INSERT OR IGNORE INTO tokens (self_chain, self_id, owner) VALUES (?, ?, ?)"#,
         )?;
         for (token_id, token) in pending_tokens {
-            token_inserter.insert((
-                chain_id,
-                token_id,
-                token.parents.as_ref().map(|(l, _)| l.chain_id),
-                token.parents.as_ref().map(|(l, _)| l.token_id),
-                token.parents.as_ref().map(|(_, r)| r.chain_id),
-                token.parents.as_ref().map(|(_, r)| r.token_id),
-                addr_to_hex(&token.owner),
-            ))?;
+            token_inserter.execute((chain_id, token_id, addr_to_hex(&token.owner)))?;
         }
         Ok(())
     }
 
-    pub fn update_tokens(
-        &self,
-        tokens: impl Iterator<Item = &(Cid, TroutMetadata)>,
-    ) -> Result<(), Error> {
-        let mut token_updater = self.0.prepare_cached(
-            r#"UPDATE tokens SET version = ? WHERE self_chain = ? AND self_id = ?"#,
+    pub fn set_cois(&self, cois: impl Iterator<Item = (TroutId, f64)>) -> Result<(), Error> {
+        let mut updater = self.0.prepare_cached(
+            r#"
+            UPDATE analysis
+               SET coi = ?
+             WHERE token IN (SELECT id FROM tokens WHERE self_chain = ? AND self_id = ?)
+            "#,
         )?;
-        let mut generation_inserter = self.0.prepare_cached(
-            r#"INSERT OR IGNORE INTO generations (token, ord, cid) VALUES (?, ?, ?)"#,
-        )?;
-        for (cid, meta) in tokens {
-            let props = &meta.properties;
-            let token_rowid = token_updater.execute((
-                CURRENT_VERSION,
-                props.self_id.chain_id,
-                props.self_id.token_id,
-            ))?;
-            generation_inserter.execute((token_rowid, props.generations.len(), &**cid))?;
-            for (ord, generation) in props.generations.iter().enumerate() {
-                generation_inserter.execute((token_rowid, ord, &**generation))?;
-            }
+        for (trout_id, coi) in cois {
+            updater.execute((coi, trout_id.chain_id, trout_id.token_id))?;
         }
         Ok(())
     }
@@ -336,9 +339,13 @@ impl Connection<'_> {
         chain_id: ChainId,
         tokens: impl Iterator<Item = (TokenId, Option<U256>)>,
     ) -> Result<(), Error> {
-        let mut fee_updater = self
-            .0
-            .prepare_cached(r#"UPDATE tokens SET fee = ? WHERE self_chain = ? AND self_id = ?"#)?;
+        let mut fee_updater = self.0.prepare_cached(
+            r#"
+                UPDATE metadata
+                   SET fee = ?
+                 WHERE token IN (SELECT id FROM tokens WHERE self_chain = ? AND self_id = ?)
+                "#,
+        )?;
         for (token_id, fee) in tokens {
             fee_updater.execute((fee.as_ref().map(u256_to_hex), chain_id, token_id))?;
         }

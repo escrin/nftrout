@@ -2,12 +2,20 @@ CREATE TABLE tokens (
   id INTEGER PRIMARY KEY,
 
   owner H160 NOT NULL,
-  fee U256 DEFAULT NULL,
 
   self_chain INTEGER NOT NULL,
-  self_id    INTEGER NOT NULL,
+  self_id    INTEGER NOT NULL
+);
 
-  version INTEGER NOT NULL,
+CREATE UNIQUE INDEX ix_tokens_self ON tokens (self_chain, self_id);
+CREATE INDEX ix_tokens_owner ON tokens (owner);
+
+CREATE TABLE metadata (
+  token INTEGER PRIMARY KEY NOT NULL REFERENCES tokens(id),
+
+  fee U256 DEFAULT NULL,
+
+  version INTEGER NOT NULL DEFAULT -1,
 
   name TEXT NOT NULL,
 
@@ -20,14 +28,12 @@ CREATE TABLE tokens (
   right_parent_id    INTEGER
 );
 
-CREATE UNIQUE INDEX ix_tokens_self ON tokens (self_chain, self_id);
-CREATE INDEX ix_tokens_left_parent ON tokens (left_parent_chain, left_parent_id);
-CREATE INDEX ix_tokens_right_parent ON tokens (right_parent_chain, right_parent_id);
-CREATE INDEX ix_tokens_version ON tokens (version);
-CREATE INDEX ix_tokens_owner ON tokens (owner);
+CREATE INDEX ix_metadata_version ON metadata (version);
+CREATE INDEX ix_metadata_left_parent ON metadata (left_parent_chain, left_parent_id);
+CREATE INDEX ix_metadata_right_parent ON metadata (right_parent_chain, right_parent_id);
 
 CREATE TABLE generations (
-  token INTEGER NOT NULL REFERENCES tokens(id),
+  token INTEGER PRIMARY KEY NOT NULL REFERENCES tokens(id),
   ord INTEGER NOT NULL DEFAULT 0 CHECK(ord >= 0),
   cid TEXT NOT NULL UNIQUE,
   pinned BOOLEAN NOT NULL DEFAULT 0 CHECK(pinned = 0 OR pinned = 1),
@@ -36,3 +42,9 @@ CREATE TABLE generations (
 
 CREATE UNIQUE INDEX ix_generations_uniq ON generations (token, ord);
 CREATE INDEX ix_generations_pinned ON generations (pinned) WHERE pinned = 0;
+
+CREATE TABLE analysis (
+  token INTEGER PRIMARY KEY NOT NULL REFERENCES tokens(id),
+
+  coi INTEGER NOT NULL DEFAULT -1
+);

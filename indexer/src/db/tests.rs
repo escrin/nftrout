@@ -39,6 +39,7 @@ fn test_token() -> TroutToken {
         },
         fee: rand::random::<Option<u128>>().map(|v| v.into()),
         owner: rand::random(),
+        coi: rand::random(),
     }
 }
 

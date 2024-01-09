@@ -2,13 +2,17 @@ use std::collections::HashMap;
 
 use ethers::types::{Address, U256};
 use futures::StreamExt as _;
+use parking_lot::RwLock;
 use tokio::time::{sleep, timeout, Duration};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument, trace, warn};
 
 use crate::{
     db::Db,
     ipfs::Client as IpfsClient,
-    nftrout::{Client as NFTroutClient, Event, PendingToken, TokenId, TroutId, TroutToken},
+    nftrout::{
+        algo::{self, Ancestors},
+        Client as NFTroutClient, Event, PendingToken, TokenId, TroutToken,
+    },
     utils::retry,
 };
 
@@ -19,15 +23,32 @@ const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 #[instrument(skip_all)]
 pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
+    let (tokens, needs_coi_analysis) = db
+        .with_conn(|conn| Ok((conn.list_tokens_for_ui(None)?, conn.needs_coi_analysis()?)))
+        .unwrap();
+    let g = RwLock::new(algo::make_graph(tokens.into_iter()));
+
     // Quickly index new and changed token metadata
     let start_block = retry(|| nftrout.latest_block()).await;
     {
         let past_nftrout = nftrout.at_block(start_block);
         debug!("starting initial index from {start_block}");
         index_ownership_and_fees(&past_nftrout, db, None).await;
-        index_new_tokens(&past_nftrout, ipfs_client, db, None).await;
-        index_new_versions(&past_nftrout, ipfs_client, db, None).await;
+        index_new_tokens(&past_nftrout, ipfs_client, db, &g, None).await;
+        index_new_versions(&past_nftrout, ipfs_client, db, &g, None).await;
         debug!("finished initial index from {start_block}");
+    }
+
+    if !needs_coi_analysis.is_empty() {
+        let g = g.read();
+        debug!("starting COI analysis");
+        let cois = needs_coi_analysis
+            .iter()
+            .copied()
+            .map(|token| (token, algo::inbreeding(&g, token)))
+            .collect::<Vec<_>>();
+        db.with_tx(|tx| tx.set_cois(cois.into_iter())).unwrap();
+        debug!("completed COI analysis");
     }
 
     let pin_fut = async {
@@ -45,11 +66,12 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
 
     let reindex_fut = async {
         loop {
-            debug!("(re-)indexing new & skipped tokens");
-            let new_fut = index_new_tokens(nftrout, ipfs_client, db, None);
-            let skipped_fut = index_skipped_tokens(nftrout, ipfs_client, db, None);
-            tokio::join!(new_fut, skipped_fut);
-            debug!("indexed new & skipped tokens");
+            debug!("batch re-indexing tokens");
+            let new_fut = index_new_tokens(nftrout, ipfs_client, db, &g, None);
+            let skipped_fut = index_skipped_tokens(nftrout, ipfs_client, db, &g, None);
+            let pending_fut = index_new_versions(nftrout, ipfs_client, db, &g, None);
+            tokio::join!(new_fut, skipped_fut, pending_fut);
+            debug!("finished batch re-indexing");
             sleep(Duration::from_secs(30)).await;
         }
     };
@@ -113,18 +135,6 @@ async fn process_token_events<const N: usize>(
                     .insert_entry(None);
                 debug!(id = id, "delisted token")
             }
-            Event::Spawned { id, left, right } => {
-                let pending = pending_tokens.entry(id).or_default();
-                let to_trout_id = |token_id| TroutId { chain_id, token_id };
-                pending.parents = if left != 0 {
-                    debug_assert!(right != 0);
-                    Some((to_trout_id(left), to_trout_id(right)))
-                } else {
-                    debug_assert!(right == 0);
-                    None
-                };
-                debug!(id = id, left = left, right = right, "spawned token");
-            }
             Event::Transfer { id, from, to } => {
                 if from.is_zero() {
                     let pending = pending_tokens.entry(id).or_default();
@@ -139,7 +149,7 @@ async fn process_token_events<const N: usize>(
                 }
             }
             Event::ProcessedBlock(block) => {
-                debug!(block = block, "processed block");
+                trace!(block = block, "processed block");
                 debug_assert!(block > processed_block);
                 processed_block = block;
             }
@@ -200,6 +210,7 @@ async fn index_new_tokens(
     nftrout: &NFTroutClient,
     ipfs_client: &IpfsClient,
     db: &Db,
+    g: &RwLock<Ancestors>,
     concurrency: Option<usize>,
 ) {
     let latest_known_token_id = db
@@ -212,6 +223,30 @@ async fn index_new_tokens(
         nftrout,
         ipfs_client,
         db,
+        g,
+        concurrency,
+    )
+    .await
+}
+
+#[instrument(skip_all)]
+async fn index_new_versions(
+    nftrout: &NFTroutClient,
+    ipfs_client: &IpfsClient,
+    db: &Db,
+    g: &RwLock<Ancestors>,
+    concurrency: Option<usize>,
+) {
+    let chain_id = nftrout.chain_id();
+    let ids_to_reindex = db
+        .with_conn(|conn| conn.outdated_token_ids(chain_id))
+        .unwrap();
+    index_tokens(
+        ids_to_reindex.into_iter(),
+        nftrout,
+        ipfs_client,
+        db,
+        g,
         concurrency,
     )
     .await
@@ -222,6 +257,7 @@ async fn index_skipped_tokens(
     nftrout: &NFTroutClient,
     ipfs_client: &IpfsClient,
     db: &Db,
+    g: &RwLock<Ancestors>,
     concurrency: Option<usize>,
 ) {
     let known_token_ids = db
@@ -236,6 +272,7 @@ async fn index_skipped_tokens(
         nftrout,
         ipfs_client,
         db,
+        g,
         concurrency,
     )
     .await
@@ -272,6 +309,7 @@ async fn index_tokens(
     nftrout: &NFTroutClient,
     ipfs_client: &IpfsClient,
     db: &Db,
+    g: &RwLock<Ancestors>,
     concurrency: Option<usize>,
 ) {
     let studs = retry(|| nftrout.studs()).await;
@@ -288,7 +326,7 @@ async fn index_tokens(
 
         let owners = retry(|| nftrout.owners(batch.iter().copied())).await;
         let fees = batch.iter().map(|i| studs.get(i).copied());
-        let tokens = futures::stream::iter(batch.iter().zip(owners).zip(fees))
+        let mut tokens = futures::stream::iter(batch.iter().zip(owners).zip(fees))
             .filter_map(|((token_id, owner), fee)| async move {
                 let cid = retry(|| nftrout.token_cid(*token_id)).await?;
                 let meta = retry(|| ipfs_client.dag_get(&cid)).await;
@@ -297,44 +335,30 @@ async fn index_tokens(
                     meta,
                     owner,
                     fee,
+                    coi: -1.0,
                 }))
             })
             .buffer_unordered(concurrency)
             .collect::<Vec<_>>()
             .await;
 
+        {
+            let mut g = g.write();
+            for token in tokens.iter() {
+                let n = g.add_node(token.meta.properties.self_id);
+                if let Some(l) = token.meta.properties.left {
+                    g.add_edge(n, l, ());
+                }
+                if let Some(r) = token.meta.properties.right {
+                    g.add_edge(n, r, ());
+                }
+            }
+            for token in tokens.iter_mut() {
+                token.coi = algo::inbreeding(&g, token.meta.properties.self_id);
+            }
+        }
+
         db.with_conn(|conn| conn.insert_tokens(tokens.iter()))
-            .unwrap();
-    }
-}
-
-#[instrument(skip_all)]
-async fn index_new_versions(
-    nftrout: &NFTroutClient,
-    ipfs_client: &IpfsClient,
-    db: &Db,
-    concurrency: Option<usize>,
-) {
-    let chain_id = nftrout.chain_id();
-    let ids_to_reindex = db
-        .with_conn(|conn| conn.outdated_token_ids(chain_id))
-        .unwrap();
-
-    let concurrency = concurrency
-        .unwrap_or(INDEX_BATCH_SIZE)
-        .min(u32::max_value() as usize);
-    for batch in ids_to_reindex.chunks(concurrency) {
-        let tokens = futures::stream::iter(batch.iter().copied())
-            .filter_map(|token_id| async move {
-                let cid = retry(|| nftrout.token_cid(token_id)).await?;
-                let meta = retry(|| ipfs_client.dag_get(&cid)).await;
-                Some(futures::future::ready((cid, meta)))
-            })
-            .buffer_unordered(concurrency)
-            .collect::<Vec<_>>()
-            .await;
-
-        db.with_conn(|conn| conn.update_tokens(tokens.iter()))
             .unwrap();
     }
 }

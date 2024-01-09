@@ -1,3 +1,5 @@
+pub mod algo;
+
 use std::{collections::HashMap, sync::Arc};
 
 use async_stream::stream;
@@ -28,26 +30,27 @@ pub enum Error {
 
 ethers::contract::abigen!(NFTrout, "src/nftrout/abi.json");
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TroutToken {
     pub cid: Cid,
     pub meta: TroutMetadata,
     pub owner: Address,
     pub fee: Option<U256>,
+    pub coi: f64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct PendingToken {
     pub id: TokenId,
     pub owner: Address,
-    pub parents: Option<(TroutId, TroutId)>,
 }
 
 /// The details of a token that are necessary for the UI.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TokenForUi {
     pub id: TokenId,
     pub owner: Address,
+    pub coi: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fee: Option<U256>,
     pub parents: Option<(TroutId, TroutId)>,
@@ -100,7 +103,9 @@ pub type ChainId = u32;
 pub type TokenId = u32;
 pub type TokenVersion = u32;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 pub struct TroutId {
     #[serde(rename = "chainId")]
     pub chain_id: ChainId,
@@ -291,12 +296,6 @@ impl Client {
             NFTroutEvents::DelistedFilter(f) => Event::Delisted {
                 id: f.token_id.as_u32(),
             },
-            NFTroutEvents::SpawnedFilter(f) => Event::Spawned {
-                id: f.child.as_u32(),
-                left: f.left.as_u32(),
-                right: f.right.as_u32(),
-            },
-            NFTroutEvents::IncubatedFilter(_) => unreachable!("not emitted"),
             NFTroutEvents::ListedFilter(f) => Event::Listed {
                 id: f.token_id.as_u32(),
                 fee: f.fee,
@@ -320,11 +319,6 @@ pub enum Event {
     },
     Delisted {
         id: TokenId,
-    },
-    Spawned {
-        id: TokenId,
-        left: TokenId,
-        right: TokenId,
     },
     Transfer {
         id: TokenId,
