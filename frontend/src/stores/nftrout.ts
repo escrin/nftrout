@@ -11,6 +11,7 @@ export type Trout = {
   id: number;
   owner: Address;
   imageUrl: string;
+  name: string;
   fee?: bigint;
   parents?: [TroutId, TroutId];
   pending: boolean;
@@ -45,14 +46,16 @@ async function fetchIndexedTrout(chainId: number): Promise<Trout[]> {
       result: Array<{
         id: number;
         owner: Address;
+        name: string;
         fee?: Hash;
         parents: [TroutId, TroutId];
         pending?: true;
       }>;
     };
-    const trout = res.result.map(({ id, owner, fee, parents, pending }) => ({
+    const trout = res.result.map(({ id, owner, name, fee, parents, pending }) => ({
       id,
       owner,
+      name,
       imageUrl: `${INDEXER_URL}/trout/${chainId}/${id}/image.svg`,
       fee: fee ? hexToBigInt(fee) : undefined,
       parents,
@@ -115,6 +118,7 @@ async function fetchWeb3Trout(nftrout: NFTrout): Promise<Trout[]> {
     trout.set(id, {
       id,
       imageUrl: imageUrls.get(id) ?? '',
+      name: `TROUT #${id}`,
       owner: addr as Address,
       pending: pendings.has(id),
     });
@@ -173,6 +177,43 @@ export const useTroutStore = defineStore('nftrout', () => {
 
   const incLocalPendingCount = () => (localPendingCount.value += 1);
 
+  const setTroutName = async (id: number, name: string) => {
+    const sig = await eth.walletClient.signTypedData({
+      account: eth.address as `0x${string}`,
+      domain: {
+        name: 'NameRequest',
+        version: '1',
+        chainId: eth.network,
+        verifyingContract: '0x0000000000000000000000000000000000000000',
+      },
+      types: {
+        NameRequest: [
+          { name: 'trout', type: 'uint256' },
+          { name: 'name', type: 'string' },
+        ],
+      },
+      primaryType: 'NameRequest',
+      message: {
+        trout: BigInt(id),
+        name,
+      },
+    });
+    const orig = trout.value[id].name;
+    trout.value[id].name = name;
+    try {
+      const res = await fetch(`${INDEXER_URL}/trout/${eth.network}/${id}/name`, {
+        method: 'POST',
+        body: JSON.stringify({ name, sig }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch {
+      trout.value[id].name = orig;
+    }
+  };
+
   return {
     trout,
     ownedTrout,
@@ -183,5 +224,6 @@ export const useTroutStore = defineStore('nftrout', () => {
     mode,
     pendingCount,
     incLocalPendingCount,
+    setTroutName: mode.value === 'indexed' ? setTroutName : async () => {},
   };
 });

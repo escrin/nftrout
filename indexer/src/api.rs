@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{Method, StatusCode},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 use tower_http::cors;
@@ -16,6 +16,7 @@ use crate::nftrout::{ChainId, TokenForUi, TokenId, TroutId};
 struct AppState {
     db: crate::db::Db,
     ipfs: crate::ipfs::Client,
+    nftrout: crate::nftrout::Client,
 }
 
 #[derive(Debug)]
@@ -34,10 +35,15 @@ impl IntoResponse for Error {
     }
 }
 
-pub async fn serve(db: crate::db::Db, ipfs: crate::ipfs::Client, port: u16) {
+pub async fn serve(
+    db: crate::db::Db,
+    ipfs: crate::ipfs::Client,
+    nftrout: crate::nftrout::Client,
+    port: u16,
+) {
     let bind_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
     let listener = tokio::net::TcpListener::bind(bind_addr).await.unwrap();
-    axum::serve(listener, make_router(AppState { db, ipfs }))
+    axum::serve(listener, make_router(AppState { db, ipfs, nftrout }))
         .await
         .unwrap();
 }
@@ -47,6 +53,7 @@ fn make_router(state: AppState) -> Router {
         .route("/", get(root))
         .route("/trout/:chain/", get(list_chain_trout))
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
+        .route("/trout/:chain/:id/name", post(set_trout_name))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
             tower_http::compression::CompressionLayer::new()
@@ -56,7 +63,8 @@ fn make_router(state: AppState) -> Router {
         .layer(
             cors::CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST])
-                .allow_origin(cors::Any),
+                .allow_origin(cors::Any)
+                .allow_headers([axum::http::header::CONTENT_TYPE]),
         )
         .with_state(state)
 }
@@ -67,7 +75,7 @@ async fn root() -> StatusCode {
 
 async fn get_trout_image(
     Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
-    State(AppState { db, ipfs }): State<AppState>,
+    State(AppState { db, ipfs, .. }): State<AppState>,
 ) -> Result<Result<Response, StatusCode>, Error> {
     let image_cid =
         match db.with_conn(|conn| conn.token_cid(&TroutId { chain_id, token_id }, None))? {
@@ -82,6 +90,24 @@ async fn get_trout_image(
         .body(Body::from_stream(res.bytes_stream()))?))
 }
 
+async fn set_trout_name(
+    Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
+    State(AppState { db, nftrout, .. }): State<AppState>,
+    Json(SetTroutParams {
+        name,
+        sig: sig_bytes,
+    }): Json<SetTroutParams>,
+) -> Result<Result<StatusCode, StatusCode>, Error> {
+    let current_owner = nftrout.owner(token_id).await?;
+    let sig = sig_bytes.as_ref().try_into()?;
+    if !crate::nftrout::names::NameRequest::new(token_id, name.clone()).verify(&sig, current_owner)
+    {
+        return Ok(Err(StatusCode::FORBIDDEN));
+    }
+    db.with_conn(|conn| conn.set_token_name(TroutId { chain_id, token_id }, &name))?;
+    Ok(Ok(StatusCode::NO_CONTENT))
+}
+
 async fn list_chain_trout(
     Path(chain_id): Path<ChainId>,
     Query(_qp): Query<ListTroutQuery>,
@@ -90,6 +116,12 @@ async fn list_chain_trout(
     Ok(Json(ListTroutResponse {
         result: db.with_conn(|conn| conn.list_tokens_for_ui(chain_id))?,
     }))
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+struct SetTroutParams {
+    name: String,
+    sig: ethers::types::Bytes,
 }
 
 #[derive(Clone, Copy, Debug, Default, serde::Deserialize)]

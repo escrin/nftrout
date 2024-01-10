@@ -1,4 +1,5 @@
 pub mod algo;
+pub mod names;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -50,6 +51,7 @@ pub struct PendingToken {
 pub struct TokenForUi {
     pub id: TokenId,
     pub owner: Address,
+    pub name: String,
     pub coi: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fee: Option<U256>,
@@ -204,6 +206,15 @@ impl Client {
             return Ok(None);
         }
         Ok(Some(cid.to_string().into()))
+    }
+
+    pub async fn owner(&self, token_id: TokenId) -> Result<Address, Error> {
+        Ok(self
+            .inner
+            .owner_of(token_id.into())
+            .block(self.block)
+            .call()
+            .await?)
     }
 
     pub async fn owners(

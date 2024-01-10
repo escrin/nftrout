@@ -40,17 +40,18 @@ async fn main() {
 
     let db = db::Db::open(cfg.db_path).unwrap();
     let ipfs = ipfs::Client::new(cfg.ipfs_endpoint);
-
-    let indexer_db = db.clone();
-    let indexer_ipfs = ipfs.clone();
     let nftrout = match cfg.chain {
         conf::Chain::SapphireMainnet => nftrout::Client::sapphire_mainnet(),
         conf::Chain::SapphireTestnet => nftrout::Client::sapphire_testnet(),
         conf::Chain::Local => nftrout::Client::local(),
     };
-    let indexer_task = indexer::run(&nftrout, &indexer_ipfs, &indexer_db);
 
-    let api_task = api::serve(db, ipfs, cfg.api_port);
+    let indexer_db = db.clone();
+    let indexer_ipfs = ipfs.clone();
+    let indexer_nftrout = nftrout.clone();
+    let indexer_task = indexer::run(&indexer_nftrout, &indexer_ipfs, &indexer_db);
+
+    let api_task = api::serve(db, ipfs, nftrout, cfg.api_port);
 
     tokio::join!(indexer_task, api_task);
 }

@@ -4,11 +4,12 @@ import { computed, ref } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import type { Trout } from '../stores/nftrout';
+import { useTroutStore } from '../stores/nftrout';
 import { useEthereumStore } from '../stores/ethereum';
 
 const eth = useEthereumStore();
-
 const nftrout = useNFTrout();
+const troutStore = useTroutStore();
 
 const emit = defineEmits(['feeUpdated', 'selected', 'menu']); // TODO: use pinia store
 
@@ -73,6 +74,7 @@ async function delistTrout() {
     class="bg-white border-gray-600 border-4 rounded-md"
     :class="{ selected: props.selected, context }"
     @contextmenu.prevent.stop="() => emit('menu')"
+    :title="troutStore.trout[trout.id].name"
   >
     <div
       @click="$emit('selected')"

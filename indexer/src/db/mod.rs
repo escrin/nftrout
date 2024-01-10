@@ -202,6 +202,7 @@ impl Connection<'_> {
                        metadata.left_parent_id,
                        metadata.right_parent_chain,
                        metadata.right_parent_id,
+                       metadata.name,
                        metadata.fee,
                        metadata.version IS NULL as pending
                   FROM tokens
@@ -229,6 +230,7 @@ impl Connection<'_> {
                     id: row.get("self_id")?,
                     coi: row.get("coi")?,
                     owner: row.get::<_, String>("owner")?.parse().unwrap(),
+                    name: row.get("name")?,
                     fee: row
                         .get::<_, Option<String>>("fee")?
                         .map(|f| f.parse().unwrap()),
@@ -317,6 +319,18 @@ impl Connection<'_> {
         for (token_id, token) in pending_tokens {
             token_inserter.execute((chain_id, token_id, addr_to_hex(&token.owner)))?;
         }
+        Ok(())
+    }
+
+    pub fn set_token_name(&self, id: TroutId, name: &str) -> Result<(), Error> {
+        self.0.execute(
+            r#"
+            UPDATE metadata
+               SET name = ?
+             WHERE token IN (SELECT id FROM tokens WHERE self_chain = ? AND self_id = ?)
+            "#,
+            (name, id.chain_id, id.token_id),
+        )?;
         Ok(())
     }
 

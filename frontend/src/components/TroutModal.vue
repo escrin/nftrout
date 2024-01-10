@@ -26,13 +26,17 @@ const toggleModal = () => {
   }
 };
 onMounted(toggleModal);
-watch(props, toggleModal);
+watch(props, () => {
+  toggleModal();
+  transferRecipient.value = '';
+  name.value = props.showingTrout ? troutStore.trout[props.showingTrout].name : '';
+});
 
 const closeModal = () => {
   emit('close');
 };
 
-const transferring = ref();
+const transferring = ref(false);
 const transferRecipient = ref('');
 
 async function sendTrout(e: Event) {
@@ -57,6 +61,25 @@ async function sendTrout(e: Event) {
     transferring.value = false;
   }
 }
+
+const renaming = ref(false);
+const name = ref(props.showingTrout ? troutStore.trout[props.showingTrout].name : '');
+
+async function renameTrout(e: Event) {
+  if (e.target instanceof HTMLFormElement) {
+    e.target.checkValidity();
+    e.target.reportValidity();
+  }
+  e.preventDefault();
+
+  if (!props.showingTrout) return;
+  try {
+    renaming.value = true;
+    await troutStore.setTroutName(props.showingTrout, name.value);
+  } finally {
+    renaming.value = false;
+  }
+}
 </script>
 
 <template>
@@ -69,39 +92,58 @@ async function sendTrout(e: Event) {
     }`"
   >
     <div
-      class="w-4/5 max-w-[800px] h-fit bg-gray-100 m-auto p-8 rounded-sm text-center"
+      class="w-4/5 max-w-[800px] h-fit bg-gray-100 m-auto p-8 rounded-sm text-left"
       @click.stop
       v-if="showingTrout"
     >
       <header class="flex justify-between mb-8 text-xl">
-        <h1>TROUT #{{ showingTrout }}</h1>
+        <h1>{{ troutStore.trout[showingTrout].name }}</h1>
         <button @click.stop="closeModal">✕</button>
       </header>
       <div>
         <img class="w-3/4 max-w-lg mx-auto my-8" :src="troutStore.trout[showingTrout].imageUrl" />
       </div>
-      <form
-        @submit="sendTrout"
+      <div
         v-if="troutStore.trout[showingTrout].owner?.toLowerCase() === eth.address?.toLowerCase()"
       >
-        <label>
-          Send to:&nbsp;<input
-            type="text"
-            class="w-[42ch] max-w-4/5"
-            placeholder="0x..."
-            v-model="transferRecipient"
-            required
-            pattern="0x[A-Fa-f0-9]{40}"
-          />
-        </label>
-        <button
-          class="ms-1 enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
-          :disabled="transferring"
-        >
-          <span v-if="transferring">Sending</span>
-          <span v-else>Send</span>
-        </button>
-      </form>
+        <form @submit="sendTrout" class="my-4">
+          <label>
+            Send to:&nbsp;<input
+              type="text"
+              class="w-[42ch] max-w-4/5"
+              placeholder="0x..."
+              v-model="transferRecipient"
+              required
+              pattern="0x[A-Fa-f0-9]{40}"
+            />
+          </label>
+          <button
+            class="ms-1 enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
+            :disabled="transferring"
+          >
+            <span v-if="transferring">Sending</span>
+            <span v-else>Send</span>
+          </button>
+        </form>
+        <form @submit="renameTrout" class="my-4">
+          <label>
+            Name:&nbsp;<input
+              type="text"
+              class="w-[38ch] max-w-4/5"
+              placeholder="Trouty McTroutface"
+              v-model="name"
+              required
+            />
+          </label>
+          <button
+            class="ms-1 enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
+            :disabled="renaming || name === troutStore.trout[showingTrout].name"
+          >
+            <span v-if="renaming">Sending</span>
+            <span v-else>Rename</span>
+          </button>
+        </form>
+      </div>
     </div>
   </dialog>
 </template>

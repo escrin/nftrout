@@ -1,6 +1,8 @@
 import detectEthereumProvider from '@metamask/detect-provider';
 import { ethers } from 'ethers';
 import { defineStore } from 'pinia';
+import { createWalletClient, custom } from 'viem';
+import { sapphire, sapphireTestnet } from 'viem/chains';
 import { computed, ref, shallowRef } from 'vue';
 
 export enum Network {
@@ -38,6 +40,10 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const network = ref<number>(parseInt(env.VITE_CHAIN_ID, 10));
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
+  const walletClient = ref(createWalletClient({
+    chain: network.value === Network.SapphireMainnet ? sapphire : sapphireTestnet,
+    transport: custom((window as any).ethereum),
+  }));
 
   const txOpts = computed(() =>
     network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet
@@ -101,5 +107,15 @@ export const useEthereumStore = defineStore('ethereum', () => {
     window.location.reload();
   }
 
-  return { signer, provider, address, network, connect, switchNetwork, txOpts, currency };
+  return {
+    signer,
+    provider,
+    address,
+    network,
+    connect,
+    switchNetwork,
+    txOpts,
+    currency,
+    walletClient,
+  };
 });
