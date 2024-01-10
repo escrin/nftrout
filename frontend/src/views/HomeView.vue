@@ -140,7 +140,7 @@ const hideIntro = () => toggleIntro(false);
 const showIntro = () => toggleIntro(true);
 
 type Sorters = Record<
-  'id' | 'fee' | 'popularity' | 'inbreeding',
+  'id' | 'fee' | 'popularity' | 'inbreeding' | 'name',
   {
     available: boolean;
     name: string;
@@ -183,37 +183,24 @@ const sorters: Sorters = {
   inbreeding: {
     available: troutStore.mode === 'indexed',
     name: 'Inbreeding',
-    makeComparator: () => {
-      const cois = calculateCois(troutStore.trout);
-      return (a, b) => (cois.get(a.id) ?? 0) - (cois.get(b.id) ?? 0);
+    makeComparator: () => (a, b) => {
+      if (a.coi === b.coi) return a.id - b.id;
+      return (a.coi ?? 0) - (b.coi ?? 0);
+    },
+  },
+  name: {
+    available: troutStore.mode === 'indexed',
+    name: 'Has Name',
+    makeComparator: () => (a, b) => {
+      const defaultPrefix = 'Sapphire TROUT #';
+      const aHasName = !a.name.startsWith(defaultPrefix);
+      const bHasName = !b.name.startsWith(defaultPrefix);
+      if (aHasName && !bHasName) return -1;
+      if (!aHasName && bHasName) return 1;
+      return a.id - b.id;
     },
   },
 };
-
-function calculateCois(trout: Record<TokenId, Trout>): Map<TokenId, number> {
-  const cois = new Map<TokenId, number>();
-
-  const calculateCoi = (troutId: TokenId): number => {
-    const fish = trout[troutId];
-    if (!fish.parents) return 0;
-
-    const [parent1, parent2] = fish.parents;
-    if (cois.has(troutId)) return cois.get(troutId)!;
-
-    const fA = trout[parent1.tokenId].parents ? calculateCoi(parent1.tokenId) : 0;
-    const fB = trout[parent2.tokenId].parents ? calculateCoi(parent2.tokenId) : 0;
-
-    const distance = 1; // I the parents are direct parents, the distance is 1
-    const coi = 0.5 ** distance * (1 + fA + fB);
-
-    cois.set(troutId, coi);
-    return coi;
-  };
-
-  Object.values(trout).forEach(({ id }) => calculateCoi(id));
-
-  return cois;
-}
 
 const sortOption = ref<keyof Sorters>('id');
 const sortDirection = ref<'asc' | 'desc'>('asc');

@@ -40,10 +40,12 @@ export const useEthereumStore = defineStore('ethereum', () => {
   const network = ref<number>(parseInt(env.VITE_CHAIN_ID, 10));
   const address = ref<string | undefined>(undefined);
   const status = ref(ConnectionStatus.Unknown);
-  const walletClient = ref(createWalletClient({
-    chain: network.value === Network.SapphireMainnet ? sapphire : sapphireTestnet,
-    transport: custom((window as any).ethereum),
-  }));
+  const walletClient = ref(
+    createWalletClient({
+      chain: network.value === Network.SapphireMainnet ? sapphire : sapphireTestnet,
+      transport: custom((window as any).ethereum),
+    }),
+  );
 
   const txOpts = computed(() =>
     network.value === Network.SapphireMainnet || network.value === Network.SapphireTestnet

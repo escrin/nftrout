@@ -14,6 +14,7 @@ export type Trout = {
   name: string;
   fee?: bigint;
   parents?: [TroutId, TroutId];
+  coi?: number;
   pending: boolean;
 };
 
@@ -50,9 +51,10 @@ async function fetchIndexedTrout(chainId: number): Promise<Trout[]> {
         fee?: Hash;
         parents: [TroutId, TroutId];
         pending?: true;
+        coi: number;
       }>;
     };
-    const trout = res.result.map(({ id, owner, name, fee, parents, pending }) => ({
+    const trout = res.result.map(({ id, owner, name, fee, parents, pending, coi }) => ({
       id,
       owner,
       name,
@@ -60,6 +62,7 @@ async function fetchIndexedTrout(chainId: number): Promise<Trout[]> {
       fee: fee ? hexToBigInt(fee) : undefined,
       parents,
       pending: pending === true,
+      coi,
     }));
     if (trout.length === 0) throw new Error('no indexed trout');
     return trout;
