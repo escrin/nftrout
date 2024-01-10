@@ -191,13 +191,13 @@ const sorters: Sorters = {
   name: {
     available: troutStore.mode === 'indexed',
     name: 'Has Name',
-    makeComparator: () => (a, b) => {
-      const defaultPrefix = 'Sapphire TROUT #';
-      const aHasName = !a.name.startsWith(defaultPrefix);
-      const bHasName = !b.name.startsWith(defaultPrefix);
-      if (aHasName && !bHasName) return -1;
-      if (!aHasName && bHasName) return 1;
-      return a.id - b.id;
+    makeComparator: () => {
+      const rv = new Map<TokenId, number>();
+      for (const { id, name } of Object.values(troutStore.trout)) {
+        const hasName = !name.startsWith('Sapphire TROUT #');
+        rv.set(id, hasName ? -1 + Math.random() : 0);
+      }
+      return (a, b) => rv.get(a.id)! - rv.get(b.id)!;
     },
   },
 };
