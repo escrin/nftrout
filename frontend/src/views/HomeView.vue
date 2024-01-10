@@ -77,7 +77,7 @@ async function checkEarnings() {
 watch(eth, async (eth) => {
   if (eth.address) {
     clearInterval(earningsPollerId);
-    // earningsPollerId = setInterval(checkEarnings, eth.address ? 30 * 1000 : 1_000);
+    earningsPollerId = setInterval(checkEarnings, 180 * 1000);
   }
   await Promise.allSettled([troutStore.fetchTrout(), checkEarnings()]);
 });
@@ -86,7 +86,7 @@ let troutPollerId: ReturnType<typeof setInterval>;
 
 onMounted(async () => {
   await troutStore.fetchTrout();
-  troutPollerId = setInterval(async () => troutStore.fetchTrout(), 30 * 1000);
+  troutPollerId = setInterval(async () => troutStore.fetchTrout(), 180 * 1000);
 
   if (window.localStorage.hasConnected) await eth.connect();
 });
