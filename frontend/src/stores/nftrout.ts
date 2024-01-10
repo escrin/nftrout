@@ -181,7 +181,7 @@ export const useTroutStore = defineStore('nftrout', () => {
   const incLocalPendingCount = () => (localPendingCount.value += 1);
 
   const setTroutName = async (id: number, name: string) => {
-    const sig = await eth.walletClient.signTypedData({
+    const sig = await eth.walletClient!.signTypedData({
       account: eth.address as `0x${string}`,
       domain: {
         name: 'NameRequest',
