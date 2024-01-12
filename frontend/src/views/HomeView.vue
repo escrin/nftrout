@@ -192,10 +192,18 @@ const sorters: Sorters = {
     available: troutStore.mode === 'indexed',
     name: 'Has Name',
     makeComparator: () => {
+      const sortId = (id: number): number => {
+        const day = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
+        id = id ^ day;
+        id = ((id >> 16) ^ id) * 0x45d9f3b;
+        id = ((id >> 16) ^ id) * 0x45d9f3b;
+        id = (id >> 16) ^ id;
+        return id;
+      };
       const rv = new Map<TokenId, number>();
       for (const { id, name } of Object.values(troutStore.trout)) {
         const hasName = !name.startsWith('Sapphire TROUT #');
-        rv.set(id, hasName ? -1 + Math.random() : 0);
+        rv.set(id, hasName ? -sortId(id) : 0);
       }
       return (a, b) => rv.get(a.id)! - rv.get(b.id)!;
     },
