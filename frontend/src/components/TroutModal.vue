@@ -175,7 +175,10 @@ async function renameTrout(e: Event) {
                 <td :title="troutStore.trout[event.child.tokenId].name"
                   >#{{ event.child.tokenId }}</td
                 >
-                <td>{{ formatEther(hexToBigInt(event.price)) }} {{ eth.currency }}</td>
+                <td v-if="event.breeder.toLowerCase() !== eth.address.toLowerCase()"
+                  >{{ formatEther(hexToBigInt(event.price)) }} {{ eth.currency }}</td
+                >
+                <td v-else>Free</td>
               </tr>
             </template>
           </tbody>

@@ -285,7 +285,7 @@ impl Connection<'_> {
                     )
                 ) AS owner,
                 IIF(
-                    se.recipient = owner,
+                    lower(se.recipient) = lower(owner),
                     '0x00',
                     (
                         SELECT fee
