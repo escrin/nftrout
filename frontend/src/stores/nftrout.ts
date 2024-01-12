@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { Address, Hash, hexToBigInt } from 'viem';
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 import type { NFTrout } from '@escrin/nftrout-evm';
 
@@ -180,6 +180,14 @@ export const useTroutStore = defineStore('nftrout', () => {
 
   const incLocalPendingCount = () => (localPendingCount.value += 1);
 
+  const events = reactive(new Map());
+  const fetchTroutEvents = async (id: number) => {
+      const res = await fetch(`${INDEXER_URL}/trout/${eth.network}/${id}/events`);
+      if (!res.ok) throw new Error(await res.text());
+      const { result } = await res.json();
+      events.set(id, result);
+  };
+
   const setTroutName = async (id: number, name: string) => {
     const sig = await eth.walletClient!.signTypedData({
       account: eth.address as `0x${string}`,
@@ -228,5 +236,7 @@ export const useTroutStore = defineStore('nftrout', () => {
     pendingCount,
     incLocalPendingCount,
     setTroutName: mode.value === 'indexed' ? setTroutName : async () => {},
+    events,
+    fetchTroutEvents: mode.value === 'indexed' ? fetchTroutEvents : async () => {},
   };
 });

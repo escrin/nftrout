@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatEther, hexToBigInt } from 'viem';
 import { onMounted, ref, watch } from 'vue';
 
 import { useNFTrout } from '../contracts';
@@ -26,10 +27,19 @@ const toggleModal = () => {
   }
 };
 onMounted(toggleModal);
-watch(props, () => {
+watch(props, async () => {
   toggleModal();
   transferRecipient.value = '';
-  name.value = props.showingTrout ? troutStore.trout[props.showingTrout].name : '';
+  if (props.showingTrout) {
+    name.value = troutStore.trout[props.showingTrout].name;
+    try {
+      troutStore.fetchTroutEvents(props.showingTrout);
+    } catch (e: any) {
+      console.error('failed to fetch trout events:', e);
+    }
+  } else {
+    name.value = '';
+  }
 });
 
 const closeModal = () => {
@@ -92,7 +102,7 @@ async function renameTrout(e: Event) {
     }`"
   >
     <div
-      class="w-4/5 max-w-[800px] h-fit bg-gray-100 m-auto p-8 rounded-sm text-left"
+      class="w-4/5 max-w-[800px] h-fit bg-gray-100 mx-auto my-2 p-8 rounded-sm text-left overflow-scroll"
       @click.stop
       v-if="showingTrout"
     >
@@ -143,6 +153,33 @@ async function renameTrout(e: Event) {
             <span v-else>Rename</span>
           </button>
         </form>
+
+        <hr />
+        <h1 class="font-medium my-4 text-2xl">Breeding Events</h1>
+        <table class="mx-auto w-3/4 border-black border-t-[3px] border-b-[3px]">
+          <thead class="border-black border-b-2 text-right">
+            <th class="py-1">Breeder</th>
+            <th class="py-1">Co-Parent</th>
+            <th class="py-1">Child</th>
+            <th class="py-1">Revenue</th>
+          </thead>
+          <tbody class="font-mono">
+            <template v-for="event of troutStore.events.get(showingTrout)">
+              <tr v-if="event.kind === 'breed'" class="text-right border-black border-t">
+                <td class="w-[7ch] inline-block truncate">{{
+                  event.breeder.toLowerCase() === eth.address.toLowerCase() ? 'You' : event.breeder
+                }}</td>
+                <td :title="troutStore.trout[event.coparent.tokenId].name"
+                  >#{{ event.coparent.tokenId }}</td
+                >
+                <td :title="troutStore.trout[event.child.tokenId].name"
+                  >#{{ event.child.tokenId }}</td
+                >
+                <td>{{ formatEther(hexToBigInt(event.price)) }} {{ eth.currency }}</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
       </div>
     </div>
   </dialog>
