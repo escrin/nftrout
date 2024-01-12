@@ -4,14 +4,15 @@ use ethers::types::{Address, U256};
 use futures::StreamExt as _;
 use parking_lot::RwLock;
 use tokio::time::{sleep, timeout, Duration};
-use tracing::{debug, instrument, trace, warn};
+use tracing::{debug, instrument, warn};
 
 use crate::{
     db::Db,
     ipfs::Client as IpfsClient,
     nftrout::{
         algo::{self, Ancestors},
-        Client as NFTroutClient, Event, PendingToken, TokenId, TroutToken,
+        Client as NFTroutClient, Event, PendingToken, TokenEvent, TokenEventKind, TokenId,
+        TroutToken,
     },
     utils::retry,
 };
@@ -23,8 +24,15 @@ const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 #[instrument(skip_all)]
 pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
-    let (tokens, needs_coi_analysis) = db
-        .with_conn(|conn| Ok((conn.list_tokens_for_ui(None)?, conn.needs_coi_analysis()?)))
+    let chain = nftrout.chain_id();
+    let (tokens, needs_coi_analysis, events_start_block) = db
+        .with_conn(|conn| {
+            Ok((
+                conn.list_tokens_for_ui(None)?,
+                conn.needs_coi_analysis()?,
+                conn.latest_processed_block(chain)?,
+            ))
+        })
         .unwrap();
     let g = RwLock::new(algo::make_graph(tokens.into_iter()));
 
@@ -76,15 +84,28 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
         }
     };
 
+    let events_fut = nftrout
+        .events(events_start_block, Some(start_block))
+        .buffered(100)
+        .chunks(1000)
+        .for_each(|batch| async move {
+            db.with_tx(|tx| tx.record_events(chain, batch.iter().flatten()))
+                .unwrap()
+        });
+
     // Start watching blocks for real-time updates
     debug!("watching events stream");
-    let events_fut = nftrout
-        .events_from(start_block + 1)
+    let realtime_fut = nftrout
+        .events(start_block + 1, None)
         .buffered(25)
         .chunks(1) // set higher for greater throughput, but higher latency
-        .for_each(|batch| process_token_events(nftrout, db, batch));
+        .for_each(|batch| async move {
+            integrate_token_events(nftrout, db, &batch).await;
+            db.with_tx(|tx| tx.record_events(nftrout.chain_id(), batch.iter().flatten()))
+                .unwrap();
+        });
 
-    tokio::join!(events_fut, pin_fut, reindex_fut);
+    tokio::join!(realtime_fut, events_fut, pin_fut, reindex_fut);
     unreachable!("contract event stream broke");
 }
 
@@ -99,10 +120,10 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
     for i in (1..=total_supply).step_by(concurrency) {
         let batch = i..(i + concurrency as u32).min(total_supply + 1);
         let owners = retry(|| nftrout.owners(batch.clone())).await;
-        let fees = batch.clone().map(|i| studs.get(&i).copied());
+        let fees = batch.clone().map(|i| studs.get(&i));
         db.with_tx(|tx| {
             tx.update_fees(chain_id, batch.clone().zip(fees))?;
-            tx.update_owners(chain_id, batch.zip(owners))?;
+            tx.update_owners(chain_id, batch.zip(owners.iter().as_ref()))?;
             Ok(())
         })
         .unwrap();
@@ -110,48 +131,39 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
 }
 
 #[instrument(skip_all)]
-async fn process_token_events<const N: usize>(
+async fn integrate_token_events<const N: usize>(
     nftrout: &NFTroutClient,
     db: &Db,
-    batch: Vec<smallvec::SmallVec<[Event; N]>>,
+    batch: &[smallvec::SmallVec<[Event; N]>],
 ) {
     let chain_id = nftrout.chain_id();
-    let mut processed_block = 0;
-    let mut ownership_changes: HashMap<TokenId, Address> = HashMap::new();
+    let mut ownership_changes: HashMap<TokenId, &Address> = HashMap::new();
     let mut pending_tokens: HashMap<TokenId, PendingToken> = HashMap::new();
-    let mut fee_changes: HashMap<TokenId, Option<U256>> = HashMap::new();
-    for event in batch.into_iter().flatten() {
-        match event {
-            Event::Listed { id, fee } => {
-                fee_changes.insert(id, Some(fee));
+    let mut fee_changes: HashMap<TokenId, Option<&U256>> = HashMap::new();
+    for event in batch.iter().flatten() {
+        let TokenEvent {
+            token: id, kind, ..
+        } = match event {
+            Event::Token(event) => event,
+            Event::ProcessedBlock(_) => continue,
+        };
+        let id = *id;
+        match kind {
+            TokenEventKind::Relisted { fee } => {
+                fee_changes.insert(id, fee.as_ref());
                 debug!(id = id, "listed token")
             }
-            Event::Delisted { id } => {
-                fee_changes
+            TokenEventKind::Spawned { to } => {
+                let pending = crate::nftrout::PendingToken { id, owner: to };
+                pending_tokens.insert(id, pending);
+                debug!(id = id, to = %to, "created token");
+            }
+            TokenEventKind::Transfer { from, to } => {
+                ownership_changes
                     .entry(id)
-                    .and_modify(|v| {
-                        debug_assert!(v.is_some() && v.as_ref().unwrap().ge(&U256::zero()))
-                    })
-                    .insert_entry(None);
-                debug!(id = id, "delisted token")
-            }
-            Event::Transfer { id, from, to } => {
-                if from.is_zero() {
-                    let pending = pending_tokens.entry(id).or_default();
-                    pending.owner = to;
-                    debug!(id = id, to = %to, "created token");
-                } else {
-                    ownership_changes
-                        .entry(id)
-                        .and_modify(|v| debug_assert_eq!(*v, from))
-                        .insert_entry(to);
-                    debug!(id = id, to = %to, "transferred token")
-                }
-            }
-            Event::ProcessedBlock(block) => {
-                trace!(block = block, "processed block");
-                debug_assert!(block > processed_block);
-                processed_block = block;
+                    .and_modify(|v| debug_assert_eq!(*v, from))
+                    .insert_entry(to);
+                debug!(id = id, to = %to, "transferred token")
             }
         }
     }

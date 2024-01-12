@@ -2,11 +2,14 @@ use std::sync::Arc;
 
 use ethers::types::{Address, U256};
 use rusqlite::OptionalExtension as _;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     ipfs::Cid,
-    nftrout::{ChainId, PendingToken, TokenForUi, TokenId, TroutId, TroutToken},
+    nftrout::{
+        ChainId, Event, EventForUi, EventKindForUi, PendingToken, TokenEvent, TokenEventKind,
+        TokenForUi, TokenId, TroutId, TroutToken,
+    },
 };
 
 #[cfg(test)]
@@ -46,7 +49,10 @@ impl Db {
     }
 
     const fn migrations() -> &'static [&'static str] {
-        &[include_str!("./migrations/00-init.sql")]
+        &[
+            include_str!("./migrations/00-init.sql"),
+            include_str!("./migrations/01-events.sql"),
+        ]
     }
 }
 
@@ -64,40 +70,6 @@ impl Connection<'_> {
     }
 }
 
-pub struct Transaction<'a>(Connection<'a>);
-
-impl<'a> std::ops::Deref for Transaction<'a> {
-    type Target = Connection<'a>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Transaction<'_> {
-    fn migrate(&self, migrations: &[&str]) -> Result<usize, Error> {
-        let tx = &self.0 .0;
-        static USER_VERSION: &str = "user_version";
-        let version =
-            tx.pragma_query_value(None, USER_VERSION, |row| row.get::<_, u32>(0))? as usize;
-        debug!(
-            current_version = version,
-            latest_version = migrations.len(),
-            "DbConnection::migrate"
-        );
-        if version >= migrations.len() {
-            if version > migrations.len() {
-                panic!("databse version unexpectedly high?");
-            }
-            return Ok(version);
-        }
-        for migration in migrations.iter().skip(version) {
-            tx.execute_batch(migration)?;
-        }
-        tx.pragma_update(None, USER_VERSION, migrations.len())?;
-        Ok(version)
-    }
-}
-
 impl Connection<'_> {
     pub fn latest_known_token_id(&self, chain_id: ChainId) -> Result<Option<TokenId>, Error> {
         self.0
@@ -105,6 +77,16 @@ impl Connection<'_> {
                 "SELECT MAX(self_id) FROM tokens WHERE self_chain = ?",
                 [chain_id],
                 |row| row.get::<_, Option<TokenId>>(0),
+            )
+            .map_err(Into::into)
+    }
+
+    pub fn latest_processed_block(&self, chain_id: ChainId) -> Result<u64, Error> {
+        self.0
+            .query_row(
+                "SELECT block FROM progress WHERE chain = ?",
+                [chain_id],
+                |row| Ok(row.get::<_, i64>(0)? as u64),
             )
             .map_err(Into::into)
     }
@@ -242,6 +224,111 @@ impl Connection<'_> {
             .map_err(Into::into)
     }
 
+    pub fn token_events(&self, token: TroutId) -> Result<Vec<EventForUi>, Error> {
+        let mut breeding_query = self.0.prepare_cached(
+            r#"
+            WITH
+            se AS (
+                SELECT spawn_events.recipient,
+                       metadata.token AS child_token,
+                       metadata.left_parent_chain AS coparent_chain,
+                       metadata.left_parent_id AS coparent_id,
+                       events.block
+                  FROM metadata
+                  JOIN events ON events.token = metadata.token AND events.kind = 1
+                  JOIN spawn_events ON spawn_events.event = events.id
+                 WHERE metadata.right_parent_chain = ?1 AND metadata.right_parent_id = ?2
+                 UNION ALL
+                SELECT spawn_events.recipient,
+                       metadata.token AS child_token,
+                       metadata.right_parent_chain AS coparent_chain,
+                       metadata.right_parent_id AS coparent_id,
+                       events.block
+                  FROM metadata
+                  JOIN events ON events.token = metadata.token AND events.kind = 1
+                  JOIN spawn_events ON spawn_events.event = events.id
+                 WHERE metadata.left_parent_chain = ?1 AND metadata.left_parent_id = ?2
+            ),
+            le AS (
+                SELECT list_events.fee, events.block
+                FROM list_events
+                JOIN events ON events.id = list_events.event
+                WHERE events.token IN (SELECT id FROM tokens WHERE self_chain = ?1 AND self_id = ?2)
+            ),
+            te AS (
+                SELECT transfer_events.recipient, events.block
+                 FROM transfer_events
+                 JOIN events ON events.id = transfer_events.event
+                WHERE events.token IN (SELECT id FROM tokens WHERE self_chain = ?1 AND self_id = ?2)
+            )
+            SELECT
+                tokens.self_chain AS child_chain,
+                tokens.self_id AS child_id,
+                se.recipient AS breeder,
+                se.coparent_chain,
+                se.coparent_id,
+                COALESCE(
+                    (
+                        SELECT recipient
+                        FROM te
+                        WHERE block < se.block
+                        ORDER BY block DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT recipient
+                        FROM spawn_events
+                        JOIN events ON spawn_events.event = events.id
+                        WHERE events.token IN (
+                                SELECT id FROM tokens WHERE self_chain = ?1 AND self_id = ?2
+                              )
+                    )
+                ) AS owner,
+                IIF(
+                    se.recipient = owner,
+                    '0x00',
+                    (
+                        SELECT fee
+                        FROM le
+                        WHERE block < se.block
+                        ORDER BY block DESC
+                        LIMIT 1
+                    )
+                ) AS fee,
+                se.block
+            FROM se
+            JOIN tokens ON tokens.id = se.child_token;
+            "#,
+        )?;
+        let breeding_events = breeding_query
+            .query_map((token.chain_id, token.token_id), |row| {
+                Ok(EventForUi {
+                    id: token,
+                    block: row.get::<_, i64>("block")? as u64,
+                    kind: EventKindForUi::Breed {
+                        breeder: row
+                            .get::<_, String>("breeder")
+                            .map(|a| a.parse().unwrap())?,
+                        child: TroutId {
+                            chain_id: row.get("child_chain")?,
+                            token_id: row.get("child_id")?,
+                        },
+                        coparent: TroutId {
+                            chain_id: row.get("coparent_chain")?,
+                            token_id: row.get("coparent_id")?,
+                        },
+                        price: row
+                            .get::<_, Option<String>>("fee")?
+                            .map(|f| f.parse().unwrap())
+                            .unwrap_or_default(),
+                        owner: row.get::<_, String>("owner").map(|a| a.parse().unwrap())?,
+                    },
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(breeding_events)
+    }
+
     pub fn insert_tokens(&self, tokens: impl Iterator<Item = &TroutToken>) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
             r#"INSERT OR IGNORE INTO tokens (self_chain, self_id, owner) VALUES (?, ?, ?)"#,
@@ -314,10 +401,15 @@ impl Connection<'_> {
         pending_tokens: impl Iterator<Item = (TokenId, PendingToken)>,
     ) -> Result<(), Error> {
         let mut token_inserter = self.0.prepare_cached(
-            r#"INSERT OR IGNORE INTO tokens (self_chain, self_id, owner) VALUES (?, ?, ?)"#,
+            r#"
+            INSERT INTO tokens (self_chain, self_id, owner)
+            VALUES (?, ?, ?)
+            ON CONFLICT (self_chain, self_id) DO NOTHING"#,
         )?;
         for (token_id, token) in pending_tokens {
-            token_inserter.execute((chain_id, token_id, addr_to_hex(&token.owner)))?;
+            token_inserter
+                .insert((chain_id, token_id, addr_to_hex(token.owner)))
+                .optional()?;
         }
         Ok(())
     }
@@ -351,7 +443,7 @@ impl Connection<'_> {
     pub fn update_fees(
         &self,
         chain_id: ChainId,
-        tokens: impl Iterator<Item = (TokenId, Option<U256>)>,
+        tokens: impl Iterator<Item = (TokenId, Option<&U256>)>,
     ) -> Result<(), Error> {
         let mut fee_updater = self.0.prepare_cached(
             r#"
@@ -361,7 +453,7 @@ impl Connection<'_> {
                 "#,
         )?;
         for (token_id, fee) in tokens {
-            fee_updater.execute((fee.as_ref().map(u256_to_hex), chain_id, token_id))?;
+            fee_updater.execute((fee.map(u256_to_hex), chain_id, token_id))?;
         }
         Ok(())
     }
@@ -369,7 +461,7 @@ impl Connection<'_> {
     pub fn update_owners(
         &self,
         chain: ChainId,
-        token_owners: impl Iterator<Item = (TokenId, Address)>,
+        token_owners: impl Iterator<Item = (TokenId, &Address)>,
     ) -> Result<(), Error> {
         let mut updater = self.0.prepare_cached(
             r#"UPDATE tokens SET owner = ? WHERE self_chain = ? AND self_id = ?"#,
@@ -396,6 +488,121 @@ impl Connection<'_> {
             .prepare_cached(r#"UPDATE generations SET pin_fails = pin_fails + 1 WHERE cid = ?"#)?;
         for cid in cids {
             updater.execute([&**cid])?;
+        }
+        Ok(())
+    }
+}
+
+pub struct Transaction<'a>(Connection<'a>);
+
+impl<'a> std::ops::Deref for Transaction<'a> {
+    type Target = Connection<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Transaction<'_> {
+    fn migrate(&self, migrations: &[&str]) -> Result<usize, Error> {
+        let tx = &self.0 .0;
+        static USER_VERSION: &str = "user_version";
+        let version =
+            tx.pragma_query_value(None, USER_VERSION, |row| row.get::<_, u32>(0))? as usize;
+        debug!(
+            current_version = version,
+            latest_version = migrations.len(),
+            "DbConnection::migrate"
+        );
+        if version >= migrations.len() {
+            if version > migrations.len() {
+                panic!("databse version unexpectedly high?");
+            }
+            return Ok(version);
+        }
+        for migration in migrations.iter().skip(version) {
+            tx.execute_batch(migration)?;
+        }
+        tx.pragma_update(None, USER_VERSION, migrations.len())?;
+        Ok(version)
+    }
+
+    pub fn record_events(
+        &self,
+        chain: ChainId,
+        events: impl Iterator<Item = &Event>,
+    ) -> Result<(), Error> {
+        let conn = &self.0 .0;
+        let mut event_inserter = conn.prepare_cached(
+            r#"
+            INSERT OR IGNORE INTO events (kind, token, block, log_index)
+            VALUES (?, ?, ?, ?)
+            RETURNING id
+            "#,
+        )?;
+        let mut list_event_inserter =
+            conn.prepare_cached(r#"INSERT INTO list_events (event, fee) VALUES (?, ?)"#)?;
+        let mut spawn_event_inserter =
+            conn.prepare_cached(r#"INSERT INTO spawn_events (event, recipient) VALUES (?, ?)"#)?;
+        let mut transfer_event_inserter = conn.prepare_cached(
+            r#"INSERT INTO transfer_events (event, sender, recipient) VALUES (?, ?, ?)"#,
+        )?;
+        let mut progress_updater =
+            conn.prepare_cached(r#"UPDATE progress SET block = ? WHERE chain = ?"#)?;
+
+        let mut last_block = None;
+        for event in events {
+            trace!(event = ?event, "processing event");
+            match event {
+                Event::Token(TokenEvent {
+                    token,
+                    kind,
+                    block,
+                    log_index,
+                }) => {
+                    let rowid = event_inserter
+                        .query_row(
+                            (
+                                match kind {
+                                    TokenEventKind::Spawned { .. } => 1,
+                                    TokenEventKind::Relisted { .. } => 2,
+                                    TokenEventKind::Transfer { .. } => 3,
+                                },
+                                token,
+                                block,
+                                log_index,
+                            ),
+                            |row| row.get::<_, i64>(0),
+                        )
+                        .optional()?;
+                    let event_id = match rowid {
+                        Some(id) => id,
+                        None => continue,
+                    };
+                    match kind {
+                        TokenEventKind::Spawned { to } => {
+                            spawn_event_inserter.insert((event_id, addr_to_hex(to)))?;
+                        }
+                        TokenEventKind::Relisted { fee } => {
+                            list_event_inserter
+                                .insert((event_id, fee.as_ref().map(u256_to_hex)))?;
+                        }
+                        TokenEventKind::Transfer { from, to } => {
+                            transfer_event_inserter.insert((
+                                event_id,
+                                addr_to_hex(from),
+                                addr_to_hex(to),
+                            ))?;
+                        }
+                    }
+                }
+                Event::ProcessedBlock(block) => {
+                    last_block = Some(block);
+                }
+            }
+        }
+        if let Some(block) = last_block {
+            trace!(block = block, "processed block");
+            progress_updater.execute((last_block, chain))?;
         }
         Ok(())
     }

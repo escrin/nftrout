@@ -10,7 +10,7 @@ use axum::{
 };
 use tower_http::cors;
 
-use crate::nftrout::{ChainId, TokenForUi, TokenId, TroutId};
+use crate::nftrout::{ChainId, EventForUi, TokenForUi, TokenId, TroutId};
 
 #[derive(Clone)]
 struct AppState {
@@ -53,6 +53,7 @@ fn make_router(state: AppState) -> Router {
         .route("/", get(root))
         .route("/trout/:chain/", get(list_chain_trout))
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
+        .route("/trout/:chain/:id/events", get(get_trout_events))
         .route("/trout/:chain/:id/name", post(set_trout_name))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(
@@ -88,6 +89,15 @@ async fn get_trout_image(
         .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
         .status(res.status().as_u16())
         .body(Body::from_stream(res.bytes_stream()))?))
+}
+
+async fn get_trout_events(
+    Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
+    State(AppState { db, .. }): State<AppState>,
+) -> Result<Json<TroutEventsResponse>, Error> {
+    Ok(Json(TroutEventsResponse {
+        result: db.with_conn(|conn| conn.token_events(TroutId { chain_id, token_id }))?,
+    }))
 }
 
 async fn set_trout_name(
@@ -131,4 +141,9 @@ struct ListTroutQuery {}
 #[derive(Clone, Debug, Default, serde::Serialize)]
 struct ListTroutResponse {
     result: Vec<TokenForUi>,
+}
+
+#[derive(Clone, Debug, Default, serde::Serialize)]
+struct TroutEventsResponse {
+    result: Vec<EventForUi>,
 }

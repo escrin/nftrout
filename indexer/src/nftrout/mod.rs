@@ -40,10 +40,10 @@ pub struct TroutToken {
     pub coi: f64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PendingToken {
+#[derive(Clone, Debug, PartialEq)]
+pub struct PendingToken<'a> {
     pub id: TokenId,
-    pub owner: Address,
+    pub owner: &'a Address,
 }
 
 /// The details of a token that are necessary for the UI.
@@ -62,6 +62,26 @@ pub struct TokenForUi {
 
 fn is_false(tf: &bool) -> bool {
     !tf
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct EventForUi {
+    pub id: TroutId,
+    pub block: u64,
+    #[serde(flatten)]
+    pub kind: EventKindForUi,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase", tag = "kind")]
+pub enum EventKindForUi {
+    Breed {
+        breeder: Address,
+        child: TroutId,
+        coparent: TroutId,
+        price: U256,
+        owner: Address,
+    },
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -240,14 +260,18 @@ impl Client {
         Ok(self.provider.get_block_number().await?.as_u64())
     }
 
-    pub fn events_from(
+    pub fn events(
         &self,
         start_block: u64,
+        stop_block: Option<u64>,
     ) -> impl Stream<Item = BoxFuture<SmallVec<[Event; 4]>>> {
         stream!({
             for await block in self.blocks(start_block).await {
                 yield self.get_block_events(block, self.addr).boxed();
                 yield futures::future::ready(smallvec![Event::ProcessedBlock(block)]).boxed();
+                if Some(block) == stop_block {
+                    break;
+                }
             }
         })
     }
@@ -295,45 +319,60 @@ impl Client {
     }
 
     fn decode_log(&self, log: Log) -> Option<Event> {
-        if log.block_number.is_none() || log.removed == Some(true) {
+        if log.block_number.is_none() || log.log_index.is_none() || log.removed == Some(true) {
             return None;
         }
         let raw_log = (log.topics, log.data.to_vec()).into();
         let event = NFTroutEvents::decode_log(&raw_log)
             .map_err(|e| warn!("failed to decode log: {e}"))
             .ok()?;
-        Some(match event {
-            NFTroutEvents::ConsecutiveTransferFilter(_) => unimplemented!("ConsecutiveTransfer"),
-            NFTroutEvents::DelistedFilter(f) => Event::Delisted {
-                id: f.token_id.as_u32(),
-            },
-            NFTroutEvents::ListedFilter(f) => Event::Listed {
-                id: f.token_id.as_u32(),
-                fee: f.fee,
-            },
-            NFTroutEvents::TransferFilter(f) => Event::Transfer {
-                id: f.token_id.as_u32(),
-                from: f.from,
-                to: f.to,
-            },
+        let (token, kind) = match event {
+            NFTroutEvents::DelistedFilter(f) => {
+                (f.token_id.as_u32(), TokenEventKind::Relisted { fee: None })
+            }
+            NFTroutEvents::ListedFilter(f) => (
+                f.token_id.as_u32(),
+                TokenEventKind::Relisted { fee: Some(f.fee) },
+            ),
+            NFTroutEvents::TransferFilter(f) => (
+                f.token_id.as_u32(),
+                if f.from.is_zero() {
+                    TokenEventKind::Spawned { to: f.to }
+                } else {
+                    TokenEventKind::Transfer {
+                        from: f.from,
+                        to: f.to,
+                    }
+                },
+            ),
             _ => return None,
-        })
+        };
+        Some(Event::Token(TokenEvent {
+            token,
+            kind,
+            block: log.block_number.unwrap().as_u64(),
+            log_index: log.log_index.unwrap().as_u64(),
+        }))
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Event {
+    Token(TokenEvent),
     ProcessedBlock(u64),
-    Listed {
-        id: TokenId,
-        fee: U256,
-    },
-    Delisted {
-        id: TokenId,
-    },
-    Transfer {
-        id: TokenId,
-        from: Address,
-        to: Address,
-    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TokenEvent {
+    pub token: TokenId,
+    pub kind: TokenEventKind,
+    pub block: u64,
+    pub log_index: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TokenEventKind {
+    Relisted { fee: Option<U256> },
+    Spawned { to: Address },
+    Transfer { from: Address, to: Address },
 }

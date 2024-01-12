@@ -1,6 +1,6 @@
 use futures::Future;
 use tokio::time::{sleep, Duration};
-use tracing::error;
+use tracing::warn;
 
 pub async fn retry<T, E, Fut>(f: impl Fn() -> Fut) -> T
 where
@@ -35,7 +35,7 @@ where
         }
         match f().await.map(&map_done) {
             Ok(Some(val)) => return Ok(val),
-            Err(e) => error!("failed: {e}"),
+            Err(e) => warn!("failed: {e}"),
             _ => {}
         }
         failures += 1;
