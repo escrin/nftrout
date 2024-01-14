@@ -379,11 +379,28 @@ async fn index_tokens(
         {
             let mut g = g.write();
             for token in tokens.iter() {
-                let n = g.add_node(token.meta.properties.self_id);
+                let self_id = token.meta.properties.self_id;
+                let n = g.add_node(self_id);
                 if let Some(l) = token.meta.properties.left {
+                    if !g.contains_node(l) {
+                        warn!(
+                            token = ?self_id,
+                            parent = ?l,
+                            "skipping analysis due to missing left parent"
+                        );
+                        continue;
+                    }
                     g.add_edge(n, l, ());
                 }
                 if let Some(r) = token.meta.properties.right {
+                    if !g.contains_node(r) {
+                        warn!(
+                            token = ?self_id,
+                            parent = ?r,
+                            "skipping analysis due to missing right parent"
+                        );
+                        continue;
+                    }
                     g.add_edge(n, r, ());
                 }
             }
