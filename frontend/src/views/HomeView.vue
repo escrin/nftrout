@@ -215,7 +215,7 @@ const sortDirection = ref<'asc' | 'desc'>('asc');
 watch(sortOption, (s) => {
   if (s === 'id' || s === 'fee' || s === 'name') sortDirection.value = 'asc';
   else sortDirection.value = 'desc';
-})
+});
 const sorter = computed(() => {
   const sorter = sorters[sortOption.value];
   const compare = sorter.makeComparator();

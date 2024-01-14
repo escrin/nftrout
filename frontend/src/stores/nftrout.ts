@@ -184,10 +184,10 @@ export const useTroutStore = defineStore('nftrout', () => {
 
   const events = reactive(new Map());
   const fetchTroutEvents = async (id: number) => {
-      const res = await fetch(`${INDEXER_URL}/trout/${eth.network}/${id}/events`);
-      if (!res.ok) throw new Error(await res.text());
-      const { result } = await res.json();
-      events.set(id, result);
+    const res = await fetch(`${INDEXER_URL}/trout/${eth.network}/${id}/events`);
+    if (!res.ok) throw new Error(await res.text());
+    const { result } = await res.json();
+    events.set(id, result);
   };
 
   const setTroutName = async (id: number, name: string) => {

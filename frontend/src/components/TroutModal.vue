@@ -171,7 +171,10 @@ const displayName = computed(() => {
             <th class="py-1">Revenue</th>
           </thead>
           <tbody class="font-mono">
-            <template v-for="event of troutStore.events.get(showingTrout)">
+            <template
+              v-for="event in troutStore.events.get(showingTrout)"
+              :key="JSON.stringify(event)"
+            >
               <tr v-if="event.kind === 'breed'" class="text-right border-black border-t">
                 <td class="w-[7ch] inline-block truncate">{{
                   event.breeder.toLowerCase() === eth.address.toLowerCase() ? 'You' : event.breeder
