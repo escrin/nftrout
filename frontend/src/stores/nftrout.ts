@@ -5,7 +5,7 @@ import { computed, reactive, ref } from 'vue';
 import type { NFTrout } from '@escrin/nftrout-evm';
 
 import { useNFTrout } from '../contracts';
-import { useEthereumStore } from './ethereum';
+import { Network, useEthereumStore } from './ethereum';
 
 export type Trout = {
   id: number;
@@ -146,6 +146,8 @@ export const useTroutStore = defineStore('nftrout', () => {
   const fetchTrout = async () => {
     let tokens: Array<Trout> = [];
     try {
+      if (eth.network !== Network.SapphireMainnet)
+        throw new Error('network not supported by indexer');
       tokens = await fetchIndexedTrout(eth.network);
       mode.value = 'indexed';
     } catch (e: any) {
