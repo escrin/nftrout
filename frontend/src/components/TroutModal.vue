@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatEther, hexToBigInt } from 'viem';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
@@ -27,6 +27,63 @@ const toggleModal = () => {
   }
 };
 onMounted(toggleModal);
+
+const closeModal = () => {
+  emit('close');
+};
+
+const transferring = reactive(new Set<TokenId>());
+const transferRecipient = ref('');
+
+async function sendTrout(e: Event) {
+  if (e.target instanceof HTMLFormElement) {
+    e.target.checkValidity();
+    e.target.reportValidity();
+  }
+  e.preventDefault();
+
+  if (!nftrout.value || !eth.address || !props.showingTrout) return;
+  try {
+    transferring.add(props.showingTrout);
+    const tx = await nftrout.value['safeTransferFrom(address,address,uint256)'](
+      eth.address,
+      transferRecipient.value,
+      BigInt(props.showingTrout),
+    );
+    console.log('sending', tx.hash);
+    await tx.wait();
+    troutStore.trout[props.showingTrout!].owner = transferRecipient.value as `0x{string}`;
+  } finally {
+    transferring.delete(props.showingTrout);
+  }
+}
+
+const renaming = reactive(new Set<TokenId>());
+const name = ref(props.showingTrout ? troutStore.trout[props.showingTrout].name : '');
+
+async function renameTrout(e: Event) {
+  if (e.target instanceof HTMLFormElement) {
+    e.target.checkValidity();
+    e.target.reportValidity();
+  }
+  e.preventDefault();
+
+  if (!props.showingTrout) return;
+  try {
+    renaming.add(props.showingTrout);
+    await troutStore.setTroutName(props.showingTrout, name.value);
+  } finally {
+    renaming.delete(props.showingTrout);
+  }
+}
+
+const displayName = computed(() => {
+  if (!props.showingTrout) return '';
+  const { name } = troutStore.trout[props.showingTrout];
+  if (/#\d+$/.test(name)) return name;
+  return `${name} (#${props.showingTrout})`;
+});
+
 watch(props, async () => {
   toggleModal();
   transferRecipient.value = '';
@@ -40,62 +97,6 @@ watch(props, async () => {
   } else {
     name.value = '';
   }
-});
-
-const closeModal = () => {
-  emit('close');
-};
-
-const transferring = ref(false);
-const transferRecipient = ref('');
-
-async function sendTrout(e: Event) {
-  if (e.target instanceof HTMLFormElement) {
-    e.target.checkValidity();
-    e.target.reportValidity();
-  }
-  e.preventDefault();
-
-  try {
-    transferring.value = true;
-    if (!nftrout.value || !eth.address || !props.showingTrout) return;
-    const tx = await nftrout.value['safeTransferFrom(address,address,uint256)'](
-      eth.address,
-      transferRecipient.value,
-      BigInt(props.showingTrout),
-    );
-    console.log('sending', tx.hash);
-    await tx.wait();
-    troutStore.trout[props.showingTrout!].owner = transferRecipient.value as `0x{string}`;
-  } finally {
-    transferring.value = false;
-  }
-}
-
-const renaming = ref(false);
-const name = ref(props.showingTrout ? troutStore.trout[props.showingTrout].name : '');
-
-async function renameTrout(e: Event) {
-  if (e.target instanceof HTMLFormElement) {
-    e.target.checkValidity();
-    e.target.reportValidity();
-  }
-  e.preventDefault();
-
-  if (!props.showingTrout) return;
-  try {
-    renaming.value = true;
-    await troutStore.setTroutName(props.showingTrout, name.value);
-  } finally {
-    renaming.value = false;
-  }
-}
-
-const displayName = computed(() => {
-  if (!props.showingTrout) return '';
-  const { name } = troutStore.trout[props.showingTrout];
-  if (/#\d+$/.test(name)) return name;
-  return `${name} (#${props.showingTrout})`;
 });
 </script>
 
@@ -136,13 +137,13 @@ const displayName = computed(() => {
           </label>
           <button
             class="ms-1 enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
-            :disabled="transferring"
+            :disabled="transferring.has(showingTrout)"
           >
-            <span v-if="transferring">Sending</span>
+            <span v-if="transferring.has(showingTrout)">Sending</span>
             <span v-else>Send</span>
           </button>
         </form>
-        <form @submit="renameTrout" class="my-4">
+        <form @submit="renameTrout" class="my-4" v-if="troutStore.mode === 'indexed'">
           <label>
             Name:&nbsp;<input
               type="text"
@@ -154,9 +155,9 @@ const displayName = computed(() => {
           </label>
           <button
             class="ms-1 enabled:bg-rose-500 disabled:bg-gray-400 px-2 py-1 rounded-md text-white enabled:cursor-pointer"
-            :disabled="renaming || name === troutStore.trout[showingTrout].name"
+            :disabled="renaming.has(showingTrout) || name === troutStore.trout[showingTrout].name"
           >
-            <span v-if="renaming">Sending</span>
+            <span v-if="renaming.has(showingTrout)">Sending</span>
             <span v-else>Rename</span>
           </button>
         </form>
