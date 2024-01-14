@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatEther, hexToBigInt } from 'viem';
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { useNFTrout } from '../contracts';
 import { useEthereumStore } from '../stores/ethereum';
@@ -90,6 +90,13 @@ async function renameTrout(e: Event) {
     renaming.value = false;
   }
 }
+
+const displayName = computed(() => {
+  if (!props.showingTrout) return '';
+  const { name } = troutStore.trout[props.showingTrout];
+  if (/#\d+$/.test(name)) return name;
+  return `${name} (#${props.showingTrout})`;
+});
 </script>
 
 <template>
@@ -107,7 +114,7 @@ async function renameTrout(e: Event) {
       v-if="showingTrout"
     >
       <header class="flex justify-between mb-8 text-xl">
-        <h1>{{ troutStore.trout[showingTrout].name }}</h1>
+        <h1>{{ displayName }}</h1>
         <button @click.stop="closeModal">✕</button>
       </header>
       <div>
