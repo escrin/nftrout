@@ -149,7 +149,7 @@ impl Client {
         Self::from_static(
             0x5afe,
             "0x998633BDF6eE32A9CcA6c9A247F428596e8e65d8",
-            "https://sapphire.oasis.io",
+            "https://sapphire2.oasis.io",
         )
     }
 
