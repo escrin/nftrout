@@ -74,21 +74,27 @@ async function checkEarnings() {
   }
 }
 
-watch(eth, async (eth) => {
+const connected = ref(false);
+eth.$subscribe(async () => {
+  if (connected.value) return;
   if (eth.address) {
     clearInterval(earningsPollerId);
     earningsPollerId = setInterval(checkEarnings, 180 * 1000);
   }
   await Promise.allSettled([troutStore.fetchTrout(), checkEarnings()]);
+  connected.value = true;
 });
 
 let troutPollerId: ReturnType<typeof setInterval>;
 
 onMounted(async () => {
-  await troutStore.fetchTrout();
-  troutPollerId = setInterval(async () => troutStore.fetchTrout(), 180 * 1000);
-
   if (window.localStorage.hasConnected) await eth.connect();
+  troutPollerId = setInterval(async () => troutStore.fetchTrout(), 180 * 1000);
+  if (!eth.address) {
+    try {
+      await troutStore.fetchTrout();
+    } catch {}
+  }
 });
 
 onBeforeUnmount(() => {

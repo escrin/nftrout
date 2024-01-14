@@ -237,8 +237,10 @@ export const useTroutStore = defineStore('nftrout', () => {
     mode,
     pendingCount,
     incLocalPendingCount,
-    setTroutName: mode.value === 'indexed' ? setTroutName : async () => {},
+    setTroutName: computed(() => (mode.value === 'indexed' ? setTroutName : async () => {})),
     events,
-    fetchTroutEvents: mode.value === 'indexed' ? fetchTroutEvents : async () => {},
+    fetchTroutEvents: computed(() =>
+      mode.value === 'indexed' ? fetchTroutEvents : async () => {},
+    ),
   };
 });

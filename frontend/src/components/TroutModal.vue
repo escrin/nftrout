@@ -43,18 +43,19 @@ async function sendTrout(e: Event) {
   e.preventDefault();
 
   if (!nftrout.value || !eth.address || !props.showingTrout) return;
+  let showingTrout = props.showingTrout;
   try {
-    transferring.add(props.showingTrout);
+    transferring.add(showingTrout);
     const tx = await nftrout.value['safeTransferFrom(address,address,uint256)'](
       eth.address,
       transferRecipient.value,
-      BigInt(props.showingTrout),
+      BigInt(showingTrout),
     );
     console.log('sending', tx.hash);
     await tx.wait();
-    troutStore.trout[props.showingTrout!].owner = transferRecipient.value as `0x{string}`;
+    troutStore.trout[showingTrout].owner = transferRecipient.value as `0x{string}`;
   } finally {
-    transferring.delete(props.showingTrout);
+    transferring.delete(showingTrout);
   }
 }
 
@@ -69,11 +70,12 @@ async function renameTrout(e: Event) {
   e.preventDefault();
 
   if (!props.showingTrout) return;
+  let showingTrout = props.showingTrout;
   try {
-    renaming.add(props.showingTrout);
+    renaming.add(showingTrout);
     await troutStore.setTroutName(props.showingTrout, name.value);
   } finally {
-    renaming.delete(props.showingTrout);
+    renaming.delete(showingTrout);
   }
 }
 
@@ -162,38 +164,42 @@ watch(props, async () => {
           </button>
         </form>
 
-        <hr />
-        <h1 class="font-medium my-4 text-2xl">Breeding Events</h1>
-        <table class="mx-auto w-3/4 border-black border-t-[3px] border-b-[3px]">
-          <thead class="border-black border-b-2 text-right">
-            <th class="py-1">Breeder</th>
-            <th class="py-1">Co-Parent</th>
-            <th class="py-1">Child</th>
-            <th class="py-1">Revenue</th>
-          </thead>
-          <tbody class="font-mono">
-            <template
-              v-for="event in troutStore.events.get(showingTrout)"
-              :key="JSON.stringify(event)"
-            >
-              <tr v-if="event.kind === 'breed'" class="text-right border-black border-t">
-                <td class="w-[7ch] inline-block truncate">{{
-                  event.breeder.toLowerCase() === eth.address.toLowerCase() ? 'You' : event.breeder
-                }}</td>
-                <td :title="troutStore.trout[event.coparent.tokenId].name"
-                  >#{{ event.coparent.tokenId }}</td
-                >
-                <td :title="troutStore.trout[event.child.tokenId].name"
-                  >#{{ event.child.tokenId }}</td
-                >
-                <td v-if="event.breeder.toLowerCase() !== eth.address.toLowerCase()"
-                  >{{ formatEther(hexToBigInt(event.price)) }} {{ eth.currency }}</td
-                >
-                <td v-else>Free</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+        <div v-if="troutStore.mode === 'indexed'">
+          <hr />
+          <h1 class="font-medium my-4 text-2xl">Breeding Events</h1>
+          <table class="mx-auto w-3/4 border-black border-t-[3px] border-b-[3px]">
+            <thead class="border-black border-b-2 text-right">
+              <th class="py-1">Breeder</th>
+              <th class="py-1">Co-Parent</th>
+              <th class="py-1">Child</th>
+              <th class="py-1">Revenue</th>
+            </thead>
+            <tbody class="font-mono">
+              <template
+                v-for="event in troutStore.events.get(showingTrout)"
+                :key="JSON.stringify(event)"
+              >
+                <tr v-if="event.kind === 'breed'" class="text-right border-black border-t">
+                  <td class="w-[7ch] inline-block truncate">{{
+                    event.breeder.toLowerCase() === eth.address.toLowerCase()
+                      ? 'You'
+                      : event.breeder
+                  }}</td>
+                  <td :title="troutStore.trout[event.coparent.tokenId].name"
+                    >#{{ event.coparent.tokenId }}</td
+                  >
+                  <td :title="troutStore.trout[event.child.tokenId].name"
+                    >#{{ event.child.tokenId }}</td
+                  >
+                  <td v-if="event.breeder.toLowerCase() !== eth.address.toLowerCase()"
+                    >{{ formatEther(hexToBigInt(event.price)) }} {{ eth.currency }}</td
+                  >
+                  <td v-else>Free</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </dialog>
