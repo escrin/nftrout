@@ -4,7 +4,7 @@ use ethers::types::{Address, U256};
 use futures::StreamExt as _;
 use parking_lot::RwLock;
 use tokio::time::{sleep, timeout, Duration};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, error, instrument, trace, warn};
 
 use crate::{
     db::Db,
@@ -19,7 +19,7 @@ use crate::{
 
 const INDEX_BATCH_SIZE: usize = 50;
 const PIN_BATCH_SIZE: usize = 50;
-const IPFS_TIMEOUT: Duration = Duration::from_secs(60);
+const IPFS_TIMEOUT: Duration = Duration::from_secs(15);
 const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 #[instrument(skip_all)]
@@ -112,15 +112,21 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
 #[instrument(skip_all)]
 async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency: Option<usize>) {
     let chain_id = nftrout.chain_id();
+    trace!("fetching total supply");
     let total_supply = retry(|| nftrout.total_supply()).await;
+    trace!("fetching studs");
     let studs = retry(|| nftrout.studs()).await;
     let concurrency = concurrency
         .unwrap_or(INDEX_BATCH_SIZE)
         .min(u32::max_value() as usize);
+    trace!(count = total_supply, "indexing ownership and fees");
     for i in (1..=total_supply).step_by(concurrency) {
         let batch = i..(i + concurrency as u32).min(total_supply + 1);
+        trace!("fetching batch owners");
         let owners = retry(|| nftrout.owners(batch.clone())).await;
+        trace!("fetching batch fess");
         let fees = batch.clone().map(|i| studs.get(&i));
+        trace!("writing batch updates");
         db.with_tx(|tx| {
             tx.update_fees(chain_id, batch.clone().zip(fees))?;
             tx.update_owners(chain_id, batch.zip(owners.iter().as_ref()))?;
@@ -229,6 +235,7 @@ async fn index_new_tokens(
         .with_conn(|conn| conn.latest_known_token_id(nftrout.chain_id()))
         .unwrap()
         .unwrap_or_default();
+    trace!("fetching total supply");
     let total_supply = retry(|| nftrout.total_supply()).await;
     index_tokens(
         (latest_known_token_id + 1)..=total_supply,
@@ -324,6 +331,7 @@ async fn index_tokens(
     g: &RwLock<Ancestors>,
     concurrency: Option<usize>,
 ) {
+    trace!("fetching studs");
     let studs = retry(|| nftrout.studs()).await;
 
     let concurrency = concurrency
@@ -336,12 +344,26 @@ async fn index_tokens(
             break;
         }
 
+        trace!("fetching owners");
         let owners = retry(|| nftrout.owners(batch.iter().copied())).await;
+        trace!("fetching fees");
         let fees = batch.iter().map(|i| studs.get(i).copied());
         let mut tokens = futures::stream::iter(batch.iter().zip(owners).zip(fees))
             .filter_map(|((token_id, owner), fee)| async move {
+                trace!(id = token_id, "fetching token CID");
                 let cid = retry(|| nftrout.token_cid(*token_id)).await?;
-                let meta = retry(|| ipfs_client.dag_get(&cid)).await;
+                trace!(cid = ?cid, "fetching CID data");
+                let meta = match timeout(IPFS_TIMEOUT, ipfs_client.dag_get(&cid)).await {
+                    Err(_) => {
+                        warn!("failed to get {cid}: timed out");
+                        return None;
+                    }
+                    Ok(Err(e)) => {
+                        error!("failed to get {cid}: {e}");
+                        return None;
+                    }
+                    Ok(Ok(meta)) => meta,
+                };
                 Some(futures::future::ready(TroutToken {
                     cid,
                     meta,
