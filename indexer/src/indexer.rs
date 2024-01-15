@@ -17,7 +17,7 @@ use crate::{
     utils::retry,
 };
 
-const INDEX_BATCH_SIZE: usize = 50;
+const INDEX_BATCH_SIZE: usize = 200;
 const PIN_BATCH_SIZE: usize = 50;
 const IPFS_TIMEOUT: Duration = Duration::from_secs(15);
 const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -124,7 +124,7 @@ async fn index_ownership_and_fees(nftrout: &NFTroutClient, db: &Db, concurrency:
         let batch = i..(i + concurrency as u32).min(total_supply + 1);
         trace!("fetching batch owners");
         let owners = retry(|| nftrout.owners(batch.clone())).await;
-        trace!("fetching batch fess");
+        trace!("fetching batch fees");
         let fees = batch.clone().map(|i| studs.get(&i));
         trace!("writing batch updates");
         db.with_tx(|tx| {
@@ -349,7 +349,7 @@ async fn index_tokens(
         trace!("fetching fees");
         let fees = batch.iter().map(|i| studs.get(i).copied());
         let mut tokens = futures::stream::iter(batch.iter().zip(owners).zip(fees))
-            .filter_map(|((token_id, owner), fee)| async move {
+            .map(|((token_id, owner), fee)| async move {
                 trace!(id = token_id, "fetching token CID");
                 let cid = retry(|| nftrout.token_cid(*token_id)).await?;
                 trace!(cid = ?cid, "fetching CID data");
@@ -364,15 +364,16 @@ async fn index_tokens(
                     }
                     Ok(Ok(meta)) => meta,
                 };
-                Some(futures::future::ready(TroutToken {
+                Some(TroutToken {
                     cid,
                     meta,
                     owner,
                     fee,
                     coi: -1.0,
-                }))
+                })
             })
             .buffer_unordered(concurrency)
+            .filter_map(|t| async { t })
             .collect::<Vec<_>>()
             .await;
 
