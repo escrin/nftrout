@@ -203,15 +203,26 @@ impl Client {
     }
 
     pub async fn studs(&self) -> Result<HashMap<TokenId, U256>, Error> {
-        Ok(self
-            .inner
-            .get_studs(0.into(), U256::max_value())
-            .block(self.block)
-            .call()
-            .await?
-            .into_iter()
-            .map(|stud| (stud.token_id.as_u32(), stud.fee))
-            .collect())
+        let batch_size = 1000;
+        let mut studs = HashMap::new();
+        let mut i = 0;
+        loop {
+            let batch = self
+                .inner
+                .get_studs(i.into(), (i + batch_size).into())
+                .block(self.block)
+                .call()
+                .await?;
+            let returned_count = batch.len();
+            for stud in batch.into_iter() {
+                studs.insert(stud.token_id.as_u32(), stud.fee);
+            }
+            if returned_count < batch_size {
+                break;
+            }
+            i += returned_count;
+        }
+        Ok(studs)
     }
 
     pub async fn token_cid(&self, token_id: TokenId) -> Result<Option<Cid>, Error> {
