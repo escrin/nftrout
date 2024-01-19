@@ -19,7 +19,7 @@ use crate::{
 
 const INDEX_BATCH_SIZE: usize = 200;
 const PIN_BATCH_SIZE: usize = 50;
-const IPFS_TIMEOUT: Duration = Duration::from_secs(15);
+const IPFS_TIMEOUT: Duration = Duration::from_secs(60);
 const PINNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 #[instrument(skip_all)]

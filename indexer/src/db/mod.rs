@@ -140,7 +140,7 @@ impl Connection<'_> {
 
     pub fn unpinned_cids(&self) -> Result<Vec<Cid>, Error> {
         self.0
-            .prepare("SELECT cid FROM generations WHERE pinned = 0 AND pin_fails < 10")?
+            .prepare("SELECT cid FROM generations WHERE pinned = 0 AND pin_fails < 20")?
             .query_map([], |row| row.get::<_, String>(0).map(Into::into))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
