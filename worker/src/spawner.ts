@@ -1,5 +1,6 @@
+import { CarWriter } from '@ipld/car';
 import { ethers } from 'ethers';
-import { NFTStorage, File } from 'nft.storage';
+import { CarReader, NFTStorage, File } from 'nft.storage';
 
 import { NFTrout, NFTroutFactory } from '@escrin/nftrout-evm';
 
@@ -223,14 +224,42 @@ export class Spawner {
         left && right
           ? `was born to ${troutName(left.id)} and ${troutName(right.id)}`
           : troutDescriptor.attributes?.genesis
-          ? 'has existed since before the dawn of time'
-          : 'was spontaneously generated'
+            ? 'has existed since before the dawn of time'
+            : 'was spontaneously generated'
       }.`,
       image: new File([fishSvg], 'trout.svg', { type: 'image/svg+xml' }),
       properties: troutDescriptor,
     });
-    await this.nftStorage.storeCar(car);
+    await this.storeNft(car);
     return { cid: token.ipnft, props: troutDescriptor };
+  }
+
+  private async storeNft(car: CarReader): Promise<void> {
+    const storeCarP = this.nftStorage.storeCar(car);
+
+    const { writer, out } = CarWriter.create(await car.getRoots());
+    for await (const block of car.blocks()) {
+      await writer.put(block);
+    }
+    await writer.close();
+    const blobParts = [];
+    for await (const part of out) {
+      blobParts.push(part);
+    }
+    const body = new FormData();
+    body.append('file', new Blob(blobParts));
+    const localPinCarP = fetch('http://127.0.0.1:5001/api/v0/dag/import', {
+      method: 'POST',
+      body,
+    });
+
+    const [storeCarResult, localPinResult] = await Promise.allSettled([storeCarP, localPinCarP]);
+    if (localPinResult.status === 'rejected') {
+      console.error('ERROR: failed to locally pin: ', localPinResult.reason);
+    }
+    if (storeCarResult.status === 'rejected') {
+      throw new Error(`failed to store CAR: ${JSON.stringify(storeCarResult.reason)}`);
+    }
   }
 
   private async generate<T extends TroutParent | null>(
