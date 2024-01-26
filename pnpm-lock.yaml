@@ -103,8 +103,8 @@ importers:
         specifier: 1.0.0-rc.3
         version: 1.0.0-rc.3(typescript@5.3.3)
       '@ipld/car':
-        specifier: ^3.2.4
-        version: 3.2.4
+        specifier: ^5.2.6
+        version: 5.2.6
       '@oasisprotocol/deoxysii':
         specifier: ^0.0.5
         version: 0.0.5
@@ -117,6 +117,9 @@ importers:
       ethers:
         specifier: ^6.9.0
         version: 6.9.0
+      multiformats:
+        specifier: ^13.0.1
+        version: 13.0.1
       nft.storage:
         specifier: ^7.1.1
         version: 7.1.1(node-fetch@3.3.2)
@@ -1907,6 +1910,16 @@ packages:
       varint: 6.0.0
     dev: false
 
+  /@ipld/car@5.2.6:
+    resolution: {integrity: sha512-ZiIYan7UFLLQsR90GpKOrZ0t6/6owrevJI7dCG8McNj0zUO4vGzsPumpKRBP4pdBgek4oXt4TbFOwxqTPEh5mA==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    dependencies:
+      '@ipld/dag-cbor': 9.0.8
+      cborg: 4.0.8
+      multiformats: 13.0.1
+      varint: 6.0.0
+    dev: false
+
   /@ipld/dag-cbor@6.0.15:
     resolution: {integrity: sha512-Vm3VTSTwlmGV92a3C5aeY+r2A18zbH2amehNhsX8PBa3muXICaWrN8Uri85A5hLH7D7ElhE8PdjxD6kNqUmTZA==}
     dependencies:
@@ -1919,6 +1932,14 @@ packages:
     dependencies:
       cborg: 1.10.2
       multiformats: 9.9.0
+    dev: false
+
+  /@ipld/dag-cbor@9.0.8:
+    resolution: {integrity: sha512-ETWJ7p7lmGw5X+BuI/7rf4/k56xyOvAOVNUVuQmnGYBdJjObLPgS+vyFxRk4odATlkyZqCq2MLNY52bhE6SlRA==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    dependencies:
+      cborg: 4.0.8
+      multiformats: 13.0.1
     dev: false
 
   /@ipld/dag-pb@2.1.18:
@@ -7591,6 +7612,10 @@ packages:
     transitivePeerDependencies:
       - node-fetch
       - supports-color
+    dev: false
+
+  /multiformats@13.0.1:
+    resolution: {integrity: sha512-bt3R5iXe2O8xpp3wkmQhC73b/lC4S2ihU8Dndwcsysqbydqb8N+bpP116qMcClZ17g58iSIwtXUTcg2zT4sniA==}
     dev: false
 
   /multiformats@9.9.0:

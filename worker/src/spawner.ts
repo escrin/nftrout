@@ -1,5 +1,6 @@
-import { CarWriter } from '@ipld/car';
+import { CarBufferWriter } from '@ipld/car';
 import { ethers } from 'ethers';
+import { CID } from 'multiformats';
 import { CarReader, NFTStorage, File } from 'nft.storage';
 
 import { NFTrout, NFTroutFactory } from '@escrin/nftrout-evm';
@@ -237,17 +238,19 @@ export class Spawner {
   private async storeNft(car: CarReader): Promise<void> {
     const storeCarP = this.nftStorage.storeCar(car);
 
-    const { writer, out } = CarWriter.create(await car.getRoots());
-    for await (const block of car.blocks()) {
-      await writer.put(block);
+    let carSize = 0;
+    for await (const { bytes } of car.blocks()) {
+      carSize += bytes.length;
     }
-    await writer.close();
-    const blobParts = [];
-    for await (const part of out) {
-      blobParts.push(part);
+    const upgradeCid = (cid: any) => new CID(cid.version, cid.code, cid.multihash, cid.bytes);
+    const writer = CarBufferWriter.createWriter(new Uint8Array(carSize + 4096), {
+      roots: (await car.getRoots()).map(upgradeCid),
+    });
+    for await (const { cid, bytes } of car.blocks()) {
+      writer.write({ cid: upgradeCid(cid), bytes });
     }
     const body = new FormData();
-    body.append('file', new Blob(blobParts));
+    body.append('file', new Blob([writer.close({ resize: true })], { type: 'application/car' }));
     const localPinCarP = fetch('http://127.0.0.1:5001/api/v0/dag/import', {
       method: 'POST',
       body,
@@ -256,6 +259,8 @@ export class Spawner {
     const [storeCarResult, localPinResult] = await Promise.allSettled([storeCarP, localPinCarP]);
     if (localPinResult.status === 'rejected') {
       console.error('ERROR: failed to locally pin: ', localPinResult.reason);
+    } else if (!localPinResult.value.ok) {
+      console.error('ERROR: failed to locally pin: ', await localPinResult.value.text());
     }
     if (storeCarResult.status === 'rejected') {
       throw new Error(`failed to store CAR: ${JSON.stringify(storeCarResult.reason)}`);
