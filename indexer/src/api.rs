@@ -10,7 +10,10 @@ use axum::{
 };
 use tower_http::cors;
 
-use crate::nftrout::{ChainId, EventForUi, TokenForUi, TokenId, TroutId};
+use crate::{
+    ipfs::Cid,
+    nftrout::{ChainId, EventForUi, TokenForUi, TokenId, TroutId},
+};
 
 #[derive(Clone)]
 struct AppState {
@@ -51,7 +54,9 @@ pub async fn serve(
 fn make_router(state: AppState) -> Router {
     Router::new()
         .route("/", get(root))
+        .route("/ipfs/*cid", get(get_ipfs_cid))
         .route("/trout/:chain/", get(list_chain_trout))
+        .route("/trout/:chain/:id/metadata.json", get(get_trout_metadata))
         .route("/trout/:chain/:id/image.svg", get(get_trout_image))
         .route("/trout/:chain/:id/events", get(get_trout_events))
         .route("/trout/:chain/:id/name", post(set_trout_name))
@@ -74,19 +79,63 @@ async fn root() -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
+async fn get_ipfs_cid(
+    Path(cid): Path<Cid>,
+    State(AppState { ipfs, .. }): State<AppState>,
+) -> Result<Result<Response, StatusCode>, Error> {
+    let multihash = Cid(cid.0.split('/').next().unwrap().to_owned());
+    if !ipfs.is_pinned(&multihash).await? {
+        return Ok(Err(StatusCode::NOT_FOUND));
+    }
+    let res = ipfs.cat(&cid).await?;
+    Ok(Ok(Response::builder()
+        .status(res.status().as_u16())
+        .body(Body::from_stream(res.bytes_stream()))?))
+}
+
+async fn get_trout_metadata(
+    Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
+    State(AppState { db, ipfs, .. }): State<AppState>,
+) -> Result<Result<Response, StatusCode>, Error> {
+    get_trout_ipfs_content(
+        "metadata.json",
+        "application/json",
+        TroutId { chain_id, token_id },
+        &db,
+        &ipfs,
+    )
+    .await
+}
+
 async fn get_trout_image(
     Path((chain_id, token_id)): Path<(ChainId, TokenId)>,
     State(AppState { db, ipfs, .. }): State<AppState>,
 ) -> Result<Result<Response, StatusCode>, Error> {
-    let image_cid =
-        match db.with_conn(|conn| conn.token_cid(&TroutId { chain_id, token_id }, None))? {
-            Some(cid) => cid.join("image/trout.svg"),
-            None => return Ok(Err(StatusCode::NOT_FOUND)),
-        };
+    get_trout_ipfs_content(
+        "image/trout.svg",
+        "image/svg+xml",
+        TroutId { chain_id, token_id },
+        &db,
+        &ipfs,
+    )
+    .await
+}
 
-    let res = ipfs.cat(&image_cid).await?;
+async fn get_trout_ipfs_content(
+    path: &'static str,
+    content_type: &'static str,
+    trout: TroutId,
+    db: &crate::db::Db,
+    ipfs: &crate::ipfs::Client,
+) -> Result<Result<Response, StatusCode>, Error> {
+    let cid = match db.with_conn(|conn| conn.token_cid(&trout, None))? {
+        Some(cid) => cid,
+        None => return Ok(Err(StatusCode::NOT_FOUND)),
+    };
+
+    let res = ipfs.cat(&cid.join(path)).await?;
     Ok(Ok(Response::builder()
-        .header(axum::http::header::CONTENT_TYPE, "image/svg+xml")
+        .header(axum::http::header::CONTENT_TYPE, content_type)
         .status(res.status().as_u16())
         .body(Body::from_stream(res.bytes_stream()))?))
 }

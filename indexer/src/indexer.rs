@@ -80,7 +80,7 @@ pub async fn run(nftrout: &NFTroutClient, ipfs_client: &IpfsClient, db: &Db) {
             let pending_fut = index_new_versions(nftrout, ipfs_client, db, &g, None);
             tokio::join!(new_fut, skipped_fut, pending_fut);
             debug!("finished batch re-indexing");
-            sleep(Duration::from_secs(30)).await;
+            sleep(Duration::from_secs(60)).await;
         }
     };
 

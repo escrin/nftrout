@@ -85,6 +85,24 @@ impl Client {
         Ok(())
     }
 
+    pub async fn is_pinned(&self, cid: &Cid) -> Result<bool, Error> {
+        trace!(cid = %cid, "checking pin");
+        let res = self.rpc::<1>("pin/ls", [&cid]).await?;
+        if res.status().is_success() {
+            return Ok(true);
+        }
+        let source = res.error_for_status_ref().unwrap_err();
+        let message = res.text().await?;
+        if message.contains("is not pinned") || message.contains("invalid path") {
+            Ok(false)
+        } else {
+            Err(Error::Http {
+                source,
+                message: Some(message),
+            })
+        }
+    }
+
     async fn json_rpc<const N: usize, T: serde::de::DeserializeOwned>(
         &self,
         method: &'static str,
