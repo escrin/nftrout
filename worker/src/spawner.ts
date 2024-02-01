@@ -231,11 +231,11 @@ export class Spawner {
       image: new File([fishSvg], 'trout.svg', { type: 'image/svg+xml' }),
       properties: troutDescriptor,
     });
-    await this.storeNft(car);
+    await this.storeNft(car, token.ipnft);
     return { cid: token.ipnft, props: troutDescriptor };
   }
 
-  private async storeNft(car: CarReader): Promise<void> {
+  private async storeNft(car: CarReader, ipnft: string): Promise<void> {
     const storeCarP = this.nftStorage.storeCar(car);
 
     let carSize = 0;
@@ -261,6 +261,16 @@ export class Spawner {
       console.error('ERROR: failed to locally pin: ', localPinResult.reason);
     } else if (!localPinResult.value.ok) {
       console.error('ERROR: failed to locally pin: ', await localPinResult.value.text());
+    } else {
+      const {
+        Root: {
+          Cid: { '/': pinnedCid },
+          PinErrorMsg: pinError,
+        },
+      } = await localPinResult.value.json();
+      if (pinError) throw new Error(`failed to pin imported CAR: ${pinError}`);
+      if (pinnedCid !== ipnft)
+        throw new Error(`pinned CID ${pinnedCid} did not match token CID ${ipnft}`);
     }
     if (storeCarResult.status === 'rejected') {
       throw new Error(`failed to store CAR: ${JSON.stringify(storeCarResult.reason)}`);
