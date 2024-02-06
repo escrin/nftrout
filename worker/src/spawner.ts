@@ -104,7 +104,7 @@ export class Spawner {
         [taskResults.map(([_, cid]) => cid)],
       );
       const submittedTaskIds = taskResults.map(([id]) => id);
-      console.debug('submitting', submittedTaskIds);
+      // console.debug('submitting', submittedTaskIds);
       try {
         const tx = await this.#nftrout.acceptTaskResults(
           submittedTaskIds,
@@ -168,7 +168,7 @@ export class Spawner {
   }
 
   private async spawnTrout(selfTokenId: TokenId): Promise<{ cid: Cid; props: TroutProperties }> {
-    console.debug('spawning', selfTokenId);
+    // console.debug('spawning', selfTokenId);
     const { left, right } = await this.#nftrout.parents(selfTokenId);
 
     let leftCid = '';
@@ -340,7 +340,7 @@ export class Spawner {
   }
 
   private async fetchProps(tokenId: number, cid: string): Promise<TroutProperties> {
-    console.debug('fetching props for', tokenId, 'from', cid);
+    // console.debug('fetching props for', tokenId, 'from', cid);
     return retry(async () => {
       const cached = this.#cidCache.get(tokenId);
       if (cached && cached.props) return cached.props;
