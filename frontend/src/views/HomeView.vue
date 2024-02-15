@@ -91,9 +91,7 @@ onMounted(async () => {
   if (window.localStorage.hasConnected) await eth.connect();
   troutPollerId = setInterval(async () => troutStore.fetchTrout(), 180 * 1000);
   if (!eth.address) {
-    try {
-      await troutStore.fetchTrout();
-    } catch {}
+    await troutStore.fetchTrout().catch(() => {});
   }
 });
 
