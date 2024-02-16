@@ -1,1 +1,1 @@
-packages: [frontend, worker]
+packages: [frontend, racing/app, racing/worker, worker]

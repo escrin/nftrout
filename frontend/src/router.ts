@@ -11,6 +11,10 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: `/races/:race`,
+      component: () => import('./views/RaceView.vue'),
+    },
+    {
       path: '/:path(.*)',
       component: () => import('./views/404View.vue'),
     },

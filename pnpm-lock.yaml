@@ -17,6 +17,9 @@ importers:
       '@metamask/jazzicon':
         specifier: ^2.0.0
         version: 2.0.0
+      '@svgdotjs/svg.js':
+        specifier: ^3.2.0
+        version: 3.2.0
       '@wagmi/core':
         specifier: ^2.6.5
         version: 2.6.5(react@18.2.0)(typescript@5.3.3)(viem@2.7.9)
@@ -2719,6 +2722,10 @@ packages:
     dependencies:
       '@sinonjs/commons': 3.0.1
     dev: true
+
+  /@svgdotjs/svg.js@3.2.0:
+    resolution: {integrity: sha512-Tr8p+QVP7y+QT1GBlq1Tt57IvedVH8zCPoYxdHLX0Oof3a/PqnC/tXAkVufv1JQJfsDHlH/UrjcDfgxSofqSNA==}
+    dev: false
 
   /@trysound/sax@0.2.0:
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
