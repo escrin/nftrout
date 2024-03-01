@@ -55,8 +55,8 @@ async function renderFish(id: number): Promise<void> {
   sprite
     .move(0, 0)
     .transform({
-      translateX: Math.random() * (cbox.value!.width - sbox.width),
-      translateY: Math.random() * (cbox.value!.height - sbox.height),
+      translateX: Math.random() * (cbox.value!.width - sbox.width - PAD),
+      translateY: Math.random() * (cbox.value!.height - sbox.height - PAD),
     })
     .addTo(canvas.value);
   if (Math.random() < 0.5) sprite.first().first().flip('x');
@@ -70,18 +70,36 @@ function applyMovingAnimation(sprite: Element) {
     const f = sprite.first().first();
     const facing = -(f.transform().scaleX ?? 1);
 
-    const dx = gaussianRandom() * 200;
-    const dy = gaussianRandom() * 200;
+    let dx = 0;
+    let dy = 0;
+    const r = Math.random();
+    if (r < 0.03) {
+      dx = gaussianRandom() * 500;
+      dy = gaussianRandom() * 500;
+    } else if (r < 0.2) {
+      dx = gaussianRandom() * 200;
+      dy = gaussianRandom() * 200;
+    } else if (r < 0.7) {
+      dx = gaussianRandom() * 100;
+      dy = gaussianRandom() * 100;
+    }
     const { translateX, translateY } = sprite.transform();
 
-    if (!((facing > 0 && dx > 0) || (facing < 0 && dx < 0))) (f.animate(300) as any).flip('x');
+    if (!((facing > 0 && dx >= 0) || (facing < 0 && dx <= 0)))
+      (f.animate(Math.random() * 200 + 200) as any).flip('x');
 
     const sbox = sprite.bbox();
     sprite
       .animate(Math.random() * 5000 + 5000)
       .transform({
-        translateX: Math.min(Math.max(0, (translateX ?? 0) + dx), cbox.value!.width - sbox.width),
-        translateY: Math.min(Math.max(0, (translateY ?? 0) + dy), cbox.value!.height - sbox.height),
+        translateX: Math.min(
+          Math.max(PAD, (translateX ?? 0) + dx),
+          cbox.value!.width - sbox.width - PAD,
+        ),
+        translateY: Math.min(
+          Math.max(PAD, (translateY ?? 0) + dy),
+          cbox.value!.height - sbox.height - PAD,
+        ),
       })
       .ease('<>')
       .after(animateMove);
@@ -97,8 +115,10 @@ function gaussianRandom(): number {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
+const PAD = 20;
+
 function applyFloatingAnimation(sprite: Element) {
-  const makeOffset = () => Math.random() * 8;
+  const makeOffset = () => Math.random() * PAD;
   const direction = Math.random() > 0.5 ? -1 : 1;
   function animateUpDown(sprite: Element) {
     const duration = 1000 * Math.random() + 1000;
