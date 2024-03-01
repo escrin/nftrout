@@ -20,6 +20,7 @@
     "@escrin/nftrout-evm": "file:../nftrout-evm-1.tgz",
     "@metamask/detect-provider": "^2.0.0",
     "@metamask/jazzicon": "^2.0.0",
+    "@svgdotjs/svg.js": "^3.2.0",
     "@wagmi/core": "^2.6.5",
     "ethers": "^6.11.1",
     "pinia": "^2.1.7",

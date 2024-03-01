@@ -138,6 +138,7 @@ export const useTroutStore = defineStore('nftrout', () => {
   const mode = ref<'indexed' | 'decentralized'>('indexed');
 
   const trout = ref<Record<number, Trout>>({});
+  const count = ref(0);
 
   const eth = useEthereumStore();
   const nftrout = useNFTrout();
@@ -155,6 +156,7 @@ export const useTroutStore = defineStore('nftrout', () => {
       tokens = await fetchWeb3Trout(nftrout.value);
       mode.value = 'decentralized';
     }
+    count.value = tokens.length;
     trout.value = Object.fromEntries(tokens.map((t) => [t.id, t]));
     localPendingCount.value = 0;
     isLoaded.value = true;
@@ -229,6 +231,7 @@ export const useTroutStore = defineStore('nftrout', () => {
 
   return {
     trout,
+    count,
     ownedTrout,
     farmedTrout,
     fetchTrout,
