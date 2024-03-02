@@ -8,7 +8,7 @@ test.skip('derive key', async () => {
   const outLength = 32;
 
   const nodeDerivedKey = await new Promise(async (resolve, reject) => {
-    hkdf('sha512-256', ikm, '', keyId, outLength, (err, key) => {
+    hkdf('sha512', ikm, '', keyId, outLength, (err, key) => {
       if (err) reject(err);
       else resolve(Buffer.from(key));
     });
