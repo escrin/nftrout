@@ -121,7 +121,7 @@ function clearAnimations(sprite: Element) {
 function applyMovingAnimation(sprite: Element) {
   function animateMove() {
     const f = sprite.first().first();
-    const facing = -(f.transform().scaleX ?? 1);
+    const heading = -(f.transform().scaleX ?? 1);
 
     let dx = 0;
     let dy = 0;
@@ -138,7 +138,11 @@ function applyMovingAnimation(sprite: Element) {
     }
     const { translateX, translateY } = sprite.transform();
 
-    if (!((facing > 0 && dx >= 0) || (facing < 0 && dx <= 0)))
+    const headingTowardsMovement = (heading > 0 && dx >= 0) || (heading < 0 && dx <= 0);
+    const maxBw = 125;
+    const magnitude = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    const canMoveBackwards = magnitude < maxBw && Math.random() < (maxBw - magnitude) / maxBw;
+    if (!(canMoveBackwards || headingTowardsMovement))
       (f.animate(Math.random() * 200 + 200) as any).flip('x');
 
     const cb = cbox.value!;
