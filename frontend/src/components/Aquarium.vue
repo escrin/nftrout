@@ -27,7 +27,7 @@ const TROUT_AREA = 458 * 234 * Math.pow(SCALE, 2);
 const count = ref(0);
 watch(cbox, updateCount);
 function updateCount() {
-  const density = 0.25;
+  const density = 0.2;
   count.value = Math.round(
     (((cbox.value?.width ?? 0) * (cbox.value?.height ?? 0)) / TROUT_AREA) * density,
   );
@@ -88,6 +88,7 @@ function placeInitial(sprite: Element) {
       translateX: Math.random() * (cbox.value!.width - sbox.width - PAD),
       translateY: Math.random() * (cbox.value!.height - sbox.height - PAD),
     });
+  if (Math.random() < 0.5) sprite.first().first().first().flip('x');
 }
 
 watch(count, (count) => {
@@ -209,7 +210,6 @@ function getSprite(imageSvg: string) {
     if (this.type === 'rect') return;
     gggg.add(this);
   });
-  if (Math.random() < 0.5) gggg.flip('x');
   gggg.scale(SCALE);
 
   return g;
@@ -228,8 +228,64 @@ async function getFishImage(url: string): Promise<string> {
 }
 
 onMounted(() => populateFishOfTheDay());
+
+const fullscreenEnabled = document.fullscreenEnabled;
+const root = ref<HTMLElement>();
+const fullscreen = ref(false);
+async function toggleFullscreen() {
+  if (!root.value) return;
+  if (!fullscreen.value) {
+    await root.value.requestFullscreen();
+    fullscreen.value = true;
+    updateWindowSize();
+  } else {
+    await document.exitFullscreen();
+    fullscreen.value = false;
+  }
+}
 </script>
 
 <template>
-  <svg ref="canvas" class="flex-grow" />
+  <div ref="root" :class="`flex-grow ${fullscreen ? 'fullscreen-bg' : ''}`">
+    <svg ref="canvas" class="w-full h-full" />
+    <button class="absolute bottom-5 right-5" @click="toggleFullscreen" v-if="fullscreenEnabled">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6"
+        v-if="!fullscreen"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+        />
+      </svg>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6"
+        v-else
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
+        />
+      </svg>
+    </button>
+  </div>
 </template>
+
+<style scoped>
+.fullscreen-bg {
+  background-image: url('/water_bg.png');
+  background-size: cover;
+}
+</style>
