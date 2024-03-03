@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Element } from '@svgdotjs/svg.js';
 import { SVG } from '@svgdotjs/svg.js';
-import { computed, onMounted, ref, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { useTroutStore } from '../stores/nftrout';
 
@@ -9,60 +9,112 @@ const troutStore = useTroutStore();
 
 const renderer = SVG();
 const canvas = ref<HTMLElement>();
-const cbox = computed(() => canvas.value?.getBoundingClientRect());
+const cbox = ref(canvas.value?.getBoundingClientRect());
+watch(canvas, (canvas) => (cbox.value = canvas?.getBoundingClientRect()));
 
-function lcg(seed: number, max: number): () => number {
-  const a = 16807;
-  const m = Math.pow(2, 31) - 1;
-  let state = seed;
-  return () => {
-    state = (state * a) % m;
-    return state % max;
-  };
+const latch = ref<ReturnType<typeof setTimeout>>();
+function updateWindowSize() {
+  if (latch.value) clearTimeout(latch.value);
+  latch.value = setTimeout(() => {
+    if (canvas.value) cbox.value = canvas.value.getBoundingClientRect();
+  }, 500);
 }
+onBeforeMount(() => window.addEventListener('resize', updateWindowSize));
+onBeforeUnmount(() => window.removeEventListener('resize', updateWindowSize));
 
 const SCALE = 0.4;
 const TROUT_AREA = 458 * 234 * Math.pow(SCALE, 2);
-
-const fishOfTheDay = ref(new Set<number>());
-watch([troutStore], populateFishOfTheDay);
-function populateFishOfTheDay() {
-  if (troutStore.count === 0 || fishOfTheDay.value.size > 0) return;
-  const day = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
-  const random = lcg(day, troutStore.count);
+const count = ref(0);
+watch(cbox, updateCount);
+function updateCount() {
   const density = 0.25;
-  const count = Math.round(((window.innerWidth * window.innerHeight) / TROUT_AREA) * density);
-  const fish = new Set<number>();
-  for (let i = 0; fish.size < count && i < count * 4; i++) fish.add(random()); // Trade time for memory.
-  fishOfTheDay.value = fish;
+  count.value = Math.round(
+    (((cbox.value?.width ?? 0) * (cbox.value?.height ?? 0)) / TROUT_AREA) * density,
+  );
 }
 
+const fishOfTheDay = ref<number[]>([]);
+watch([troutStore], populateFishOfTheDay);
+function populateFishOfTheDay() {
+  if (troutStore.count === 0 || fishOfTheDay.value.length > 0) return;
+  const day = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
+  const random = lcg(day, troutStore.count * 2);
+  const count = 30;
+  const fish = new Set<number>();
+  for (let i = 0; fish.size < count && i < count * 4; i++) fish.add(random() % troutStore.count);
+  fishOfTheDay.value = [...fish];
+}
+
+const sprites = ref<Element[]>([]);
 watch([fishOfTheDay, canvas], async ([fishOfTheDay, canvas]) => {
-  if (!canvas || fishOfTheDay.size === 0) return;
-  const renderings = [];
-  for (const id of fishOfTheDay) {
-    renderings.push(renderFish(id));
+  if (!canvas || fishOfTheDay.length === 0) return;
+
+  updateCount();
+  const rendered = await Promise.allSettled(fishOfTheDay.map((id, i) => renderFish(i, id)));
+  for (const r of rendered) {
+    if (r.status != 'fulfilled') continue;
+    sprites.value.push(r.value);
   }
-  await Promise.allSettled(renderings);
 });
 
-async function renderFish(id: number): Promise<void> {
+async function renderFish(i: number, id: number): Promise<Element> {
   if (!canvas.value) throw new Error('no canvas');
 
   const sprite = getSprite(await getFishImage(troutStore.trout[id].imageUrl));
 
-  const sbox = sprite.bbox();
+  if (i >= count.value) sprite.hide();
+  placeInitial(sprite);
+  sprite.addTo(canvas.value);
+  if (sprite.visible()) applyAnimations(sprite);
+
+  return sprite;
+}
+
+function getSbox(sprite: Element): { width: number; height: number } {
+  try {
+    return sprite.rbox();
+  } catch {
+    return sprite.bbox();
+  }
+}
+
+function placeInitial(sprite: Element) {
+  const sbox = getSbox(sprite);
   sprite
+    .move(0, 0)
+    .first()
     .move(0, 0)
     .transform({
       translateX: Math.random() * (cbox.value!.width - sbox.width - PAD),
       translateY: Math.random() * (cbox.value!.height - sbox.height - PAD),
-    })
-    .addTo(canvas.value);
-  if (Math.random() < 0.5) sprite.first().first().flip('x');
+    });
+}
 
-  applyFloatingAnimation(sprite.first());
-  applyMovingAnimation(sprite);
+watch(count, (count) => {
+  sprites.value.forEach((sprite, i) => {
+    if (i >= count) {
+      if (sprite.visible()) {
+        clearAnimations(sprite);
+        sprite.hide();
+      }
+    } else {
+      if (!sprite.visible()) {
+        placeInitial(sprite);
+        sprite.show();
+        applyAnimations(sprite);
+      }
+    }
+  });
+});
+
+function applyAnimations(sprite: Element) {
+  applyFloatingAnimation(sprite.first().first());
+  applyMovingAnimation(sprite.first());
+}
+
+function clearAnimations(sprite: Element) {
+  sprite.first().first().timeline().finish();
+  sprite.first().timeline().finish();
 }
 
 function applyMovingAnimation(sprite: Element) {
@@ -88,23 +140,29 @@ function applyMovingAnimation(sprite: Element) {
     if (!((facing > 0 && dx >= 0) || (facing < 0 && dx <= 0)))
       (f.animate(Math.random() * 200 + 200) as any).flip('x');
 
-    const sbox = sprite.bbox();
+    const cb = cbox.value!;
+    const sbox = getSbox(sprite);
+    const dest = {
+      translateX: Math.min(Math.max(PAD, (translateX ?? 0) + dx), cb.width - sbox.width - PAD),
+      translateY: Math.min(Math.max(PAD, (translateY ?? 0) + dy), cb.height - sbox.height - PAD),
+    };
     sprite
       .animate(Math.random() * 5000 + 5000)
-      .transform({
-        translateX: Math.min(
-          Math.max(PAD, (translateX ?? 0) + dx),
-          cbox.value!.width - sbox.width - PAD,
-        ),
-        translateY: Math.min(
-          Math.max(PAD, (translateY ?? 0) + dy),
-          cbox.value!.height - sbox.height - PAD,
-        ),
-      })
+      .transform(dest)
       .ease('<>')
       .after(animateMove);
   }
   animateMove();
+}
+
+function lcg(seed: number, max: number): () => number {
+  const a = 16807;
+  const m = Math.pow(2, 31) - 1;
+  let state = seed;
+  return () => {
+    state = (state * a) % m;
+    return state % max;
+  };
 }
 
 function gaussianRandom(): number {
@@ -146,11 +204,13 @@ function getSprite(imageSvg: string) {
   let g = renderer.group();
   let gg = g.group();
   let ggg = gg.group();
+  let gggg = ggg.group();
   pfp.each(function (this: Element) {
     if (this.type === 'rect') return;
-    ggg.add(this);
+    gggg.add(this);
   });
-  ggg.scale(SCALE);
+  if (Math.random() < 0.5) gggg.flip('x');
+  gggg.scale(SCALE);
 
   return g;
 }
