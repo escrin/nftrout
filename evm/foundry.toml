@@ -3,6 +3,11 @@ solc_version = "0.8.23"
 optimizer = false
 via_ir = true
 
+remappings = [
+  "@escrin/=lib/escrin",
+  "erc721a/=lib/ERC721A",
+]
+
 [fmt]
 line_length = 100
 
