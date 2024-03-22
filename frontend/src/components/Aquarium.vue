@@ -39,7 +39,7 @@ function populateFishOfTheDay() {
   if (troutStore.count === 0 || fishOfTheDay.value.length > 0) return;
   const day = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
   const random = lcg(day, troutStore.count * 2);
-  const count = 30;
+  const count = 15;
   const fish = new Set<number>();
   for (let i = 0; fish.size < count && i < count * 4; i++) fish.add(random() % troutStore.count);
   fishOfTheDay.value = [...fish];
