@@ -32,11 +32,15 @@ contract NFTrout is
 
     type TokenId is uint256;
 
+    /// There are still claims to process.
+    error ClaimsOutstanding();
+
     /// The trout is no longer breedable.
     event Delisted();
     event TasksAccepted();
 
-    bytes32 private immutable claimantsRoot;
+    uint256 private immutable numClaimable;
+    bytes32 private immutable claimsRoot;
     string private urlPrefix;
     string private urlSuffix;
 
@@ -49,8 +53,8 @@ contract NFTrout is
         address upstreamAcceptor,
         uint64 initialAcceptorTimelock,
         address paymentTokenAddr,
-        uint256 numClaimants,
-        bytes32 claimantsMerkleRoot,
+        uint256 numClaimableTokens,
+        bytes32 claimsMerkleRoot,
         uint256 initialMintFee,
         string memory initialUrlPrefix,
         string memory initialUrlSuffix
@@ -65,36 +69,33 @@ contract NFTrout is
         );
 
         mintFee = initialMintFee;
-        claimantsRoot = claimantsMerkleRoot;
+        numClaimable = numClaimableTokens;
+        claimsRoot = claimsMerkleRoot;
         (urlPrefix, urlSuffix) = (initialUrlPrefix, initialUrlSuffix);
 
-        uint256 divisor = 9;
-        uint256 batches = numClaimants >> divisor;
-        uint256 remainder = numClaimants - (batches << divisor);
-        for (uint256 i; i < batches; i++) {
-            _mintERC2309(address(this), 1 << divisor);
-        }
-        if (remainder > 0) {
-            _mintERC2309(address(this), remainder);
-        }
+        _pause(); // wait for claims
     }
 
-    struct ClaimRange {
+    struct Claim {
         uint256 startTokenId;
         uint256 quantity;
+        address claimant;
     }
 
-    function claim(address claimant, ClaimRange[] calldata ranges, bytes32[] calldata proof)
-        external
-        whenNotPaused
-    {
-        bytes32 leaf = keccak256(abi.encode(claimant, ranges));
-        if (!MerkleProof.verifyCalldata(proof, claimantsRoot, leaf)) revert Unauthorized();
-        for (uint256 i; i < ranges.length; i++) {
-            for (uint256 j; i < ranges[i].quantity; j++) {
-                safeTransferFrom(address(this), claimant, ranges[i].startTokenId + j);
-            }
+    function processClaims(
+        Claim[] calldata claims,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags
+    ) external {
+        bytes32[] memory leaves = new bytes32[](claims.length);
+        for (uint256 i; i < claims.length; i++) {
+            Claim calldata claim = claims[i];
+            leaves[i] = keccak256(abi.encode(claim));
+            if (_nextTokenId() != claim.startTokenId) revert ClaimsOutstanding();
+            _mint(claim.claimant, claim.quantity);
         }
+        bool ok = MerkleProof.multiProofVerify(proof, proofFlags, claimsRoot, leaves);
+        if (!ok) revert MerkleProof.MerkleProofInvalidMultiproof();
     }
 
     function mint(uint256 quantity) external whenNotPaused {
@@ -104,22 +105,22 @@ contract NFTrout is
         paymentToken.safeTransferFrom(msg.sender, address(this), fee);
     }
 
+    struct BreedingPair {
+        TokenId left;
+        TokenId right;
+    }
+
     /// Breeds any two trout to produce a third trout that will be owned by the caller.
     /// This method must be called with enough value to pay for the two trouts' fees and the minting fee.
-    function breed(TokenId[] calldata lefts, TokenId[] calldata rights) external whenNotPaused {
-        require(lefts.length == rights.length, "mismatched lengths");
-        uint256 quantity = lefts.length;
-
-        uint256 fee = _earn(owner(), quantity * mintFee);
-        for (uint256 i; i < quantity; i++) {
-            (TokenId left, TokenId right) = (lefts[i], rights[i]);
+    function breed(BreedingPair[] calldata pairs) external whenNotPaused {
+        uint256 fee = _earn(owner(), pairs.length * mintFee);
+        for (uint256 i; i < pairs.length; i++) {
+            (TokenId left, TokenId right) = (pairs[i].left, pairs[i].right);
             require(TokenId.unwrap(left) != TokenId.unwrap(right), "cannot self-breed");
             fee += _earn(_ownerOf(left), getBreedingFee(msg.sender, left));
             fee += _earn(_ownerOf(right), getBreedingFee(msg.sender, right));
         }
-
-        _safeMint(msg.sender, quantity);
-
+        _safeMint(msg.sender, pairs.length);
         paymentToken.safeTransferFrom(msg.sender, address(this), fee);
     }
 
@@ -149,7 +150,8 @@ contract NFTrout is
     }
 
     function unpause() external onlyOwner {
-        _unpause();
+        if (_nextTokenId() > numClaimable) _unpause();
+        else revert ClaimsOutstanding();
     }
 
     /// Returns a cost for the payer to breed the trout that is no larger than the list price.
@@ -166,7 +168,7 @@ contract NFTrout is
         override(IERC721A, ERC721A)
         returns (string memory)
     {
-        return string.concat(urlPrefix, Strings.toString(tokenId));
+        return string.concat(urlPrefix, Strings.toString(tokenId), urlSuffix);
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -220,10 +222,21 @@ contract NFTrout is
         uint256[] calldata,
         bytes calldata report,
         TaskIdSelector memory
-    ) internal override {
+    ) internal override whenNotPaused {
         Task[] memory tasks = abi.decode(report, (Task[]));
         for (uint256 i; i < tasks.length; i++) {
             Task memory task = tasks[i];
+
+            if (task.kind == TaskKind.List) {
+                ListTask memory listTask = abi.decode(task.payload, (ListTask));
+                for (uint256 j; j < listTask.listings.length; j++) {
+                    StudFee memory l = listTask.listings[j];
+                    uint256 oldFee = l.packedFees >> 128;
+                    if (studFees[l.stud] != oldFee) continue;
+                    studFees[l.stud] = uint128(l.packedFees);
+                }
+                return;
+            }
 
             if (task.kind == TaskKind.Mint) {
                 MintTask memory mintTask = abi.decode(task.payload, (MintTask));
@@ -242,17 +255,6 @@ contract NFTrout is
                 for (uint256 j; j < burnTask.tokens.length; j++) {
                     if (!_exists(burnTask.tokens[j])) continue;
                     _burn(TokenId.unwrap(burnTask.tokens[j]));
-                }
-                return;
-            }
-
-            if (task.kind == TaskKind.List) {
-                ListTask memory listTask = abi.decode(task.payload, (ListTask));
-                for (uint256 j; j < listTask.listings.length; j++) {
-                    StudFee memory l = listTask.listings[j];
-                    uint256 oldFee = l.packedFees >> 128;
-                    if (studFees[l.stud] != oldFee) continue;
-                    studFees[l.stud] = uint128(l.packedFees);
                 }
                 return;
             }
