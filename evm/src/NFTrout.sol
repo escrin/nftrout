@@ -32,9 +32,6 @@ contract NFTrout is
 
     type TokenId is uint256;
 
-    /// The token does not exist;
-    error NoSuchToken(TokenId id); // 08ff8e94 CP+OlA==
-
     /// The trout is no longer breedable.
     event Delisted();
     event TasksAccepted();
@@ -89,6 +86,7 @@ contract NFTrout is
 
     function claim(address claimant, ClaimRange[] calldata ranges, bytes32[] calldata proof)
         external
+        whenNotPaused
     {
         bytes32 leaf = keccak256(abi.encode(claimant, ranges));
         if (!MerkleProof.verifyCalldata(proof, claimantsRoot, leaf)) revert Unauthorized();
@@ -116,8 +114,6 @@ contract NFTrout is
         for (uint256 i; i < quantity; i++) {
             (TokenId left, TokenId right) = (lefts[i], rights[i]);
             require(TokenId.unwrap(left) != TokenId.unwrap(right), "cannot self-breed");
-            if (!_exists(left)) revert NoSuchToken(left);
-            if (!_exists(right)) revert NoSuchToken(right);
             fee += _earn(_ownerOf(left), getBreedingFee(msg.sender, left));
             fee += _earn(_ownerOf(right), getBreedingFee(msg.sender, right));
         }
@@ -197,13 +193,13 @@ contract NFTrout is
     }
 
     struct MintTask {
-        uint256 startTokenId;
         RecipentQuantity[] outputs;
     }
 
     struct RecipentQuantity {
         address recipient;
-        uint256 quantity;
+        // @dev uint128 minted || uint128 quantity
+        uint256 packedMintedAndQuantity;
     }
 
     struct BurnTask {
@@ -216,8 +212,8 @@ contract NFTrout is
 
     struct StudFee {
         TokenId stud;
-        uint256 oldFee;
-        uint256 newFee;
+        /// @dev uint128 prev || uint128 next
+        uint256 packedFees;
     }
 
     function _afterTaskResultsAccepted(
@@ -231,9 +227,12 @@ contract NFTrout is
 
             if (task.kind == TaskKind.Mint) {
                 MintTask memory mintTask = abi.decode(task.payload, (MintTask));
-                if (mintTask.startTokenId != _nextTokenId()) continue;
                 for (uint256 j; j < mintTask.outputs.length; j++) {
-                    _safeMint(mintTask.outputs[j].recipient, mintTask.outputs[j].quantity);
+                    RecipentQuantity memory rq = mintTask.outputs[j];
+                    uint256 expectedMinted = rq.packedMintedAndQuantity >> 128;
+                    if (_numberMinted(rq.recipient) != expectedMinted) continue;
+                    uint256 qty = uint128(rq.packedMintedAndQuantity);
+                    _safeMint(rq.recipient, qty);
                 }
                 return;
             }
@@ -251,8 +250,9 @@ contract NFTrout is
                 ListTask memory listTask = abi.decode(task.payload, (ListTask));
                 for (uint256 j; j < listTask.listings.length; j++) {
                     StudFee memory l = listTask.listings[j];
-                    if (studFees[l.stud] != l.oldFee) continue;
-                    studFees[l.stud] = l.newFee;
+                    uint256 oldFee = l.packedFees >> 128;
+                    if (studFees[l.stud] != oldFee) continue;
+                    studFees[l.stud] = uint128(l.packedFees);
                 }
                 return;
             }
