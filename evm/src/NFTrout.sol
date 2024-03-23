@@ -10,7 +10,6 @@ import {TimelockedDelegatedTaskAcceptor} from
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {
     IERC165, ERC165Checker
@@ -168,7 +167,7 @@ contract NFTrout is
         override(IERC721A, ERC721A)
         returns (string memory)
     {
-        return string.concat(urlPrefix, Strings.toString(tokenId), urlSuffix);
+        return string.concat(urlPrefix, _toString(tokenId), urlSuffix);
     }
 
     function supportsInterface(bytes4 interfaceId)
