@@ -159,11 +159,9 @@ contract NFTrout is
     }
 
     /// Returns a cost for the payer to breed the trout that is no larger than the list price.
-    function getBreedingFee(address breeder, TokenId tokenId) public view returns (uint256) {
+    function getBreedingFee(address breeder, TokenId tokenId) public view returns (uint256 fee) {
         if (_isApprovedOrOwner(breeder, tokenId)) return 0;
-        uint256 fee = studFees[tokenId];
-        if (fee == 0) revert Unauthorized();
-        return fee;
+        if ((fee = studFees[tokenId]) == 0) revert Unauthorized();
     }
 
     function tokenURI(uint256 tokenId)
@@ -198,28 +196,16 @@ contract NFTrout is
         List
     }
 
-    struct MintTask {
-        RecipentQuantity[] outputs;
-    }
-
     struct RecipentQuantity {
         address recipient;
         // @dev uint128 minted || uint128 quantity
-        uint256 packedMintedAndQuantity;
-    }
-
-    struct BurnTask {
-        TokenId[] tokens;
-    }
-
-    struct ListTask {
-        StudFee[] listings;
+        uint32 packedMintedAndQuantity;
     }
 
     struct StudFee {
         TokenId stud;
         /// @dev uint128 prev || uint128 next
-        uint256 packedFees;
+        uint32 packedFees;
     }
 
     function _afterTaskResultsAccepted(
@@ -232,33 +218,31 @@ contract NFTrout is
             Task memory task = tasks[i];
 
             if (task.kind == TaskKind.List) {
-                ListTask memory listTask = abi.decode(task.payload, (ListTask));
-                for (uint256 j; j < listTask.listings.length; j++) {
-                    StudFee memory l = listTask.listings[j];
-                    uint256 oldFee = l.packedFees >> 128;
-                    if (studFees[l.stud] != oldFee) continue;
-                    studFees[l.stud] = uint128(l.packedFees);
+                StudFee[] memory listings = abi.decode(task.payload, (StudFee[]));
+                for (uint256 j; j < listings.length; j++) {
+                    uint256 oldFee = listings[j].packedFees >> 128;
+                    if (studFees[listings[j].stud] != oldFee) continue;
+                    studFees[listings[j].stud] = uint128(listings[j].packedFees);
                 }
                 return;
             }
 
             if (task.kind == TaskKind.Mint) {
-                MintTask memory mintTask = abi.decode(task.payload, (MintTask));
-                for (uint256 j; j < mintTask.outputs.length; j++) {
-                    RecipentQuantity memory rq = mintTask.outputs[j];
-                    uint256 expectedMinted = rq.packedMintedAndQuantity >> 128;
-                    if (_numberMinted(rq.recipient) != expectedMinted) continue;
-                    uint256 qty = uint128(rq.packedMintedAndQuantity);
-                    _safeMint(rq.recipient, qty);
+                RecipentQuantity[] memory outputs = abi.decode(task.payload, (RecipentQuantity[]));
+                for (uint256 j; j < outputs.length; j++) {
+                    uint256 expectedMinted = outputs[j].packedMintedAndQuantity >> 128;
+                    if (_numberMinted(outputs[j].recipient) != expectedMinted) continue;
+                    uint256 qty = uint128(outputs[j].packedMintedAndQuantity);
+                    _safeMint(outputs[j].recipient, qty);
                 }
                 return;
             }
 
             if (task.kind == TaskKind.Burn) {
-                BurnTask memory burnTask = abi.decode(task.payload, (BurnTask));
-                for (uint256 j; j < burnTask.tokens.length; j++) {
-                    if (!_exists(burnTask.tokens[j])) continue;
-                    _burn(TokenId.unwrap(burnTask.tokens[j]));
+                TokenId[] memory tokens = abi.decode(task.payload, (TokenId[]));
+                for (uint256 j; j < tokens.length; j++) {
+                    if (!_exists(TokenId.unwrap(tokens[j]))) continue;
+                    _burn(TokenId.unwrap(tokens[j]));
                 }
                 return;
             }
@@ -289,10 +273,6 @@ contract NFTrout is
         uint256 tokenId = TokenId.unwrap(id);
         address owner = ownerOf(tokenId);
         return whom == owner || getApproved(tokenId) == whom || isApprovedForAll(owner, whom);
-    }
-
-    function _exists(TokenId id) internal view returns (bool) {
-        return _exists(TokenId.unwrap(id));
     }
 
     function _startTokenId() internal pure override returns (uint256) {
