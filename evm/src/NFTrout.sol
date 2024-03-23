@@ -111,7 +111,11 @@ contract NFTrout is
 
     /// Breeds any two trout to produce a third trout that will be owned by the caller.
     /// This method must be called with enough value to pay for the two trouts' fees and the minting fee.
-    function breed(BreedingPair[] calldata pairs) external whenNotPaused {
+    function breed(BreedingPair[] calldata pairs)
+        external
+        whenNotPaused
+        returns (uint256 startTokenId)
+    {
         uint256 fee = _earn(owner(), pairs.length * mintFee);
         for (uint256 i; i < pairs.length; i++) {
             (TokenId left, TokenId right) = (pairs[i].left, pairs[i].right);
@@ -119,13 +123,14 @@ contract NFTrout is
             fee += _earn(_ownerOf(left), getBreedingFee(msg.sender, left));
             fee += _earn(_ownerOf(right), getBreedingFee(msg.sender, right));
         }
+        startTokenId = _nextTokenId();
         _safeMint(msg.sender, pairs.length);
         paymentToken.safeTransferFrom(msg.sender, address(this), fee);
     }
 
     /// Makes a trout not breedable.
     function delist(TokenId tokenId) external {
-        if (msg.sender != _ownerOf(tokenId)) revert Unauthorized();
+        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
         studFees[tokenId] = 0;
         emit Delisted();
     }
@@ -155,7 +160,7 @@ contract NFTrout is
 
     /// Returns a cost for the payer to breed the trout that is no larger than the list price.
     function getBreedingFee(address breeder, TokenId tokenId) public view returns (uint256) {
-        if (TokenId.unwrap(tokenId) == 0 || breeder == _ownerOf(tokenId)) return 0;
+        if (_isApprovedOrOwner(breeder, tokenId)) return 0;
         uint256 fee = studFees[tokenId];
         if (fee == 0) revert Unauthorized();
         return fee;
@@ -278,6 +283,12 @@ contract NFTrout is
 
     function _ownerOf(TokenId id) internal view returns (address) {
         return ownerOf(TokenId.unwrap(id));
+    }
+
+    function _isApprovedOrOwner(address whom, TokenId id) internal view returns (bool) {
+        uint256 tokenId = TokenId.unwrap(id);
+        address owner = ownerOf(tokenId);
+        return whom == owner || getApproved(tokenId) == whom || isApprovedForAll(owner, whom);
     }
 
     function _exists(TokenId id) internal view returns (bool) {
