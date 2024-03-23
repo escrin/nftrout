@@ -79,7 +79,7 @@ contract Scales is ERC20, ERC20Burnable, ERC20Permit, TimelockedDelegatedTaskAcc
                     if (balanceOf(mints[j].account) != oldBalance) continue;
                     _mint(mints[j].account, uint128(mints[j].packedQuantities));
                 }
-                return;
+                continue;
             }
 
             if (task.kind == TaskKind.Unknown) continue;

@@ -224,7 +224,7 @@ contract NFTrout is
                     if (studFees[listings[j].stud] != oldFee) continue;
                     studFees[listings[j].stud] = uint128(listings[j].packedFees);
                 }
-                return;
+                continue;
             }
 
             if (task.kind == TaskKind.Mint) {
@@ -235,7 +235,7 @@ contract NFTrout is
                     uint256 qty = uint128(outputs[j].packedMintedAndQuantity);
                     _safeMint(outputs[j].recipient, qty);
                 }
-                return;
+                continue;
             }
 
             if (task.kind == TaskKind.Burn) {
@@ -244,7 +244,7 @@ contract NFTrout is
                     if (!_exists(TokenId.unwrap(tokens[j]))) continue;
                     _burn(TokenId.unwrap(tokens[j]));
                 }
-                return;
+                continue;
             }
         }
         emit TasksAccepted();
