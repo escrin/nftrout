@@ -7,3 +7,6 @@
 [submodule "evm/lib/ERC721A"]
 	path = evm/lib/ERC721A
 	url = https://github.com/chiru-labs/ERC721A
+[submodule "evm/lib/escrin"]
+	path = evm/lib/escrin
+	url = https://github.com/escrin/escrin
